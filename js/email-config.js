@@ -5,9 +5,9 @@
    자세한 설정 방법: 이메일알림_설정가이드.md 참고
 ========================================================= */
 export const EMAILJS = {
-  publicKey: "",   // EmailJS → Account → General → Public Key
-  serviceId: "",   // EmailJS → Email Services → Service ID
-  templateId: ""   // EmailJS → Email Templates → Template ID
+  publicKey: "",   // DknDJGqx1rzW27_CV
+  serviceId: "",   // service_jqaqp6k
+  templateId: ""   // template_159qnew
 };
 
 export function emailEnabled(){
