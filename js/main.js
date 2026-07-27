@@ -4,15 +4,20 @@
 import { db } from './firebase-init.js';
 import {
   collection, addDoc, updateDoc, doc, onSnapshot, query, orderBy,
-  increment, serverTimestamp, limit
+  increment, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 import {
   initLayout, esc, ddayInfo, noticeIsNew, catClass, fbError,
-  KIND, openModal, closeModal, bindModalEvents
+  KIND, ORG_TYPES, openModal, closeModal, bindModalEvents
 } from './common.js';
+import { sendApplicationEmail, emailEnabled } from './email-config.js';
 
 initLayout('home');
 bindModalEvents();
+
+document.getElementById('a-orgtype').innerHTML =
+  '<option value="">유형을 선택하세요</option>' +
+  ORG_TYPES.map(t => `<option>${t}</option>`).join('');
 
 const $ = id => document.getElementById(id);
 let programs = [];
@@ -84,8 +89,11 @@ function openApply(programId){
   chip.textContent = KIND[p.type] || '';
   chip.style.background = p.type === 'workshop' ? 'var(--navy-soft)' : 'var(--sprout-soft)';
   chip.style.color = p.type === 'workshop' ? 'var(--navy)' : 'var(--leaf)';
-  $('a-session').innerHTML = '<option value="">회차를 선택하세요</option>' +
-    Array.from({length: p.sessions}, (_, i) => `<option>${i+1}회차</option>`).join('');
+  const courses = Array.isArray(p.courses) && p.courses.length
+    ? p.courses
+    : Array.from({length: p.sessions || 1}, (_, i) => `${i+1}회차`); // 구버전 데이터 호환
+  $('a-course').innerHTML = '<option value="">강좌를 선택하세요</option>' +
+    courses.map(c => `<option>${esc(c)}</option>`).join('');
   $('applyForm').reset();
   $('a-programId').value = p.id;
   $('a-programName').value = p.title;
@@ -103,22 +111,47 @@ $('applyForm').addEventListener('submit', async e => {
   const btn = $('applySubmitBtn');
   btn.disabled = true; btn.textContent = '접수 중…';
   try {
-    await addDoc(collection(db, 'applications'), {
+    const appData = {
       programId,
       programTitle: p ? p.title : '',
-      session: $('a-session').value,
+      course: $('a-course').value,
       name: $('a-name').value.trim(),
       org: $('a-org').value.trim(),
+      orgType: $('a-orgtype').value,
       phone: $('a-phone').value.trim(),
       email: $('a-email').value.trim(),
       memo: $('a-memo').value.trim(),
       createdAt: serverTimestamp()
-    });
+    };
+    const ref = await addDoc(collection(db, 'applications'), appData);
     await updateDoc(doc(db, 'programs', programId), { applied: increment(1) });
+
     $('applyForm').style.display = 'none';
     $('applyDoneMsg').textContent =
-      `[${p.title} · ${$('a-session').value}] 신청이 접수되었습니다. 담당자 확인 후 입력하신 연락처로 안내드립니다.`;
+      `[${p.title} · ${appData.course}] 신청이 접수되었습니다. 담당자 확인 후 안내드립니다.`;
+    $('applyDoneCode').textContent = ref.id;
     $('applyDone').style.display = 'block';
+
+    // 신청내역 이메일 발송 (실패해도 접수는 완료)
+    const mailNote = $('applyDoneMail');
+    if (emailEnabled()){
+      const r = await sendApplicationEmail({
+        to_email: appData.email,
+        name: appData.name,
+        org: appData.org,
+        org_type: appData.orgType,
+        phone: appData.phone,
+        program: appData.programTitle,
+        course: appData.course,
+        app_id: ref.id,
+        date: new Date().toLocaleString('ko-KR', {dateStyle:'long', timeStyle:'short'})
+      });
+      mailNote.innerHTML = r.ok
+        ? '신청번호는 <b>신청 확인·취소</b>에 필요합니다. 📧 입력하신 이메일로 신청내역을 발송했습니다.'
+        : '신청번호는 <b>신청 확인·취소</b>에 필요합니다. (이메일 발송에 실패했으니 위 번호를 꼭 메모해주세요.)';
+    } else {
+      mailNote.innerHTML = '신청번호는 <b>신청 확인·취소</b>에 필요합니다. 위 번호를 꼭 메모하거나 화면을 캡처해주세요.';
+    }
   } catch (err) {
     $('applyError').textContent = fbError(err);
     $('applyError').style.display = 'block';
@@ -129,18 +162,19 @@ $('applyForm').addEventListener('submit', async e => {
 
 /* ---------- 최신 공지 미리보기 (5건) ---------- */
 onSnapshot(
-  query(collection(db, 'notices'), orderBy('createdAt', 'desc'), limit(5)),
+  query(collection(db, 'notices'), orderBy('createdAt', 'desc')),
   snap => {
     const tb = $('noticePreviewBody');
-    const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const rows = [...all.filter(n => n.pinned), ...all.filter(n => !n.pinned)].slice(0, 5);
     if (!rows.length){
       tb.innerHTML = '<tr class="empty-row"><td colspan="4">등록된 공지사항이 없습니다.</td></tr>';
       return;
     }
     tb.innerHTML = rows.map(n => `
-      <tr onclick="location.href='notice.html?id=${n.id}'">
+      <tr onclick="location.href='notice.html?id=${n.id}'" class="${n.pinned ? 'pinned' : ''}">
         <td><span class="notice-cat ${catClass(n.cat)}">${esc(n.cat)}</span></td>
-        <td class="b-title"><b>${esc(n.title)}</b>${noticeIsNew(n.date) ? '<span class="notice-new">N</span>' : ''}</td>
+        <td class="b-title">${n.pinned ? '<span class="pin-mark">📌</span>' : ''}<b>${esc(n.title)}</b>${noticeIsNew(n.date) ? '<span class="notice-new">N</span>' : ''}</td>
         <td class="b-author">${esc(n.author)}</td>
         <td>${esc(n.date)}</td>
       </tr>`).join('');

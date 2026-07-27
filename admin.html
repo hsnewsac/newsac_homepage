@@ -54,6 +54,23 @@
       </div>
     </div>
 
+    <!-- 통계 대시보드 -->
+    <div class="admin-box">
+      <h3>📊 신청 현황 대시보드</h3>
+      <div class="dash-cards">
+        <div class="dash-card"><div class="num" id="d-total">0</div><div class="lbl">총 신청 건수</div></div>
+        <div class="dash-card"><div class="num" id="d-today">0</div><div class="lbl">오늘 신청</div></div>
+        <div class="dash-card"><div class="num" id="d-open">0</div><div class="lbl">접수중 프로그램</div></div>
+        <div class="dash-card"><div class="num" id="d-fill">0%</div><div class="lbl">평균 충원율</div></div>
+      </div>
+      <div class="dash-grid">
+        <div class="dash-chart"><h4>프로그램별 신청 / 정원</h4><div class="chart-box"><canvas id="chartPrograms"></canvas></div></div>
+        <div class="dash-chart"><h4>강좌별 신청 분포</h4><div class="chart-box"><canvas id="chartCourses"></canvas></div></div>
+        <div class="dash-chart"><h4>소속기관 유형 분포</h4><div class="chart-box"><canvas id="chartOrgTypes"></canvas></div></div>
+        <div class="dash-chart"><h4>최근 14일 신청 추이</h4><div class="chart-box"><canvas id="chartDaily"></canvas></div></div>
+      </div>
+    </div>
+
     <!-- 프로그램 등록/수정 -->
     <div class="admin-box">
       <h3 id="pFormTitle">📌 새 프로그램 등록</h3>
@@ -92,19 +109,18 @@
             <input id="p-capacity" type="number" min="1" placeholder="예) 90" required>
           </div>
           <div class="form-row">
-            <label for="p-sessions">회차 수 <span class="req">*</span></label>
-            <input id="p-sessions" type="number" min="1" max="20" value="3" required>
-          </div>
-        </div>
-        <div class="form-2col">
-          <div class="form-row">
-            <label for="p-content">교육 내용 <span class="req">*</span></label>
-            <input id="p-content" type="text" placeholder="예) 블록코딩 · 피지컬컴퓨팅 · 생성형 AI" required>
-          </div>
-          <div class="form-row">
             <label for="p-applied">기존 신청 인원 (선택)</label>
             <input id="p-applied" type="number" min="0" value="0" placeholder="타 채널 접수분이 있으면 입력">
           </div>
+        </div>
+        <div class="form-row">
+          <label for="p-content">교육 내용 <span class="req">*</span></label>
+          <input id="p-content" type="text" placeholder="예) 블록코딩 · 피지컬컴퓨팅 · 생성형 AI" required>
+        </div>
+        <div class="form-row">
+          <label for="p-courses">개설 강좌 목록 <span class="req">*</span></label>
+          <textarea id="p-courses" rows="4" required
+            placeholder="한 줄에 강좌 하나씩 입력하세요. 신청자가 이 목록에서 희망 강좌를 선택합니다.&#10;예)&#10;생성형 AI 이미지 제작 기초&#10;블록코딩으로 배우는 알고리즘&#10;피지컬컴퓨팅 실습 (아두이노)"></textarea>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button type="submit" class="btn btn-navy btn-sm" id="pFormSubmit">프로그램 등록</button>
@@ -128,8 +144,9 @@
 
     <!-- 공지사항 작성/관리 -->
     <div class="admin-box">
-      <h3>📢 공지사항 작성</h3>
+      <h3 id="nFormTitle">📢 공지사항 작성</h3>
       <form id="noticeForm">
+        <input type="hidden" id="n-id">
         <div class="form-2col">
           <div class="form-row">
             <label for="n-cat">분류 <span class="req">*</span></label>
@@ -148,11 +165,18 @@
           <label for="n-body">내용 <span class="req">*</span></label>
           <textarea id="n-body" rows="4" placeholder="공지 내용을 입력하세요 (줄바꿈이 그대로 반영됩니다)" required></textarea>
         </div>
-        <button type="submit" class="btn btn-navy btn-sm">공지 등록</button>
+        <label class="form-check">
+          <input type="checkbox" id="n-pinned">
+          <span>📌 게시판 상단에 고정</span>
+        </label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button type="submit" class="btn btn-navy btn-sm" id="nFormSubmit">공지 등록</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="resetNoticeForm()">입력 초기화</button>
+        </div>
       </form>
       <div class="table-scroll" style="margin-top:20px;">
         <table class="admin-table">
-          <thead><tr><th>분류</th><th>제목</th><th>등록일</th><th>조회</th><th>관리</th></tr></thead>
+          <thead><tr><th>고정</th><th>분류</th><th>제목</th><th>등록일</th><th>조회</th><th>관리</th></tr></thead>
           <tbody id="noticeAdminBody"></tbody>
         </table>
       </div>
@@ -166,7 +190,7 @@
       <div class="table-scroll">
         <table class="admin-table">
           <thead>
-            <tr><th>접수일시</th><th>프로그램</th><th>회차</th><th>이름</th><th>소속</th><th>연락처</th><th>이메일</th><th>관리</th></tr>
+            <tr><th>접수일시</th><th>프로그램</th><th>강좌</th><th>강사명</th><th>소속기관</th><th>유형</th><th>전화번호</th><th>전자메일</th><th>관리</th></tr>
           </thead>
           <tbody id="applicantTableBody"></tbody>
         </table>
@@ -178,6 +202,7 @@
 
 <footer id="site-footer"></footer>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script type="module" src="js/admin.js"></script>
 </body>
 </html>

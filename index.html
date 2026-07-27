@@ -86,26 +86,33 @@
         <input type="text" id="a-programName" readonly>
       </div>
       <div class="form-row">
-        <label for="a-session">희망 회차 <span class="req">*</span></label>
-        <select id="a-session" required></select>
+        <label for="a-course">희망 강좌 <span class="req">*</span></label>
+        <select id="a-course" required></select>
       </div>
       <div class="form-2col">
         <div class="form-row">
-          <label for="a-name">이름 <span class="req">*</span></label>
+          <label for="a-name">강사명 <span class="req">*</span></label>
           <input id="a-name" type="text" placeholder="홍길동" required>
         </div>
         <div class="form-row">
-          <label for="a-org">소속 (학교/기관) <span class="req">*</span></label>
-          <input id="a-org" type="text" placeholder="○○초등학교" required>
+          <label for="a-org">소속기관 <span class="req">*</span></label>
+          <input id="a-org" type="text" placeholder="○○초등학교 / ○○대학교 / ○○기업" required>
         </div>
         <div class="form-row">
-          <label for="a-phone">연락처 <span class="req">*</span></label>
+          <label for="a-orgtype">소속기관 유형 <span class="req">*</span></label>
+          <select id="a-orgtype" required>
+            <option value="">유형을 선택하세요</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="a-phone">전화번호 <span class="req">*</span></label>
           <input id="a-phone" type="tel" placeholder="010-0000-0000" required>
         </div>
-        <div class="form-row">
-          <label for="a-email">이메일</label>
-          <input id="a-email" type="email" placeholder="example@hs.ac.kr">
-        </div>
+      </div>
+      <div class="form-row">
+        <label for="a-email">전자메일 <span class="req">*</span></label>
+        <input id="a-email" type="email" placeholder="example@hs.ac.kr" required>
+        <p class="form-note" style="margin-top:6px;">입력하신 메일로 신청내역과 신청번호가 발송됩니다.</p>
       </div>
       <div class="form-row">
         <label for="a-memo">문의 및 요청사항</label>
@@ -120,6 +127,10 @@
     <div class="form-success" id="applyDone" style="display:none;">
       <h3>✅ 신청이 접수되었습니다</h3>
       <p id="applyDoneMsg">담당자 확인 후 입력하신 연락처로 안내드립니다.</p>
+      <p style="margin-top:12px;font-size:.88rem;">나의 신청번호</p>
+      <p><span class="app-code" id="applyDoneCode"></span></p>
+      <p style="font-size:.85rem;color:#4A5850;margin-top:8px;" id="applyDoneMail">
+        신청번호는 <b>신청 확인·취소</b>에 필요합니다. 입력하신 이메일로도 발송되니 보관해주세요.</p>
       <button class="btn btn-outline btn-sm" style="margin-top:14px" onclick="closeModal('applyModal')">닫기</button>
     </div>
   </div>

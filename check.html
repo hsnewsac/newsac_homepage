@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>신청 확인 — 한신대학교 디지털새싹 사업단</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header id="site-header"></header>
+
+<div class="page-title">
+  <div class="page-title-inner">
+    <span class="tag">CHECK</span>
+    <h1>신청 확인 · 취소</h1>
+    <p>접수 시 발급된 신청번호로 내 신청내역을 확인하고, 필요 시 취소할 수 있습니다.</p>
+  </div>
+</div>
+
+<section>
+  <div class="section">
+    <div class="check-wrap">
+      <div class="check-card">
+        <h3>🔎 신청번호로 조회</h3>
+        <form id="checkForm">
+          <div class="form-error" id="checkError"></div>
+          <div class="form-row">
+            <label for="c-code">신청번호 <span class="req">*</span></label>
+            <input id="c-code" type="text" placeholder="접수 완료 화면 또는 안내 메일의 신청번호" required
+                   autocomplete="off" spellcheck="false">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%" id="checkBtn">조회하기</button>
+          <p class="form-note">※ 신청번호를 분실하셨다면 사업단 사무국(hello@hsnewsac.com)으로 문의해주세요.</p>
+        </form>
+
+        <!-- 조회 결과 -->
+        <div class="check-result" id="checkResult" style="display:none;">
+          <dl>
+            <dt>신청번호</dt><dd><span class="app-code" id="r-code"></span></dd>
+            <dt>프로그램</dt><dd id="r-program"></dd>
+            <dt>희망 강좌</dt><dd id="r-course"></dd>
+            <dt>강사명</dt><dd id="r-name"></dd>
+            <dt>소속기관</dt><dd id="r-org"></dd>
+            <dt>소속기관 유형</dt><dd id="r-orgtype"></dd>
+            <dt>전화번호</dt><dd id="r-phone"></dd>
+            <dt>전자메일</dt><dd id="r-email"></dd>
+            <dt>접수일시</dt><dd id="r-date"></dd>
+          </dl>
+          <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="resetCheck()">다른 신청 조회</button>
+            <button class="btn btn-sm" style="background:#FBE9E4;color:var(--red);border-color:#EDC9C2;margin-left:auto;"
+                    id="cancelBtn" onclick="cancelApplication()">신청 취소하기</button>
+          </div>
+        </div>
+
+        <!-- 취소 완료 -->
+        <div class="form-success" id="cancelDone" style="display:none;margin-top:22px;">
+          <h3>신청이 취소되었습니다</h3>
+          <p>취소 처리가 완료되었습니다. 다시 참여를 원하시면 언제든 새로 신청해주세요.</p>
+          <a href="index.html" class="btn btn-outline btn-sm" style="margin-top:14px;">홈으로 가기</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer id="site-footer"></footer>
+
+<script type="module" src="js/check.js"></script>
+</body>
+</html>

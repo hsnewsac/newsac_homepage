@@ -303,3 +303,38 @@ nav a.active{background:var(--sprout-soft);color:var(--leaf);}
 .login-wrap{max-width:420px;margin:0 auto;}
 .login-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:32px;}
 .login-card h3{font-size:1.15rem;font-weight:800;margin-bottom:18px;}
+
+/* ===== 1단계 고도화 스타일 ===== */
+/* 공지 고정(📌) */
+.board-table tr.pinned{background:#FDFAF0;}
+.board-table tr.pinned:hover{background:#FBF3DC;}
+.pin-mark{color:#B8860B;font-weight:900;margin-right:4px;}
+
+/* 신청 확인(check) 페이지 */
+.check-wrap{max-width:560px;margin:0 auto;}
+.check-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:32px;}
+.check-card h3{font-size:1.12rem;font-weight:800;margin-bottom:16px;}
+.check-result{margin-top:22px;}
+.check-result dl{display:grid;grid-template-columns:110px 1fr;row-gap:9px;font-size:.94rem;
+  background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:18px 20px;}
+.check-result dt{font-weight:700;color:var(--leaf);}
+.check-result dd{color:#43514A;word-break:break-all;}
+.app-code{
+  font-family:ui-monospace,Consolas,monospace;font-size:1.02rem;font-weight:800;
+  background:var(--sprout-soft);color:var(--leaf);border-radius:8px;padding:6px 12px;
+  display:inline-block;letter-spacing:.03em;word-break:break-all;
+}
+
+/* 관리자 대시보드 */
+.dash-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+.dash-card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px 18px;}
+.dash-card .num{font-size:1.55rem;font-weight:800;color:var(--leaf);line-height:1.2;}
+.dash-card .lbl{font-size:.8rem;color:#4A5850;font-weight:700;margin-top:2px;}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.dash-chart{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px;}
+.dash-chart h4{font-size:.9rem;font-weight:800;margin-bottom:10px;color:#3C4A41;}
+.dash-chart .chart-box{position:relative;height:220px;}
+@media (max-width:840px){
+  .dash-cards{grid-template-columns:1fr 1fr;}
+  .dash-grid{grid-template-columns:1fr;}
+}

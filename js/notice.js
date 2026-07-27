@@ -17,10 +17,14 @@ let noticePage = 1, noticeQuery = '';
 let pendingOpenId = new URLSearchParams(location.search).get('id');
 let openedOnce = false;
 
+function sortPinnedFirst(list){
+  return [...list.filter(n => n.pinned), ...list.filter(n => !n.pinned)];
+}
 function filteredNotices(){
-  if (!noticeQuery) return notices;
+  const base = sortPinnedFirst(notices);
+  if (!noticeQuery) return base;
   const q = noticeQuery.toLowerCase();
-  return notices.filter(n =>
+  return base.filter(n =>
     n.title.toLowerCase().includes(q) ||
     String(n.body).replace(/<[^>]*>/g, ' ').toLowerCase().includes(q)
   );
@@ -39,10 +43,10 @@ function renderNoticeList(){
     tb.innerHTML = `<tr class="empty-row"><td colspan="6">${noticeQuery ? '검색 결과가 없습니다.' : '등록된 공지사항이 없습니다.'}</td></tr>`;
   } else {
     tb.innerHTML = pageItems.map((n, i) => `
-      <tr onclick="openNotice('${n.id}')">
-        <td>${list.length - start - i}</td>
+      <tr onclick="openNotice('${n.id}')" class="${n.pinned ? 'pinned' : ''}">
+        <td>${n.pinned ? '📌' : list.length - start - i}</td>
         <td><span class="notice-cat ${catClass(n.cat)}">${esc(n.cat)}</span></td>
-        <td class="b-title"><b>${esc(n.title)}</b>${noticeIsNew(n.date) ? '<span class="notice-new">N</span>' : ''}</td>
+        <td class="b-title">${n.pinned ? '<span class="pin-mark">📌</span>' : ''}<b>${esc(n.title)}</b>${noticeIsNew(n.date) ? '<span class="notice-new">N</span>' : ''}</td>
         <td class="b-author">${esc(n.author)}</td>
         <td>${esc(n.date)}</td>
         <td class="b-views">${n.views || 0}</td>

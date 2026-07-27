@@ -4,6 +4,7 @@
 ========================================================= */
 
 export const KIND = { camp: '집합형 연수', workshop: '강사 워크샵' };
+export const ORG_TYPES = ['초중고등 교원', '대학생/대학원생', '기업/기관 종사자', '프리랜서'];
 
 /* ---------- 헤더/푸터 주입 ---------- */
 export function initLayout(active){
@@ -25,6 +26,7 @@ export function initLayout(active){
       <nav id="gnb">
         <a href="index.html"  class="${active === 'home'   ? 'active' : ''}">홈</a>
         <a href="notice.html" class="${active === 'notice' ? 'active' : ''}">공지사항</a>
+        <a href="check.html"  class="${active === 'check'  ? 'active' : ''}">신청 확인</a>
         <a href="about.html"  class="${active === 'about'  ? 'active' : ''}">사업단 소개</a>
         <a href="admin.html"  class="${active === 'admin'  ? 'active' : ''}">관리자</a>
       </nav>
@@ -44,7 +46,7 @@ export function initLayout(active){
       </div>
       <div>
         <h4>바로가기</h4>
-        <p><a href="index.html">홈</a> · <a href="notice.html">공지사항</a> · <a href="about.html">사업단 소개</a> · <a href="admin.html">관리자</a></p>
+        <p><a href="index.html">홈</a> · <a href="notice.html">공지사항</a> · <a href="check.html">신청 확인</a> · <a href="about.html">사업단 소개</a> · <a href="admin.html">관리자</a></p>
       </div>
     </div>
     <div class="footer-bottom">© 2026 Hanshin University Digital Saessak.</div>`;
