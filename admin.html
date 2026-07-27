@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>관리자 — 한신대학교 디지털새싹 사업단</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header id="site-header"></header>
+
+<div class="page-title">
+  <div class="page-title-inner">
+    <span class="tag" style="color:var(--navy);">ADMIN</span>
+    <h1>관리자</h1>
+    <p id="adminSubtitle">사업단 관리자 계정으로 로그인해주세요.</p>
+  </div>
+</div>
+
+<!-- ===== 로그인 (미로그인 시) ===== -->
+<section id="loginSection">
+  <div class="section">
+    <div class="login-wrap">
+      <div class="login-card">
+        <h3>🔒 관리자 로그인</h3>
+        <form id="loginForm">
+          <div class="form-error" id="loginError"></div>
+          <div class="form-row">
+            <label for="l-email">이메일</label>
+            <input id="l-email" type="email" placeholder="hello@hsnewsac.com" required autocomplete="username">
+          </div>
+          <div class="form-row">
+            <label for="l-pw">비밀번호</label>
+            <input id="l-pw" type="password" placeholder="비밀번호" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn btn-navy" style="width:100%" id="loginBtn">로그인</button>
+          <p class="form-note">※ 관리자 계정은 Firebase 콘솔 → Authentication에서 관리합니다.</p>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 관리자 패널 (로그인 시) ===== -->
+<section id="admin-panel">
+  <div class="section">
+    <div class="admin-bar on" style="border-radius:12px;margin-bottom:22px;">
+      <div class="admin-bar-inner">
+        <span>🔑 <strong>관리자 모드</strong> — <span id="adminEmail"></span></span>
+        <button class="logout" onclick="adminLogout()">로그아웃</button>
+      </div>
+    </div>
+
+    <!-- 프로그램 등록/수정 -->
+    <div class="admin-box">
+      <h3 id="pFormTitle">📌 새 프로그램 등록</h3>
+      <form id="programForm">
+        <input type="hidden" id="p-id">
+        <div class="form-2col">
+          <div class="form-row">
+            <label for="p-type">프로그램 유형 <span class="req">*</span></label>
+            <select id="p-type" required>
+              <option value="camp">집합형 연수 (캠프)</option>
+              <option value="workshop">강사 워크샵</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label for="p-title">프로그램명 <span class="req">*</span></label>
+            <input id="p-title" type="text" placeholder="예) 2026 하계 SW·AI 집합형 캠프" required>
+          </div>
+          <div class="form-row">
+            <label for="p-target">대상 <span class="req">*</span></label>
+            <input id="p-target" type="text" placeholder="예) 초등 3~6학년 · 중등 1~3학년" required>
+          </div>
+          <div class="form-row">
+            <label for="p-period">운영 기간 <span class="req">*</span></label>
+            <input id="p-period" type="text" placeholder="예) 2026.08.03(월) ~ 08.21(금)" required>
+          </div>
+          <div class="form-row">
+            <label for="p-place">장소 <span class="req">*</span></label>
+            <input id="p-place" type="text" placeholder="예) 한신대학교 캠퍼스" required>
+          </div>
+          <div class="form-row">
+            <label for="p-deadline">접수 마감일 <span class="req">*</span></label>
+            <input id="p-deadline" type="date" required>
+          </div>
+          <div class="form-row">
+            <label for="p-capacity">모집 정원 <span class="req">*</span></label>
+            <input id="p-capacity" type="number" min="1" placeholder="예) 90" required>
+          </div>
+          <div class="form-row">
+            <label for="p-sessions">회차 수 <span class="req">*</span></label>
+            <input id="p-sessions" type="number" min="1" max="20" value="3" required>
+          </div>
+        </div>
+        <div class="form-2col">
+          <div class="form-row">
+            <label for="p-content">교육 내용 <span class="req">*</span></label>
+            <input id="p-content" type="text" placeholder="예) 블록코딩 · 피지컬컴퓨팅 · 생성형 AI" required>
+          </div>
+          <div class="form-row">
+            <label for="p-applied">기존 신청 인원 (선택)</label>
+            <input id="p-applied" type="number" min="0" value="0" placeholder="타 채널 접수분이 있으면 입력">
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button type="submit" class="btn btn-navy btn-sm" id="pFormSubmit">프로그램 등록</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="resetProgramForm()">입력 초기화</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- 프로그램 목록 -->
+    <div class="admin-box">
+      <h3>📋 등록된 프로그램</h3>
+      <div class="table-scroll">
+        <table class="admin-table">
+          <thead>
+            <tr><th>유형</th><th>프로그램명</th><th>마감일</th><th>신청/정원</th><th>상태</th><th>관리</th></tr>
+          </thead>
+          <tbody id="programTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 공지사항 작성/관리 -->
+    <div class="admin-box">
+      <h3>📢 공지사항 작성</h3>
+      <form id="noticeForm">
+        <div class="form-2col">
+          <div class="form-row">
+            <label for="n-cat">분류 <span class="req">*</span></label>
+            <select id="n-cat" required>
+              <option value="모집">모집</option>
+              <option value="안내">안내</option>
+              <option value="마감임박">마감임박</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label for="n-title">제목 <span class="req">*</span></label>
+            <input id="n-title" type="text" placeholder="공지 제목을 입력하세요" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="n-body">내용 <span class="req">*</span></label>
+          <textarea id="n-body" rows="4" placeholder="공지 내용을 입력하세요 (줄바꿈이 그대로 반영됩니다)" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-navy btn-sm">공지 등록</button>
+      </form>
+      <div class="table-scroll" style="margin-top:20px;">
+        <table class="admin-table">
+          <thead><tr><th>분류</th><th>제목</th><th>등록일</th><th>조회</th><th>관리</th></tr></thead>
+          <tbody id="noticeAdminBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 신청자 명단 -->
+    <div class="admin-box">
+      <h3>👥 신청자 명단
+        <button class="btn btn-outline btn-sm" onclick="downloadCSV()">CSV 다운로드</button>
+      </h3>
+      <div class="table-scroll">
+        <table class="admin-table">
+          <thead>
+            <tr><th>접수일시</th><th>프로그램</th><th>회차</th><th>이름</th><th>소속</th><th>연락처</th><th>이메일</th><th>관리</th></tr>
+          </thead>
+          <tbody id="applicantTableBody"></tbody>
+        </table>
+      </div>
+      <p class="form-note">※ 신청자 개인정보는 로그인한 관리자만 조회할 수 있습니다. 연수 종료 후에는 데이터를 파기해주세요.</p>
+    </div>
+  </div>
+</section>
+
+<footer id="site-footer"></footer>
+
+<script type="module" src="js/admin.js"></script>
+</body>
+</html>

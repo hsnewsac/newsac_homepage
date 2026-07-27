@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한신대학교 디지털새싹 사업단</title>
+<meta name="description" content="한신대학교 디지털새싹 사업단 — SW·AI 집합형 캠프와 강사 워크샵 신청 및 공지">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header id="site-header"></header>
+
+<!-- ===== 컴팩트 히어로 ===== -->
+<div class="hero" id="top">
+  <svg class="hero-mark" viewBox="0 0 200 220" aria-hidden="true">
+    <rect class="px" style="animation-delay:.05s" x="70"  y="180" width="60" height="18" rx="5" fill="#B98A5A"/>
+    <rect class="px" style="animation-delay:.15s" x="88"  y="150" width="24" height="24" rx="6" fill="#1E7F4F"/>
+    <rect class="px" style="animation-delay:.28s" x="88"  y="120" width="24" height="24" rx="6" fill="#2E9B62"/>
+    <rect class="px" style="animation-delay:.42s" x="88"  y="90"  width="24" height="24" rx="6" fill="#5FC97E"/>
+    <rect class="px" style="animation-delay:.58s" x="52"  y="62"  width="26" height="26" rx="7" fill="#5FC97E"/>
+    <rect class="px" style="animation-delay:.66s" x="26"  y="44"  width="22" height="22" rx="6" fill="#8ADCA0"/>
+    <rect class="px" style="animation-delay:.62s" x="122" y="62"  width="26" height="26" rx="7" fill="#1E7F4F"/>
+    <rect class="px" style="animation-delay:.72s" x="152" y="44"  width="22" height="22" rx="6" fill="#2E9B62"/>
+    <rect class="px" style="animation-delay:.85s" x="92"  y="52"  width="16" height="16" rx="5" fill="#F5C542"/>
+  </svg>
+  <div>
+    <h1>지금, <em>새싹</em>이 자라는 중입니다</h1>
+    <p>한신대학교 디지털새싹 사업단 — 접수 중인 연수와 최신 공지를 바로 확인하세요.</p>
+  </div>
+</div>
+
+<!-- ===== 지금 접수중인 프로그램 ===== -->
+<section id="open-now">
+  <div class="section">
+    <div class="section-head">
+      <span class="tag">NOW OPEN</span>
+      <h2>지금 접수 중인 프로그램</h2>
+    </div>
+    <div class="open-grid" id="programGrid">
+      <div class="open-empty">프로그램을 불러오는 중입니다…</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 최신 공지 미리보기 ===== -->
+<section id="notice">
+  <div class="section">
+    <div class="section-head">
+      <span class="tag">NOTICE</span>
+      <h2>공지사항</h2>
+      <a href="notice.html" class="notice-preview-more">전체 보기 →</a>
+    </div>
+    <div class="table-scroll">
+      <table class="board-table">
+        <thead>
+          <tr>
+            <th class="c-cat">분류</th><th>제목</th>
+            <th class="c-author">작성자</th><th class="c-date">등록일</th>
+          </tr>
+        </thead>
+        <tbody id="noticePreviewBody">
+          <tr class="empty-row"><td colspan="4">공지사항을 불러오는 중입니다…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<footer id="site-footer"></footer>
+
+<!-- ===== 신청 모달 ===== -->
+<div class="modal-back" id="applyModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="kind-chip" id="am-kind">집합형 연수</span>
+      <h3 id="am-title">프로그램 신청</h3>
+      <button class="modal-close" onclick="closeModal('applyModal')" aria-label="닫기">✕</button>
+    </div>
+    <form id="applyForm">
+      <input type="hidden" id="a-programId">
+      <div class="form-error" id="applyError"></div>
+      <div class="form-row">
+        <label>신청 프로그램</label>
+        <input type="text" id="a-programName" readonly>
+      </div>
+      <div class="form-row">
+        <label for="a-session">희망 회차 <span class="req">*</span></label>
+        <select id="a-session" required></select>
+      </div>
+      <div class="form-2col">
+        <div class="form-row">
+          <label for="a-name">이름 <span class="req">*</span></label>
+          <input id="a-name" type="text" placeholder="홍길동" required>
+        </div>
+        <div class="form-row">
+          <label for="a-org">소속 (학교/기관) <span class="req">*</span></label>
+          <input id="a-org" type="text" placeholder="○○초등학교" required>
+        </div>
+        <div class="form-row">
+          <label for="a-phone">연락처 <span class="req">*</span></label>
+          <input id="a-phone" type="tel" placeholder="010-0000-0000" required>
+        </div>
+        <div class="form-row">
+          <label for="a-email">이메일</label>
+          <input id="a-email" type="email" placeholder="example@hs.ac.kr">
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="a-memo">문의 및 요청사항</label>
+        <textarea id="a-memo" rows="2" placeholder="궁금한 점이나 요청사항을 적어주세요."></textarea>
+      </div>
+      <label class="form-check">
+        <input type="checkbox" id="a-consent" required>
+        <span>개인정보 수집·이용에 동의합니다. 수집된 정보는 연수 운영 목적에만 사용되며, 종료 후 관계 법령에 따라 파기됩니다. <span class="req">*</span></span>
+      </label>
+      <button type="submit" class="btn btn-primary" style="width:100%" id="applySubmitBtn">신청 접수하기</button>
+    </form>
+    <div class="form-success" id="applyDone" style="display:none;">
+      <h3>✅ 신청이 접수되었습니다</h3>
+      <p id="applyDoneMsg">담당자 확인 후 입력하신 연락처로 안내드립니다.</p>
+      <button class="btn btn-outline btn-sm" style="margin-top:14px" onclick="closeModal('applyModal')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>공지사항 — 한신대학교 디지털새싹 사업단</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header id="site-header"></header>
+
+<div class="page-title">
+  <div class="page-title-inner">
+    <span class="tag">NOTICE</span>
+    <h1>공지사항</h1>
+    <p>모집 공고와 일정 안내를 확인하세요. 제목을 누르면 상세 내용이 열립니다.</p>
+  </div>
+</div>
+
+<section id="notice">
+  <div class="section">
+    <!-- 목록 뷰 -->
+    <div id="noticeListView">
+      <div class="board-toolbar">
+        <span class="board-count">전체 <b id="noticeTotal">0</b>건</span>
+        <div class="board-search">
+          <input type="text" id="noticeSearch" placeholder="제목·내용 검색"
+                 onkeydown="if(event.key==='Enter')searchNotices()">
+          <button class="mini-btn" onclick="searchNotices()">검색</button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table class="board-table">
+          <thead>
+            <tr>
+              <th class="c-no">번호</th><th class="c-cat">분류</th><th>제목</th>
+              <th class="c-author">작성자</th><th class="c-date">등록일</th><th class="c-views">조회</th>
+            </tr>
+          </thead>
+          <tbody id="noticeTableBody">
+            <tr class="empty-row"><td colspan="6">공지사항을 불러오는 중입니다…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="board-pagination" id="noticePagination"></div>
+    </div>
+    <!-- 상세 뷰 -->
+    <div id="noticeDetailView" style="display:none;"></div>
+  </div>
+</section>
+
+<footer id="site-footer"></footer>
+
+<script type="module" src="js/notice.js"></script>
+</body>
+</html>
