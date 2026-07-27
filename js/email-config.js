@@ -1,13 +1,11 @@
 /* =========================================================
    신청 완료 이메일 자동 발송 (EmailJS)
-   ▼ EmailJS 가입 후 아래 세 값을 채우면 발송이 활성화됩니다.
-     비워두면 이메일 발송만 건너뛰고 신청은 정상 접수됩니다.
-   자세한 설정 방법: 이메일알림_설정가이드.md 참고
+   ✅ 설정 완료: 세 값이 모두 따옴표 안에 입력되어 있어야 합니다.
 ========================================================= */
 export const EMAILJS = {
-  publicKey: "",   // DknDJGqx1rzW27_CV
-  serviceId: "",   // service_jqaqp6k
-  templateId: ""   // template_159qnew
+  publicKey: "DknDJGqx1rzW27_CV",
+  serviceId: "service_jqaqp6k",
+  templateId: "template_159qnew"
 };
 
 export function emailEnabled(){
