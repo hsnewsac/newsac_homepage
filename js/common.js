@@ -13,7 +13,9 @@ export function initLayout(active){
     header.innerHTML = `
     <div class="header-inner">
       <a href="index.html" class="brand">
-        <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+        <img src="img/logo.png" class="brand-mark brand-img" alt="사업단 로고"
+             onerror="this.style.display='none';document.getElementById('brandSvg').style.display='block';">
+        <svg id="brandSvg" class="brand-mark" viewBox="0 0 40 40" aria-hidden="true" style="display:none;">
           <rect x="16" y="24" width="8" height="8" rx="2" fill="#1E7F4F"/>
           <rect x="16" y="14" width="8" height="8" rx="2" fill="#5FC97E"/>
           <rect x="6"  y="8"  width="8" height="8" rx="2" fill="#5FC97E"/>
@@ -39,10 +41,23 @@ export function initLayout(active){
   const footer = document.getElementById('site-footer');
   if (footer){
     footer.innerHTML = `
+    <div class="partner-strip" id="partnerStrip" style="display:none;">
+      <div class="partner-inner">
+        <span class="partner-label">함께하는 기관</span>
+        <img src="img/partner-1.png" alt="교육부"
+             onload="document.getElementById('partnerStrip').style.display='block'" onerror="this.remove()">
+        <img src="img/partner-2.png" alt="한국과학창의재단"
+             onload="document.getElementById('partnerStrip').style.display='block'" onerror="this.remove()">
+        <img src="img/partner-3.png" alt="한신대학교"
+             onload="document.getElementById('partnerStrip').style.display='block'" onerror="this.remove()">
+        <img src="img/partner-4.png" alt="협력기관"
+             onload="document.getElementById('partnerStrip').style.display='block'" onerror="this.remove()">
+      </div>
+    </div>
     <div class="footer-inner">
       <div>
         <h4>한신대학교 디지털새싹 사업단</h4>
-        <p>경기도 오산시 한신대길 137 한신대학교<br>사무국 031-000-0000 · hello@hsnewsac.com<br>운영시간 평일 09:00 ~ 18:00 (점심 12:00~13:00)</p>
+        <p>경기도 오산시 한신대길 137 한신대학교<br>사무국 031-379-0252 · hello@hsnewsac.com<br>운영시간 평일 09:00 ~ 18:00 (점심 12:00~13:00)</p>
       </div>
       <div>
         <h4>바로가기</h4>
