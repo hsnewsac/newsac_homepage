@@ -4,10 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>사업단 소개 — 한신대학교 디지털새싹 사업단</title>
-<meta name="description" content="한신대학교 디지털새싹 사업단의 교육과정 7종 소개와 오시는 길 안내입니다.">
+<meta name="description" content="한신대학교 디지털새싹 사업단의 2026년 교육과정 7종 소개와 오시는 길 안내입니다.">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="css/style.css">
+<style>
+  /* about.html 전용 보강 스타일 */
+  .prog-subj{display:flex;flex-wrap:wrap;gap:5px;margin-top:11px;}
+  .prog-subj span{font-size:.73rem;font-weight:700;color:#5A6862;
+    background:#F4F7F5;border:1px solid var(--line);border-radius:6px;padding:3px 8px;}
+  .prog-card.special .prog-subj span{background:#FDF6F3;border-color:#F0DAD1;color:#8C4632;}
+  .prog-out{margin-top:8px;font-size:.8rem;color:#6A776F;line-height:1.6;}
+  .prog-tool{margin-top:9px;}
+</style>
 </head>
 <body>
 
@@ -29,12 +38,12 @@
       <div class="about-card"><h3>무엇을 하나요</h3><p>SW·AI 집합형 캠프 운영과 강사 양성 워크샵, 역량강화 연수를 진행합니다.</p></div>
       <div class="about-card"><h3>누가 참여하나요</h3><p>초·중등 학생과 학부모, 캠프 강사·보조강사, 예비 교원이 참여합니다.</p></div>
       <div class="about-card"><h3>어떻게 운영되나요</h3><p>학기 중·방학 중 회차별 캠프로 운영하며, 안내는 본 홈페이지에서 제공합니다.</p></div>
-      <div class="about-card"><h3>무엇을 배우나요</h3><p>블록코딩·피지컬컴퓨팅부터 생성형 AI의 이해와 윤리까지 배웁니다.</p></div>
+      <div class="about-card"><h3>무엇을 배우나요</h3><p>AI 아트코딩을 중심으로 문학·음악·과학을 넘나드는 융합 교육을 진행합니다.</p></div>
     </div>
     <div class="about-strip">
       <span><strong>주관</strong> 교육부 · 한국과학창의재단</span>
-      <span><strong>운영</strong> 한신대학교 디지털새싹 사업단</span>
-      <span><strong>대상</strong> 초·중등 학생 및 교원·강사</span>
+      <span><strong>제안기관</strong> 한신대학교 산학협력단</span>
+      <span><strong>협력기관</strong> (사)한국시각장애인연합회 · (사)한국중증중복뇌병변장애인부모회</span>
     </div>
   </div>
 </section>
@@ -46,113 +55,178 @@
       <span class="tag">PROGRAMS</span>
       <h2>2026 교육과정 7종</h2>
       <p class="section-sub">
-        기본과정 5종과 특화과정 2종으로 구성됩니다.
-        AI 아트코딩을 중심으로 문학·음악·과학을 넘나들며, 특화과정은 특수교육 대상 학생을 위해 별도로 설계되었습니다.
+        기본과정 5종과 특화과정 2종으로 운영합니다. 모든 과정은 <b>진입기 → 도약기 → 성장기</b>의 나선형 단계로 설계되어,
+        AI 도구 사용에 그치지 않고 프롬프트를 스스로 수정·보완하며 완성도 있는 결과물을 만드는 데까지 이어집니다.
+        특화과정은 특수교육대상 학생을 위해 기획 단계부터 다시 설계한 과정입니다.
       </p>
     </div>
 
     <div class="prog-legend">
       <span class="prog-tag basic">기본과정 5종</span>
       <span class="prog-tag special">특화과정 2종</span>
-      <span class="prog-goal">2026년 목표 인원 <b>4,500명</b></span>
+      <span class="prog-goal">2026년 총 목표 인원 <b>4,800명</b></span>
+    </div>
+
+    <!-- 한눈에 보기 -->
+    <div class="table-scroll" style="margin-bottom:34px;">
+      <table class="admin-table">
+        <thead>
+          <tr><th>구분</th><th>학교급</th><th>프로그램명</th><th>교육차시</th><th>차시 구성</th><th>1회 정원</th><th>목표 인원</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="prog-tag basic">기본</span></td><td class="nowrap">초등 고학년</td><td><b>AI문학코딩</b> 미래 작가의 따뜻한 마음그림여행</td><td class="nowrap">8차시</td><td class="nowrap">3 · 2 · 3</td><td class="nowrap">20명</td><td class="nowrap">800명</td></tr>
+          <tr><td><span class="prog-tag basic">기본</span></td><td class="nowrap">초등 저학년</td><td><b>AI음악코딩</b> 유쾌한 창작자의 싱어송여행</td><td class="nowrap">8차시</td><td class="nowrap">2 · 3 · 3</td><td class="nowrap">20명</td><td class="nowrap">1,000명</td></tr>
+          <tr><td><span class="prog-tag basic">기본</span></td><td class="nowrap">초등 고학년</td><td><b>AI과학코딩</b> VRAI로 떠나는 우주여행</td><td class="nowrap">8차시</td><td class="nowrap">2 · 4 · 2</td><td class="nowrap">20명</td><td class="nowrap">800명</td></tr>
+          <tr><td><span class="prog-tag basic">기본</span></td><td class="nowrap">중학교</td><td><b>AI과학코딩</b> 호기심 많은 과학자의 바이브여행</td><td class="nowrap">8차시</td><td class="nowrap">2 · 2 · 4</td><td class="nowrap">20명</td><td class="nowrap">600명</td></tr>
+          <tr><td><span class="prog-tag basic">기본</span></td><td class="nowrap">고등학교</td><td><b>AI과학코딩</b> 바이브실험으로 과학자의 평행우주여행</td><td class="nowrap">8차시</td><td class="nowrap">2 · 4 · 2</td><td class="nowrap">20명</td><td class="nowrap">600명</td></tr>
+          <tr><td><span class="prog-tag special">특화</span></td><td class="nowrap">특수교육대상</td><td><b>AI문학코딩</b> 특수아이의 따뜻한 마음그림여행</td><td class="nowrap">12차시</td><td class="nowrap">3 · 4 · 5</td><td class="nowrap">10명</td><td class="nowrap">500명</td></tr>
+          <tr><td><span class="prog-tag special">특화</span></td><td class="nowrap">특수교육대상</td><td><b>AI음악코딩</b> 특수아이의 유쾌한 음악여행</td><td class="nowrap">12차시</td><td class="nowrap">4 · 4 · 4</td><td class="nowrap">10명</td><td class="nowrap">500명</td></tr>
+        </tbody>
+      </table>
+      <p class="cell-sub" style="margin-top:8px;font-size:.78rem;color:#8A968E;">※ 차시 구성은 진입기 · 도약기 · 성장기 순입니다.</p>
     </div>
 
     <!-- 기본과정 -->
-    <h3 class="prog-group">기본과정</h3>
+    <h3 class="prog-group">기본과정 <span>5종</span></h3>
     <div class="prog-grid">
 
       <article class="prog-card basic">
-        <div class="prog-top"><span class="prog-no">01</span><span class="prog-tag basic">기본</span></div>
-        <h4>AI문학코딩<br><em>따뜻한 마음그림책 작가 되기</em></h4>
-        <p>생성형 AI로 이야기를 짓고 그림을 만들어 나만의 그림책을 완성합니다. 글쓰기와 코딩을 함께 익히며 상상한 장면을 직접 구현하는 경험을 합니다.</p>
+        <div class="prog-top"><span class="prog-no">01</span><span class="prog-lv">초등 고학년</span><span class="prog-tag basic">기본</span></div>
+        <h4>AI문학코딩<br><em>미래 작가의 따뜻한 마음그림여행</em></h4>
+        <p>차가운 디지털 환경 속에서 자신의 정서를 탐색하고 타인의 아픔에 공감하는 경험을 제공합니다. 생성형 AI와 상호작용하며 추상적인 감정을 구체적인 예술 작품으로 바꾸는 과정을 통해, 디지털 문해력을 넘어선 <b>정서적 문해력</b>을 갖춘 미래형 작가로 성장합니다.</p>
         <ul class="prog-keys">
-          <li>스토리텔링 · 프롬프트 설계</li>
-          <li>AI 이미지 생성과 편집</li>
-          <li>그림책 제작 및 발표</li>
+          <li><b>진입기 3차시</b> 생활 속 AI 사례와 프롬프트 연습 · 차가운 순간을 따뜻한 문장으로 재구성 · 세상의 따뜻한 장면 수집</li>
+          <li><b>도약기 2차시</b> AI와 함께 위로가 되는 이야기 쓰기 · 생성형 AI로 동화책 제작</li>
+          <li><b>성장기 3차시</b> 이야기 주제곡 만들기 · 동화책 소개 영상 제작 · 공유와 인공지능 윤리</li>
         </ul>
+        <div class="prog-meta">
+          <span>8차시</span><span>정원 20명</span><span>이론 10 · 실습 70 · 프로젝트 20</span>
+        </div>
+        <div class="prog-subj"><span>국어</span><span>도덕</span><span>사회</span><span>미술</span><span>음악</span><span>실과</span></div>
+        <p class="prog-tool">🧰 캔바 · 패들렛 · 뤼튼 · Suno · 구글 AI · 도란도란 스토리텔링 스티커</p>
+        <p class="prog-out">🎒 <b>결과물</b> 캔바 화이트보드(문장 테라피·따스함 데이터), 웹페이지(동화책·주제곡), 패들렛 소감</p>
       </article>
 
       <article class="prog-card basic">
-        <div class="prog-top"><span class="prog-no">02</span><span class="prog-tag basic">기본</span></div>
-        <h4>AI음악코딩<br><em>유쾌한 싱어송라이터 / 지휘자 되기</em></h4>
-        <p>멜로디와 가사를 직접 만들고 AI 도구로 편곡해 한 곡을 완성합니다. 소리를 데이터로 다루며 음악과 코딩이 만나는 지점을 경험합니다.</p>
+        <div class="prog-top"><span class="prog-no">02</span><span class="prog-lv">초등 저학년</span><span class="prog-tag basic">기본</span></div>
+        <h4>AI음악코딩<br><em>유쾌한 창작자의 싱어송여행</em></h4>
+        <p>생성형 AI(제미나이·Suno·Canva)와 물리적 코딩 교구 <b>허밍블럭스</b>를 융합해 나만의 음악과 뮤직비디오를 창작하는 감각 통합형 AI·SW 교육입니다. 손으로 조립하는 블록으로 순차·반복·조건·함수의 논리 구조를 몸으로 익힙니다.</p>
         <ul class="prog-keys">
-          <li>작사·작곡 기초</li>
-          <li>AI 음악 생성 도구 활용</li>
-          <li>연주·지휘 체험과 공유</li>
+          <li><b>진입기 2차시</b> 내 마음속 보물찾기 · 제미나이로 이야기 얼개 구상 · 송메이커 ‘감정 레시피’ BGM 창작</li>
+          <li><b>도약기 3차시</b> 성격 코딩 악보 만들기 · 반복·조건 블록과 기울기 센서로 감정 지휘 · 함수 블록으로 음악 완성</li>
+          <li><b>성장기 3차시</b> Suno·Canva로 음악·삽화 창작 · Vrew로 뮤직비디오 편집 · 온라인 시사회와 윤리 실천</li>
         </ul>
+        <div class="prog-meta">
+          <span>8차시</span><span>정원 20명</span><span>이론 20 · 실습 30 · 프로젝트 50</span>
+        </div>
+        <div class="prog-subj"><span>음악</span><span>국어</span><span>실과</span><span>수학</span><span>미술</span><span>도덕</span></div>
+        <p class="prog-tool">🧰 허밍블럭스 · 구글 AI(제미나이·송메이커) · Suno · Canva · Vrew · 패들렛 · 도란도란 스토리텔링 스티커</p>
+        <p class="prog-out">🎒 <b>결과물</b> 송메이커 BGM 공유 링크, 최종 AI 뮤직비디오 영상(MP4)</p>
       </article>
 
       <article class="prog-card basic">
-        <div class="prog-top"><span class="prog-no">03</span><span class="prog-tag basic">기본</span></div>
-        <h4>AI과학코딩<br><em>유영하는 우주인 되기</em></h4>
-        <p>우주와 천체를 주제로 과학 개념을 탐구하고, 시뮬레이션과 시각화를 코딩으로 구현합니다. 관찰한 것을 데이터로 표현하는 힘을 기릅니다.</p>
+        <div class="prog-top"><span class="prog-no">03</span><span class="prog-lv">초등 고학년</span><span class="prog-tag basic">기본</span></div>
+        <h4>AI과학코딩<br><em>VRAI로 떠나는 우주여행</em></h4>
+        <p>생성형 AI와 자연어 기반 <b>바이브코딩</b>, 실감형 기기(VR)를 융합해 우주를 탐구하고, 자신만의 인터랙티브 우주 프로젝트를 완성하는 미래 융합 캠프입니다.</p>
         <ul class="prog-keys">
-          <li>우주·천체 탐구</li>
-          <li>시뮬레이션 코딩</li>
-          <li>데이터 시각화</li>
+          <li><b>진입기 2차시</b> VR로 360도 우주 영상 체험 · AI 챗봇으로 행성 데이터 탐색 · 티처블머신으로 AI 학습 원리 이해</li>
+          <li><b>도약기 4차시</b> AI로 나만의 별자리 설화 창작 · 태양계 여행 가이드북(플립북) 디자인 · 우주 미션 해결 보고서</li>
+          <li><b>성장기 2차시</b> 바이브코딩으로 변수·조건 알고리즘 설계 · 우주 퀴즈 게임 구현과 디버깅 · 시연회와 AI 윤리 토론</li>
         </ul>
+        <div class="prog-meta">
+          <span>8차시</span><span>정원 20명</span><span>이론 20 · 실습 40 · 프로젝트 40</span>
+        </div>
+        <div class="prog-subj"><span>과학</span><span>국어</span><span>실과</span><span>미술</span><span>수학</span></div>
+        <p class="prog-tool">🧰 VR 기기(메타퀘스트) · 노트북 · 크롬북/태블릿 · 티처블머신 · 캔바</p>
+        <p class="prog-out">🎒 <b>결과물</b> 행성 분류 AI 모델, 태양계 여행 가이드북(플립북)과 미션 보고서, 웹 기반 우주 인터랙티브 게임(QR·링크)</p>
       </article>
 
       <article class="prog-card basic">
-        <div class="prog-top"><span class="prog-no">04</span><span class="prog-tag basic">기본</span></div>
-        <h4>AI과학코딩<br><em>세상을 바이브로 터치하는 과학자 되기</em></h4>
-        <p>센서와 피지컬컴퓨팅으로 주변 환경을 직접 측정하고 반응하는 장치를 만듭니다. 손으로 만지며 배우는 실습 중심 과정입니다.</p>
+        <div class="prog-top"><span class="prog-no">04</span><span class="prog-lv">중학교</span><span class="prog-tag basic">기본</span></div>
+        <h4>AI과학코딩<br><em>호기심 많은 과학자의 바이브여행</em></h4>
+        <p>바이브코딩과 <b>공공데이터(NEIS Open API)</b>를 융합해 실생활 문제를 해결하는 웹앱과 게임을 기획·개발·배포하는 실천적 AI·SW 프로젝트입니다. 코드를 공개하고 서로의 결과물을 검증하는 개발자 협업 문화를 경험합니다.</p>
         <ul class="prog-keys">
-          <li>센서 · 피지컬컴퓨팅</li>
-          <li>측정과 제어 실습</li>
-          <li>메이커 프로젝트</li>
+          <li><b>진입기 2차시</b> 알파폴드·코로나나우로 보는 과학 혁신 · 급식 알러지 필터 웹앱 기획 · NEIS API 인증키 발급과 바이브코딩</li>
+          <li><b>도약기 2차시</b> UI/UX가 사용자 심리에 미치는 영향 분석과 AI 디자인 제작 · 앱 핵심 기능 구현</li>
+          <li><b>성장기 4차시</b> Foldit 사례 탐구와 과학 원리 게임 제작 · GitHub 배포 · AI 홍보 영상·기사 제작과 온라인 시사회</li>
         </ul>
+        <div class="prog-meta">
+          <span>8차시</span><span>정원 20명</span><span>이론 20 · 실습 30 · 프로젝트 50</span>
+        </div>
+        <div class="prog-subj"><span>과학</span><span>정보</span><span>국어</span><span>수학</span><span>미술</span></div>
+        <p class="prog-tool">🧰 NEIS 공공데이터 API · Antigravity · GitHub · Canva · Gamboai</p>
+        <p class="prog-out">🎒 <b>결과물</b> 급식 알러지 필터 웹앱(URL·QR), 과학 원리 구현 게임(URL·QR), 메이커 홍보 뉴스·영상</p>
       </article>
 
       <article class="prog-card basic">
-        <div class="prog-top"><span class="prog-no">05</span><span class="prog-tag basic">기본</span></div>
-        <h4>AI과학코딩<br><em>가장 작은 세상의 앤트맨 되기</em></h4>
-        <p>메타버스와 양자컴퓨팅을 소재로 눈에 보이지 않는 미시 세계를 탐험합니다. 가상 공간에서 과학 개념을 체험하며 미래 기술의 감각을 익힙니다.</p>
+        <div class="prog-top"><span class="prog-no">05</span><span class="prog-lv">고등학교</span><span class="prog-tag basic">기본</span></div>
+        <h4>AI과학코딩<br><em>바이브실험으로 과학자의 평행우주여행</em></h4>
+        <p>코딩 지식 없이 과학 실험 앱을 제작해 개발 관점의 전환을 경험합니다. 나아가 양자 컴퓨팅의 기초 원리를 이해하고 클라우드 기반 양자시뮬레이터 <b>EduQAI</b>로 실생활의 복잡한 다변수 최적화 문제에 도전합니다.</p>
         <ul class="prog-keys">
-          <li>메타버스 · XR 체험</li>
-          <li>양자컴퓨팅 기초 개념</li>
-          <li>미시 세계 탐구</li>
+          <li><b>진입기 2차시</b> 구글 NotebookLM으로 과학 자료 학습 · Opal로 과학 콘텐츠 앱 만들기</li>
+          <li><b>도약기 4차시</b> 과학 공식의 변수를 조작하는 시각화 로직 설계·수정 · 양자 회로 설계와 알고리즘 논리 실습</li>
+          <li><b>성장기 2차시</b> 실생활 다변수 최적화 난제를 양자컴퓨팅 시뮬레이터로 해결</li>
         </ul>
+        <div class="prog-meta">
+          <span>8차시</span><span>정원 20명</span><span>이론 20 · 실습 50 · 프로젝트 30</span>
+        </div>
+        <div class="prog-subj"><span>인공지능 기초</span><span>과학탐구실험</span><span>전자기와 양자</span></div>
+        <p class="prog-tool">🧰 양자시뮬레이터(EduQAI) · NotebookLM · Opal · 양자 회로 설계 시각화 보드 · 자체 개발 실습 워크북</p>
+        <p class="prog-out">🎒 <b>결과물</b> 나만의 디지털 과학 실험실 미니 앱, 실습 워크북·시뮬레이션 데이터, 모둠별 최적화 프로젝트 기획서와 발표 자료</p>
       </article>
 
     </div>
 
     <!-- 특화과정 -->
-    <h3 class="prog-group special">특화과정 <span>특수교육 대상 학생</span></h3>
+    <h3 class="prog-group special">특화과정 <span>2종 · 특수교육대상 학생</span></h3>
     <p class="prog-note">
-      특화과정은 (사)한국시각장애인연합회와 협력하여 운영합니다.
-      시각장애를 비롯한 특수교육 대상 학생이 <b>교육의 수혜자에서 공급자로 성장</b>하는 선순환 구조를 지향합니다.
+      특화과정은 <b>(사)한국시각장애인연합회</b>, <b>(사)한국중증중복뇌병변장애인부모회</b>와 협력하여 운영합니다.
+      일반 과정의 난이도를 낮춘 것이 아니라, 기획 단계부터 특수교육대상 학생 맞춤형으로 <b>100% 전면 재설계</b>했습니다.
+      두 과정 모두 <b>사회정서학습(SEL)</b>을 전면 융합해 12차시로 넉넉히 구성했고, 1회 정원을 <b>10명</b>으로 두어
+      차시마다 수준별·개인차를 고려한 수업이 가능하도록 설계되었습니다.
     </p>
     <div class="prog-grid">
 
       <article class="prog-card special">
-        <div class="prog-top"><span class="prog-no">06</span><span class="prog-tag special">특화</span></div>
-        <h4>특수아이의<br><em>따뜻한 마음그림책 작가 되기</em></h4>
-        <p>AI문학코딩 과정을 특수교육 대상 학생의 접근성에 맞춰 재설계했습니다. 감각적 표현과 보조공학 도구를 활용해 자신만의 이야기를 완성합니다.</p>
+        <div class="prog-top"><span class="prog-no">06</span><span class="prog-lv">특수교육대상</span><span class="prog-tag special">특화</span></div>
+        <h4>AI문학코딩<br><em>특수아이의 따뜻한 마음그림여행</em></h4>
+        <p>생성형 AI를 따뜻한 창작의 도구로 활용해, 학생들이 자신의 감정을 탐색하고 세상에 하나뿐인 디지털 동화책을 완성하는 <b>사회정서학습(SEL) 기반</b> 융합 교육입니다. AI가 표현의 장벽을 낮추고, 결과를 고치는 단계에서는 학생의 주체성을 지킵니다.</p>
         <ul class="prog-keys">
-          <li>접근성 고려 교구·도구</li>
-          <li>감각 중심 스토리텔링</li>
-          <li>1:1 보조강사 지원</li>
+          <li><b>진입기 3차시</b> ‘Say What you See’로 프롬프트 연습 · 오토드로우로 내 감정의 색깔 인지 · 그림일기 쓰기</li>
+          <li><b>도약기 4차시</b> 『아홉 살 마음 사전』으로 감정 탐색 · 제미나이로 동시 쓰고 시화 완성 · 이야기 선정과 개요 작성</li>
+          <li><b>성장기 5차시</b> 캔바로 장면 나누기와 그림책 디자인 · SUNO로 배경음악 · QR 디지털 전시회와 북 콘서트</li>
         </ul>
+        <div class="prog-meta">
+          <span>12차시</span><span>정원 10명</span><span>이론 10 · 실습 60 · 프로젝트 30</span>
+        </div>
+        <div class="prog-subj"><span>실과</span><span>국어</span><span>미술</span><span>도덕</span><span>음악</span><span>통합</span></div>
+        <p class="prog-tool">🧰 『아홉살 마음 사전』 동화책 · 『감정의 시간 여행』 보드게임 · 오토드로우 · 제미나이 · 캔바 · SUNO</p>
+        <p class="prog-out">🎒 <b>결과물</b> 그림일기, 내 마음을 담은 시화, 마음 성장 동화책</p>
       </article>
 
       <article class="prog-card special">
-        <div class="prog-top"><span class="prog-no">07</span><span class="prog-tag special">특화</span></div>
-        <h4>특수아이의<br><em>유쾌한 싱어송라이터 / 지휘자 되기</em></h4>
-        <p>AI음악코딩 과정을 특수교육 대상 학생을 위해 재구성했습니다. 소리와 리듬을 중심으로 누구나 자신의 음악을 만들고 표현할 수 있도록 돕습니다.</p>
+        <div class="prog-top"><span class="prog-no">07</span><span class="prog-lv">특수교육대상</span><span class="prog-tag special">특화</span></div>
+        <h4>AI음악코딩<br><em>특수아이의 유쾌한 음악여행</em></h4>
+        <p>다감각적 실물 교구(실로폰·색 악보 등)와 AI 도구, 음악 코딩 교구 <b>허밍블럭스</b>에 사회정서학습(SEL)을 전면 융합한 AI 특화 프로그램입니다. 단순화된 패턴과 교사의 모델링으로 성공 경험부터 쌓아 올립니다.</p>
         <ul class="prog-keys">
-          <li>청각 중심 음악 활동</li>
-          <li>보조공학 기반 창작</li>
-          <li>1:1 보조강사 지원</li>
+          <li><b>진입기 4차시</b> 감정과 소리(높낮이·빠르기) 기초 탐색 · 크롬 뮤직랩과 색 악보 · 실로폰·핸드벨 합주</li>
+          <li><b>도약기 4차시</b> 칸딘스키 도구로 그림을 소리로 변환 · 제미나이·수노로 주제곡 가사 구성 · 위로와 공감의 노래 창작</li>
+          <li><b>성장기 4차시</b> 허밍블럭스로 반복·조건·함수 코딩 악보 창작 · 작품 공유와 긍정적 피드백 나누기</li>
         </ul>
+        <div class="prog-meta">
+          <span>12차시</span><span>정원 10명</span><span>이론 20 · 실습 30 · 프로젝트 50</span>
+        </div>
+        <div class="prog-subj"><span>음악</span><span>실과</span></div>
+        <p class="prog-tool">🧰 허밍블럭스 · 실로폰·터치 핸드벨 · 감정 카드와 색 악보 키트 · Chrome Music Lab · ToneTransfer · Gemini · Suno</p>
+        <p class="prog-out">🎒 <b>결과물</b> 나만의 색 악보와 합주 영상, 그림-소리 변환 음악과 주제곡, 코딩 악보 기반 최종 창작 뮤직비디오</p>
       </article>
 
     </div>
 
-    <p class="form-note" style="margin-top:22px;">
-      ※ 과정별 세부 커리큘럼과 운영 일정은 회차마다 달라질 수 있습니다.
-      실제 모집 일정은 <a href="index.html" style="text-decoration:underline;color:var(--leaf);font-weight:700;">홈</a>과
+    <p class="form-note" style="margin-top:24px;">
+      ※ 모든 과정은 사업단이 <b>자체 개발</b>하여 주관 운영합니다. 평가는 결과보다 과정에 초점을 두어
+      자기·동료·포트폴리오·관찰 평가를 함께 운영하며, 세부 커리큘럼과 운영 일정은 회차마다 달라질 수 있습니다.<br>
+      ※ 실제 모집 일정은 <a href="index.html" style="text-decoration:underline;color:var(--leaf);font-weight:700;">홈</a>과
       <a href="notice.html" style="text-decoration:underline;color:var(--leaf);font-weight:700;">공지사항</a>에서 안내드립니다.
     </p>
   </div>
