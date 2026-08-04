@@ -86,14 +86,33 @@
     </div>
     <form id="applyForm">
       <input type="hidden" id="a-programId">
+      <div class="apply-auth" id="applyAuthNote"></div>
       <div class="form-error" id="applyError"></div>
       <div class="form-row">
         <label>신청 프로그램</label>
         <input type="text" id="a-programName" readonly>
       </div>
       <div class="form-row">
-        <label for="a-course">희망 강좌 <span class="req">*</span></label>
+        <label for="a-course" id="a-courseLabel">희망 강좌 <span class="req">*</span></label>
         <select id="a-course" required></select>
+      </div>
+
+      <!-- 강사 모집 공고 전용 입력 -->
+      <div id="recruitFields" style="display:none;">
+        <div class="form-row">
+          <label>강의 가능 요일 <span class="hint">(복수 선택)</span></label>
+          <div class="chk-grid tight" id="a-days"></div>
+        </div>
+        <div class="form-2col">
+          <div class="form-row">
+            <label for="a-time">가능 시간대</label>
+            <select id="a-time"><option value="">선택</option></select>
+          </div>
+          <div class="form-row">
+            <label for="a-area">희망 배정 지역</label>
+            <input id="a-area" type="text" placeholder="예) 오산·화성 권역 우선">
+          </div>
+        </div>
       </div>
       <div class="form-2col">
         <div class="form-row">

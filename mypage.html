@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>마이페이지 — 한신대학교 디지털새싹 사업단</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header id="site-header"></header>
+
+<div class="page-title">
+  <div class="page-title-inner">
+    <span class="tag">MY PAGE</span>
+    <h1>마이페이지</h1>
+    <p id="mySubtitle">로그인하면 나의 신청·수강 이력과 이수증을 확인할 수 있습니다.</p>
+  </div>
+</div>
+
+<!-- ===== 로그인 / 회원가입 (미로그인) ===== -->
+<section id="authSection">
+  <div class="section">
+    <div class="auth-layout">
+
+      <div class="login-card">
+        <div class="auth-tabs">
+          <button id="tabLogin" class="active" onclick="switchAuthTab('login')">로그인</button>
+          <button id="tabJoin" onclick="switchAuthTab('join')">회원가입</button>
+        </div>
+
+        <!-- 로그인 -->
+        <form id="loginForm">
+          <div class="form-error" id="authError"></div>
+          <div class="form-row">
+            <label for="li-email">이메일</label>
+            <input id="li-email" type="email" placeholder="example@hs.ac.kr" required autocomplete="username">
+          </div>
+          <div class="form-row">
+            <label for="li-pw">비밀번호</label>
+            <input id="li-pw" type="password" placeholder="비밀번호" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%" id="liBtn">로그인</button>
+          <p class="form-note">비밀번호를 잊으셨나요?
+            <a href="#" onclick="resetPassword();return false;" style="text-decoration:underline;">재설정 메일 받기</a></p>
+        </form>
+
+        <!-- 회원가입 -->
+        <form id="joinForm" style="display:none;">
+          <div class="form-error" id="joinError"></div>
+          <div class="form-row">
+            <label for="j-name">이름(강사명) <span class="req">*</span></label>
+            <input id="j-name" type="text" placeholder="홍길동" required>
+          </div>
+          <div class="form-row">
+            <label for="j-email">이메일 <span class="req">*</span></label>
+            <input id="j-email" type="email" placeholder="example@hs.ac.kr" required autocomplete="username">
+            <p class="form-note" style="margin-top:6px;">연수 신청 시 사용한(할) 이메일로 가입하면 신청 이력이 자동으로 연결됩니다.</p>
+          </div>
+          <div class="form-2col">
+            <div class="form-row">
+              <label for="j-pw">비밀번호 <span class="req">*</span></label>
+              <input id="j-pw" type="password" placeholder="6자 이상" required minlength="6" autocomplete="new-password">
+            </div>
+            <div class="form-row">
+              <label for="j-pw2">비밀번호 확인 <span class="req">*</span></label>
+              <input id="j-pw2" type="password" placeholder="비밀번호 재입력" required autocomplete="new-password">
+            </div>
+            <div class="form-row">
+              <label for="j-org">소속기관</label>
+              <input id="j-org" type="text" placeholder="○○초등학교">
+            </div>
+            <div class="form-row">
+              <label for="j-orgtype">소속기관 유형</label>
+              <select id="j-orgtype"><option value="">선택</option></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <label for="j-phone">전화번호</label>
+            <input id="j-phone" type="tel" placeholder="010-0000-0000">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%" id="jBtn">회원가입</button>
+        </form>
+      </div>
+
+      <!-- 회원 안내 -->
+      <aside class="auth-aside">
+        <h3>강사 계정으로 무엇을 할 수 있나요?</h3>
+        <ul class="auth-benefits">
+          <li><b>신청이 자동 저장됩니다</b><span>신청번호를 따로 보관하지 않아도 언제든 내역을 확인할 수 있어요.</span></li>
+          <li><b>수강·수료 이력이 쌓입니다</b><span>참여한 연수와 강의활동이 한곳에 모여 경력처럼 관리됩니다.</span></li>
+          <li><b>이수증을 언제든 재발급</b><span>수료한 과정의 이수증을 다시 내려받을 수 있습니다.</span></li>
+          <li><b>강사 모집에 지원할 수 있습니다</b><span>전문분야·경력·활동지역을 등록해두면 향후 강의배정 시 후보로 검토됩니다.</span></li>
+        </ul>
+        <p class="auth-aside-note">※ 회원가입 없이도 연수 신청은 가능하지만, 신청번호를 분실하면 확인·취소가 어렵습니다.</p>
+      </aside>
+
+    </div>
+  </div>
+</section>
+
+<!-- ===== 마이페이지 본문 (로그인 시) ===== -->
+<section id="mySection" style="display:none;">
+  <div class="section">
+
+    <!-- 활동 요약 -->
+    <div class="dash-cards my-cards">
+      <div class="dash-card"><div class="num" id="s-total">0</div><div class="lbl">총 신청·지원</div></div>
+      <div class="dash-card"><div class="num" id="s-done">0</div><div class="lbl">수료 완료</div></div>
+      <div class="dash-card"><div class="num" id="s-assign">0</div><div class="lbl">배정 확정</div></div>
+      <div class="dash-card"><div class="num" id="s-hours">0</div><div class="lbl">누적 강의 시수</div></div>
+    </div>
+
+    <!-- 진행 중인 지원 현황 -->
+    <div class="admin-box" id="statusBox" style="display:none;">
+      <h3>🎯 지원 진행 현황</h3>
+      <div id="statusCards" class="status-cards"></div>
+    </div>
+
+    <!-- 내 정보 -->
+    <div class="admin-box">
+      <h3>👤 내 정보
+        <span class="box-actions">
+          <button class="btn btn-outline btn-sm" id="editInfoBtn" onclick="toggleInfoEdit(true)">정보 수정</button>
+          <button class="btn btn-outline btn-sm" onclick="myLogout()">로그아웃</button>
+        </span>
+      </h3>
+
+      <dl class="my-info" id="infoView">
+        <dt>이름</dt><dd id="m-name">-</dd>
+        <dt>이메일</dt><dd id="m-email">-</dd>
+        <dt>소속기관</dt><dd id="m-org">-</dd>
+        <dt>유형</dt><dd id="m-orgtype">-</dd>
+        <dt>전화번호</dt><dd id="m-phone">-</dd>
+      </dl>
+
+      <form id="infoForm" style="display:none;">
+        <div class="form-error" id="infoError"></div>
+        <div class="form-2col">
+          <div class="form-row">
+            <label for="e-name">이름(강사명) <span class="req">*</span></label>
+            <input id="e-name" type="text" required>
+          </div>
+          <div class="form-row">
+            <label for="e-phone">전화번호</label>
+            <input id="e-phone" type="tel" placeholder="010-0000-0000">
+          </div>
+          <div class="form-row">
+            <label for="e-org">소속기관</label>
+            <input id="e-org" type="text" placeholder="○○초등학교">
+          </div>
+          <div class="form-row">
+            <label for="e-orgtype">소속기관 유형</label>
+            <select id="e-orgtype"><option value="">선택</option></select>
+          </div>
+        </div>
+        <p class="form-note">※ 이메일(로그인 아이디)은 변경할 수 없습니다. 변경이 필요하면 사업단으로 문의해주세요.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+          <button type="submit" class="btn btn-primary btn-sm" id="infoSaveBtn">저장</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="toggleInfoEdit(false)">취소</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- 강사 프로필 -->
+    <div class="admin-box">
+      <h3>🧑‍🏫 강사 프로필
+        <span class="pf-state" id="pfState"></span>
+      </h3>
+      <p class="form-note" style="margin-bottom:16px;">
+        전문분야·경력·활동가능지역을 등록해두시면 <b>향후 강사 모집 및 강의배정</b> 시 후보 검토 자료로 활용됩니다.
+        지금 채워두시면 모집 공고가 열렸을 때 지원 절차가 훨씬 간단해집니다.
+      </p>
+      <form id="profileForm">
+        <div class="form-error" id="pfError"></div>
+
+        <div class="form-row">
+          <label>전문분야 <span class="hint">(복수 선택 가능)</span></label>
+          <div class="chk-grid" id="pf-specialties"></div>
+        </div>
+
+        <div class="form-2col">
+          <div class="form-row">
+            <label for="pf-career">강의 경력</label>
+            <select id="pf-career"><option value="">선택</option></select>
+          </div>
+          <div class="form-row">
+            <label for="pf-cert">보유 자격 / 학위</label>
+            <input id="pf-cert" type="text" placeholder="예) 정보·컴퓨터 정교사 2급, 교육공학 석사">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>활동 가능 지역 <span class="hint">(복수 선택 가능)</span></label>
+          <div class="chk-grid" id="pf-regions"></div>
+        </div>
+
+        <div class="form-row">
+          <label for="pf-bio">자기소개 · 주요 강의 이력</label>
+          <textarea id="pf-bio" rows="4"
+            placeholder="예) 2024~2025 경기권 초등 대상 엔트리 코딩 캠프 40시간 진행 / 생성형 AI 활용 교원연수 강의 경험"></textarea>
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button type="submit" class="btn btn-primary btn-sm" id="pfSaveBtn">강사 프로필 저장</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- 신청·수강 이력 -->
+    <div class="admin-box">
+      <h3>🎓 나의 신청·수강 이력
+        <button class="btn btn-outline btn-sm" style="margin-left:auto;" onclick="reloadMyApps()">🔄 새로고침</button>
+      </h3>
+      <div class="table-scroll">
+        <table class="admin-table">
+          <thead>
+            <tr><th>신청일</th><th>프로그램</th><th>강좌/분야</th><th>신청번호</th><th>진행</th><th>수료</th><th>관리</th></tr>
+          </thead>
+          <tbody id="myAppsBody">
+            <tr><td colspan="7" style="text-align:center;color:#6A776F;">불러오는 중…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="form-note">
+        ※ 수료 처리는 과정 종료 후 사업단에서 일괄 진행합니다. 수료 완료된 과정은 [이수증] 버튼이 활성화됩니다.<br>
+        ※ 수료 처리되었거나 <b>배정이 확정된</b> 건은 마이페이지에서 취소할 수 없습니다. 사업단으로 문의해주세요.
+      </p>
+    </div>
+
+    <!-- 강의활동 이력 -->
+    <div class="admin-box" id="activityBox" style="display:none;">
+      <h3>📚 나의 강의활동 이력
+        <span class="pf-state" id="actTotal"></span>
+      </h3>
+      <p class="form-note" style="margin-bottom:14px;">
+        배정이 확정된 강의 활동입니다. 누적 차수·시수는 경력 자료로 활용하실 수 있습니다.
+      </p>
+      <div class="table-scroll">
+        <table class="admin-table">
+          <thead>
+            <tr><th>공고/프로그램</th><th>분야</th><th>배정 학교·기관</th><th>운영 기간</th><th>차수</th><th>시수</th><th>안내</th></tr>
+          </thead>
+          <tbody id="activityBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 지난 신청 연결 -->
+    <div class="admin-box">
+      <h3>🔗 지난 신청 내역 연결</h3>
+      <p class="form-note" style="margin-bottom:14px;">
+        가입 이메일과 <b>다른 이메일로 신청</b>했거나 <b>비회원으로 신청</b>한 내역은 위 목록에 나타나지 않습니다.
+        신청 시 받은 <b>신청번호</b>를 입력하면 내 계정으로 가져올 수 있습니다.
+      </p>
+      <form id="linkForm" class="link-form">
+        <input id="lk-code" type="text" placeholder="신청번호를 붙여넣으세요 (예: aB3xK9…)" required>
+        <button type="submit" class="btn btn-primary btn-sm" id="lkBtn">내 계정에 연결</button>
+      </form>
+      <div class="form-error" id="linkError" style="margin-top:12px;"></div>
+      <div class="form-note" id="linkOk" style="display:none;color:var(--leaf);font-weight:700;margin-top:12px;"></div>
+    </div>
+
+    <!-- 비밀번호 변경 -->
+    <div class="admin-box">
+      <h3>🔒 비밀번호 변경</h3>
+      <form id="pwForm">
+        <div class="form-error" id="pwError"></div>
+        <div class="form-2col">
+          <div class="form-row">
+            <label for="pw-cur">현재 비밀번호 <span class="req">*</span></label>
+            <input id="pw-cur" type="password" required autocomplete="current-password">
+          </div>
+          <div class="form-row">
+            <label for="pw-new">새 비밀번호 <span class="req">*</span></label>
+            <input id="pw-new" type="password" required minlength="6" placeholder="6자 이상" autocomplete="new-password">
+          </div>
+          <div class="form-row">
+            <label for="pw-new2">새 비밀번호 확인 <span class="req">*</span></label>
+            <input id="pw-new2" type="password" required autocomplete="new-password">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm" id="pwBtn">비밀번호 변경</button>
+      </form>
+    </div>
+
+  </div>
+</section>
+
+<footer id="site-footer"></footer>
+
+<script type="module" src="js/mypage.js"></script>
+</body>
+</html>

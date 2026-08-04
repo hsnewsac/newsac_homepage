@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>이수증 — 한신대학교 디지털새싹 사업단</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header id="site-header"></header>
+
+<div class="cert-toolbar">
+  <a href="mypage.html" class="btn btn-outline btn-sm">마이페이지로</a>
+  <button class="btn btn-primary btn-sm" onclick="window.print()">🖨 인쇄 / PDF로 저장</button>
+</div>
+
+<!-- 이수증 본문 -->
+<div class="cert-sheet" id="certSheet" style="display:none;">
+  <div class="cert-frame">
+    <div class="cert-frame-inner">
+      <div class="cert-no">발급번호: <b id="c-no">-</b></div>
+
+      <svg class="cert-mark" viewBox="0 0 200 220" aria-hidden="true" style="margin-top:18px;">
+        <rect x="70"  y="180" width="60" height="18" rx="5" fill="#B98A5A"/>
+        <rect x="88"  y="150" width="24" height="24" rx="6" fill="#1E7F4F"/>
+        <rect x="88"  y="120" width="24" height="24" rx="6" fill="#2E9B62"/>
+        <rect x="88"  y="90"  width="24" height="24" rx="6" fill="#5FC97E"/>
+        <rect x="52"  y="62"  width="26" height="26" rx="7" fill="#5FC97E"/>
+        <rect x="26"  y="44"  width="22" height="22" rx="6" fill="#8ADCA0"/>
+        <rect x="122" y="62"  width="26" height="26" rx="7" fill="#1E7F4F"/>
+        <rect x="152" y="44"  width="22" height="22" rx="6" fill="#2E9B62"/>
+        <rect x="92"  y="52"  width="16" height="16" rx="5" fill="#F5C542"/>
+      </svg>
+
+      <h1 class="cert-title">이 수 증</h1>
+
+      <dl class="cert-fields">
+        <dt>성명</dt><dd id="c-name">-</dd>
+        <dt>소속</dt><dd id="c-org">-</dd>
+        <dt>과정명</dt><dd id="c-program">-</dd>
+        <dt>이수 강좌</dt><dd id="c-course">-</dd>
+        <dt>교육 기간</dt><dd id="c-period">-</dd>
+      </dl>
+
+      <p class="cert-body">
+        위 사람은 한신대학교 디지털새싹 사업단이 주관한<br>
+        위 과정을 성실히 이수하였으므로<br>
+        이 증서를 수여합니다.
+      </p>
+
+      <div class="cert-date" id="c-date">-</div>
+
+      <div class="cert-issuer">
+        한신대학교 디지털새싹 사업단장
+        <img class="cert-stamp" src="img/stamp.png" alt="" onerror="this.remove()">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 오류/안내 -->
+<div class="section" id="certError" style="display:none;">
+  <div class="check-wrap">
+    <div class="check-card" style="text-align:center;">
+      <h3 id="certErrorTitle">이수증을 표시할 수 없습니다</h3>
+      <p id="certErrorMsg" style="color:#4A5850;font-size:.94rem;"></p>
+      <a href="mypage.html" class="btn btn-outline btn-sm" style="margin-top:16px;">마이페이지로</a>
+    </div>
+  </div>
+</div>
+
+<footer id="site-footer"></footer>
+
+<script type="module" src="js/cert.js"></script>
+</body>
+</html>

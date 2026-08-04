@@ -53,6 +53,12 @@ $('checkForm').addEventListener('submit', async e => {
     $('r-date').textContent = appDate(currentApp);
     $('checkResult').style.display = 'block';
     $('cancelDone').style.display = 'none';
+    const tip = $('linkTip');
+    if (tip){
+      tip.style.display = currentApp.uid ? 'none' : 'block';
+      tip.innerHTML = `💡 이 신청번호를 <a href="mypage.html" style="text-decoration:underline;font-weight:700;">마이페이지</a>에서
+        내 계정에 연결하면, 앞으로 번호 없이도 신청 이력과 이수증을 확인할 수 있습니다.`;
+    }
   } catch (err) {
     showError(fbError(err));
   } finally {
@@ -71,6 +77,10 @@ function resetCheck(){
 
 async function cancelApplication(){
   if (!currentApp) return;
+  if (currentApp.completed){
+    showError('이미 수료 처리된 신청은 취소할 수 없습니다. 사업단(hello@hsnewsac.com / 031-379-0252)으로 문의해주세요.');
+    return;
+  }
   if (!confirm(`[${currentApp.programTitle} · ${currentApp.course || ''}]\n${currentApp.name}님의 신청을 취소할까요?\n\n취소 후에는 되돌릴 수 없으며, 재참여를 원하시면 다시 신청해야 합니다.`)) return;
   const btn = $('cancelBtn');
   btn.disabled = true; btn.textContent = '취소 처리 중…';
