@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>계정 UID 확인 — 관리자 등록 진단</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .uid-wrap{max-width:640px;margin:0 auto;}
+  .uid-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:30px;margin-bottom:18px;}
+  .uid-card h3{font-size:1.1rem;font-weight:800;margin-bottom:14px;}
+  .uid-box{display:flex;gap:8px;align-items:center;background:var(--paper);border:1.5px dashed var(--line);
+    border-radius:10px;padding:14px 16px;margin:10px 0;}
+  .uid-box code{flex:1;font-family:ui-monospace,Consolas,monospace;font-size:.92rem;
+    word-break:break-all;color:var(--ink);font-weight:700;}
+  .diag{display:flex;gap:10px;align-items:flex-start;border-radius:11px;padding:14px 16px;
+    font-size:.9rem;line-height:1.65;margin-top:14px;}
+  .diag.ok{background:var(--sprout-soft);border:1px solid #BFE6CC;color:#1B5C39;}
+  .diag.no{background:#FBE9E4;border:1px solid #EDC9C2;color:#8C3020;}
+  .diag.warn{background:#FFF6E0;border:1px solid #EAD9A8;color:#7A5C00;}
+  .diag b{display:block;margin-bottom:3px;}
+  .steps{counter-reset:s;list-style:none;margin-top:6px;}
+  .steps li{counter-increment:s;position:relative;padding-left:34px;margin-bottom:14px;
+    font-size:.92rem;line-height:1.7;color:#3C4A41;}
+  .steps li::before{content:counter(s);position:absolute;left:0;top:1px;width:23px;height:23px;
+    border-radius:50%;background:var(--navy);color:#fff;font-size:.78rem;font-weight:800;
+    display:grid;place-items:center;}
+  .steps b{color:var(--navy);}
+  .steps code{background:var(--navy-soft);color:var(--navy);border-radius:5px;
+    padding:1px 7px;font-size:.85rem;font-weight:700;}
+</style>
+</head>
+<body>
+
+<header id="site-header"></header>
+
+<div class="page-title">
+  <div class="page-title-inner">
+    <span class="tag" style="color:var(--navy);">DIAGNOSTIC</span>
+    <h1>계정 UID 확인 · 관리자 등록 진단</h1>
+    <p>로그인한 계정의 UID를 확인하고, 관리자로 등록되어 있는지 점검합니다.</p>
+  </div>
+</div>
+
+<section>
+  <div class="section">
+    <div class="uid-wrap">
+
+      <!-- 미로그인 -->
+      <div class="uid-card" id="anonCard" style="display:none;">
+        <h3>🔒 로그인이 필요합니다</h3>
+        <p class="form-note" style="margin-bottom:16px;">
+          진단하려는 계정(관리자로 쓰실 계정)으로 먼저 로그인해주세요.
+        </p>
+        <a class="btn btn-navy" href="mypage.html?stay=1" style="width:100%;">로그인하러 가기</a>
+      </div>
+
+      <!-- 로그인 상태 -->
+      <div class="uid-card" id="userCard" style="display:none;">
+        <h3>👤 현재 로그인한 계정</h3>
+        <dl class="my-info">
+          <dt>이메일</dt><dd id="u-email">-</dd>
+          <dt>표시이름</dt><dd id="u-name">-</dd>
+        </dl>
+
+        <p class="form-note" style="margin-top:16px;font-weight:800;color:var(--navy);">
+          아래 값이 <b>UID</b> 입니다. 이 값을 그대로 복사해 문서 ID로 사용하세요.
+        </p>
+        <div class="uid-box">
+          <code id="u-uid">…</code>
+          <button class="mini-btn" onclick="copyUid()">복사</button>
+        </div>
+
+        <div id="diagBox"></div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;">
+          <button class="btn btn-outline btn-sm" onclick="recheck()">🔄 다시 확인</button>
+          <a class="btn btn-outline btn-sm" href="admin.html">관리자 페이지 열기</a>
+          <button class="btn btn-outline btn-sm" onclick="doLogout()">로그아웃</button>
+        </div>
+      </div>
+
+      <!-- 등록 방법 -->
+      <div class="uid-card">
+        <h3>🛠 관리자로 등록하는 방법</h3>
+        <ol class="steps">
+          <li><b>Firebase 콘솔</b>에 접속해 <code>newsac-20d73</code> 프로젝트를 엽니다.</li>
+          <li>왼쪽 메뉴에서 <b>Firestore Database</b> → <b>데이터</b> 탭으로 들어갑니다.</li>
+          <li><b>컬렉션 시작</b>을 눌러 컬렉션 ID를 정확히 <code>admins</code> 로 만듭니다.
+            (이미 있으면 이 단계는 건너뛰고 <b>문서 추가</b>를 누르세요)</li>
+          <li>문서 ID 칸에 <b>위에서 복사한 UID를 붙여넣습니다.</b>
+            ⚠️ <b>이메일이 아니라 UID</b> 여야 합니다. <b>자동 ID</b> 버튼을 누르면 안 됩니다.</li>
+          <li>필드는 아무거나 하나 넣으면 됩니다. 예: 필드명 <code>role</code>, 타입 <code>string</code>,
+            값 <code>admin</code> — 내용은 검사하지 않고 <b>문서의 존재 여부만</b> 봅니다.</li>
+          <li>저장한 뒤 이 페이지에서 <b>[🔄 다시 확인]</b> 을 누릅니다.</li>
+        </ol>
+        <p class="form-note" style="margin-top:8px;">
+          ※ 여러 명을 관리자로 두려면 각자의 UID로 문서를 하나씩 추가하면 됩니다.<br>
+          ※ 보안상 <code>admins</code> 컬렉션은 콘솔에서만 편집할 수 있고, 웹에서는 등록·수정이 불가능합니다.
+        </p>
+      </div>
+
+      <div class="uid-card">
+        <h3>❓ 그래도 안 될 때</h3>
+        <p class="form-note" style="line-height:1.8;">
+          <b>1. 문서 ID에 공백이 섞였는지 확인</b> — 복사 과정에서 앞뒤 공백이 붙는 경우가 많습니다.<br>
+          <b>2. 컬렉션 이름 확인</b> — <code>admin</code> 이 아니라 <code>admins</code> (복수형) 입니다.<br>
+          <b>3. 보안 규칙 게시 여부 확인</b> — <code>firestore_보안규칙_v5.txt</code> 가 게시되어 있어야 합니다.
+          위 진단에 <b>권한 오류</b>가 뜬다면 규칙 문제입니다.<br>
+          <b>4. 로그아웃 후 재로그인</b> — 인증 토큰이 갱신되며 해결되는 경우가 있습니다.<br>
+          <b>5. 강력 새로고침</b> — <code>Ctrl+Shift+R</code> (Mac은 <code>Cmd+Shift+R</code>)
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<footer id="site-footer"></footer>
+
+<script type="module">
+import { db, auth } from './js/firebase-init.js';
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+import { initLayout, esc } from './js/common.js';
+
+initLayout('');
+const $ = id => document.getElementById(id);
+let me = null;
+
+function diag(kind, title, body){
+  $('diagBox').innerHTML =
+    `<div class="diag ${kind}"><span>${kind === 'ok' ? '✅' : (kind === 'no' ? '❌' : '⚠️')}</span>
+       <div><b>${title}</b>${body}</div></div>`;
+}
+
+async function check(){
+  if (!me) return;
+  diag('warn', '확인 중…', 'admins 컬렉션을 조회하고 있습니다.');
+  try {
+    const snap = await getDoc(doc(db, 'admins', me.uid));
+    if (snap.exists()){
+      diag('ok', '관리자로 등록되어 있습니다',
+        '이 계정으로 로그인하면 관리자 페이지가 열립니다. 그래도 마이페이지로 이동한다면 강력 새로고침(Ctrl+Shift+R) 후 다시 시도해보세요.');
+    } else {
+      diag('no', 'admins 컬렉션에 이 UID 문서가 없습니다',
+        '바로 이것이 관리자 페이지가 열리지 않는 원인입니다. 아래 [관리자로 등록하는 방법]을 따라 문서를 추가해주세요.');
+    }
+  } catch (err) {
+    diag('warn', '조회 중 오류가 발생했습니다 (' + esc(err.code || '') + ')',
+      '보안 규칙이 게시되지 않았거나 네트워크 문제일 수 있습니다. firestore_보안규칙_v5.txt 게시 여부를 확인해주세요.');
+  }
+}
+
+onAuthStateChanged(auth, user => {
+  me = user;
+  $('anonCard').style.display = user ? 'none' : 'block';
+  $('userCard').style.display = user ? 'block' : 'none';
+  if (!user) return;
+  $('u-email').textContent = user.email || '-';
+  $('u-name').textContent = user.displayName || '(설정 안 됨)';
+  $('u-uid').textContent = user.uid;
+  check();
+});
+
+window.recheck = check;
+window.doLogout = () => signOut(auth);
+window.copyUid = async () => {
+  try {
+    await navigator.clipboard.writeText(me.uid);
+    alert('UID를 복사했습니다.\n\n' + me.uid);
+  } catch {
+    const r = document.createRange();
+    r.selectNode($('u-uid'));
+    getSelection().removeAllRanges();
+    getSelection().addRange(r);
+    alert('아래 UID를 직접 복사해주세요.');
+  }
+};
+</script>
+</body>
+</html>

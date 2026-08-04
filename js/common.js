@@ -149,7 +149,7 @@ export function initLayout(active){
     <div class="footer-inner">
       <div>
         <h4>한신대학교 디지털새싹 사업단</h4>
-        <p>경기도 오산시 한신대길 137 한신대학교<br>사무국 031-379-0252 · hello@hsnewsac.com<br>운영시간 평일 09:00 ~ 18:00 (점심 12:00~13:00)</p>
+        <p>(18101) 경기도 오산시 한신대길 137 한신대학교<br>임마누엘관 지하1층 5008호<br>사무국 031-379-0255 · hello@hsnewsac.com<br>운영시간 평일 09:00 ~ 18:00 (점심 12:00~13:00)</p>
       </div>
       <div>
         <h4>바로가기</h4>

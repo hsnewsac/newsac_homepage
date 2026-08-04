@@ -78,7 +78,7 @@ function resetCheck(){
 async function cancelApplication(){
   if (!currentApp) return;
   if (currentApp.completed){
-    showError('이미 수료 처리된 신청은 취소할 수 없습니다. 사업단(hello@hsnewsac.com / 031-379-0252)으로 문의해주세요.');
+    showError('이미 수료 처리된 신청은 취소할 수 없습니다. 사업단(hello@hsnewsac.com / 031-379-0255)으로 문의해주세요.');
     return;
   }
   if (!confirm(`[${currentApp.programTitle} · ${currentApp.course || ''}]\n${currentApp.name}님의 신청을 취소할까요?\n\n취소 후에는 되돌릴 수 없으며, 재참여를 원하시면 다시 신청해야 합니다.`)) return;

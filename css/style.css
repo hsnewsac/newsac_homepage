@@ -765,3 +765,81 @@ nav a.active{background:var(--sprout-soft);color:var(--leaf);}
 @media (max-width:520px){
   .role-picker{grid-template-columns:1fr;}
 }
+
+/* =========================================================
+   v9 — 사업단 소개: 교육과정 7종 · 오시는 길
+========================================================= */
+
+/* ----- 교육과정 ----- */
+.prog-band{background:linear-gradient(180deg,var(--sprout-soft),transparent 60%);
+  border-top:1px solid var(--line);}
+.prog-legend{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:24px;}
+.prog-goal{font-size:.86rem;color:#4A5850;font-weight:600;margin-left:auto;}
+.prog-goal b{color:var(--leaf);font-size:1rem;font-weight:800;}
+.prog-tag{display:inline-block;font-size:.74rem;font-weight:800;padding:4px 12px;border-radius:999px;}
+.prog-tag.basic{background:var(--sprout-soft);color:var(--leaf);}
+.prog-tag.special{background:#FDEEE9;color:#B4553C;}
+
+.prog-group{font-size:1.12rem;font-weight:800;margin:6px 0 14px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.prog-group::before{content:'';width:4px;height:19px;border-radius:3px;background:var(--leaf);}
+.prog-group.special{margin-top:38px;}
+.prog-group.special::before{background:#D98263;}
+.prog-group span{font-size:.82rem;font-weight:700;color:#8A968E;}
+.prog-note{font-size:.9rem;color:#4A5850;line-height:1.75;margin-bottom:18px;
+  background:#FDF6F3;border:1px solid #F0DAD1;border-radius:11px;padding:14px 17px;}
+
+.prog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(292px,1fr));gap:16px;}
+.prog-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+  padding:22px 22px 20px;display:flex;flex-direction:column;gap:10px;transition:.18s;}
+.prog-card:hover{transform:translateY(-3px);box-shadow:0 8px 26px rgba(30,127,79,.10);
+  border-color:var(--sprout);}
+.prog-card.special:hover{border-color:#D98263;box-shadow:0 8px 26px rgba(180,85,60,.10);}
+.prog-top{display:flex;align-items:center;gap:9px;}
+.prog-no{font-size:1.5rem;font-weight:800;color:var(--line);line-height:1;letter-spacing:-.02em;}
+.prog-card.basic .prog-no{color:#BFE6CC;}
+.prog-card.special .prog-no{color:#F0C9BC;}
+.prog-top .prog-tag{margin-left:auto;}
+.prog-card h4{font-size:1.02rem;font-weight:800;line-height:1.45;letter-spacing:-.01em;}
+.prog-card h4 em{font-style:normal;font-size:1.06rem;color:var(--leaf);}
+.prog-card.special h4 em{color:#B4553C;}
+.prog-card > p{font-size:.89rem;color:#4A5850;line-height:1.7;}
+.prog-keys{list-style:none;display:flex;flex-direction:column;gap:5px;margin-top:auto;
+  padding-top:13px;border-top:1px dashed var(--line);}
+.prog-keys li{font-size:.83rem;color:#5A6862;padding-left:15px;position:relative;}
+.prog-keys li::before{content:'';position:absolute;left:0;top:8px;width:5px;height:5px;
+  border-radius:50%;background:var(--sprout);}
+.prog-card.special .prog-keys li::before{background:#D98263;}
+
+/* ----- 오시는 길 ----- */
+.map-wrap{position:relative;width:100%;aspect-ratio:16/8;min-height:280px;
+  border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--paper);}
+.map-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
+.map-links{display:flex;gap:9px;flex-wrap:wrap;margin:14px 0 26px;}
+
+.dir-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;}
+.dir-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:24px;}
+.dir-card.highlight{background:var(--navy-soft);border-color:#C9DAEC;}
+.dir-card h3{font-size:1.03rem;font-weight:800;margin-bottom:13px;}
+.dir-lead{font-size:.91rem;color:#3C4A41;line-height:1.7;}
+.dir-steps{list-style:none;counter-reset:d;margin:13px 0 0;}
+.dir-steps li{counter-increment:d;position:relative;padding-left:30px;margin-bottom:10px;
+  font-size:.89rem;color:#4A5850;line-height:1.65;}
+.dir-steps li::before{content:counter(d);position:absolute;left:0;top:0;width:21px;height:21px;
+  border-radius:50%;background:var(--leaf);color:#fff;font-size:.74rem;font-weight:800;
+  display:grid;place-items:center;}
+.dir-bus{display:grid;grid-template-columns:auto 1fr;gap:7px 13px;margin-top:12px;font-size:.88rem;}
+.dir-bus dt{font-weight:800;color:var(--navy);white-space:nowrap;}
+.dir-bus dd{color:#4A5850;line-height:1.6;}
+.dir-info{display:grid;grid-template-columns:72px 1fr;gap:10px 14px;font-size:.9rem;}
+.dir-info dt{font-weight:800;color:var(--navy);}
+.dir-info dd{color:#2E4256;line-height:1.65;}
+.dir-info a{text-decoration:underline;font-weight:700;}
+.dir-tip{margin-top:14px;padding-top:13px;border-top:1px dashed var(--line);
+  font-size:.83rem;color:#6A776F;line-height:1.7;}
+.dir-card.highlight .dir-tip{border-color:#C9DAEC;color:#5C7794;}
+
+@media (max-width:640px){
+  .prog-goal{margin-left:0;width:100%;}
+  .map-wrap{aspect-ratio:4/3;}
+}
