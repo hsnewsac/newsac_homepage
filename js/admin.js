@@ -12,13 +12,14 @@ import {
   runTransaction, deleteField
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 import {
-  signInWithEmailAndPassword, signOut, onAuthStateChanged
+  signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
 import {
   initLayout, esc, ddayInfo, todayStr, catClass, fbError,
   KIND, ORG_TYPES, SPECIALTIES, REGIONS, CAREER_LEVELS,
   STATUS, STATUS_ORDER, statusOf, statusChip,
-  tsText, tsNum, toast, openModal, closeModal, bindModalEvents
+  ROLES, ROLE_ORDER, roleOf,
+  tsText, tsNum, toast, openModal, closeModal, bindModalEvents, checkIsAdmin
 } from './common.js';
 import { sendCertificateEmail, certEmailEnabled,
          sendStatusEmail, statusEmailEnabled } from './email-config.js';
@@ -49,6 +50,8 @@ $('cd-specialty').innerHTML = '<option value="">전체</option>' +
   SPECIALTIES.map(s => `<option>${s}</option>`).join('');
 $('cd-career').innerHTML = '<option value="">전체</option>' +
   CAREER_LEVELS.map((c, i) => `<option value="${i}">${c} 이상</option>`).join('');
+$('mf-role').innerHTML = '<option value="">전체</option>' +
+  ROLE_ORDER.map(k => `<option value="${k}">${ROLES[k].icon} ${ROLES[k].label}</option>`).join('');
 
 /* ==================== 탭 ==================== */
 function switchTab(name){
@@ -62,52 +65,49 @@ function switchTab(name){
 }
 window.switchTab = switchTab;
 
-/* ==================== 인증 ==================== */
-$('loginForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const btn = $('loginBtn');
-  btn.disabled = true; btn.textContent = '로그인 중…';
-  try {
-    await signInWithEmailAndPassword(auth, $('l-email').value.trim(), $('l-pw').value);
-  } catch (err) {
-    $('loginError').textContent = fbError(err);
-    $('loginError').style.display = 'block';
-  } finally {
-    btn.disabled = false; btn.textContent = '로그인';
-  }
-});
+/* ==================== 접근 제어 ==================== */
 function adminLogout(){ signOut(auth); }
 window.adminLogout = adminLogout;
 
-async function verifyAdmin(user){
-  try {
-    const snap = await getDoc(doc(db, 'admins', user.uid));
-    return snap.exists();
-  } catch { return false; }
+function showGate(kind, user){
+  $('gateSection').style.display = 'block';
+  $('admin-panel').classList.remove('on');
+  const icon = $('gateIcon'), title = $('gateTitle'),
+        desc = $('gateDesc'), acts = $('gateActions');
+  if (kind === 'anon'){
+    $('adminSubtitle').textContent = '관리자 로그인이 필요합니다.';
+    icon.textContent = '🔒';
+    title.textContent = '로그인이 필요합니다';
+    desc.innerHTML = '사업단 관리자 계정으로 로그인하시면 이 페이지가 열립니다.<br>로그인은 사이트 우측 상단에서도 하실 수 있습니다.';
+    acts.innerHTML = `<a class="btn btn-navy" href="mypage.html?next=admin">로그인하러 가기</a>
+      <a class="btn btn-outline" href="index.html">홈으로</a>`;
+  } else {
+    $('adminSubtitle').textContent = '이 계정에는 관리자 권한이 없습니다.';
+    icon.textContent = '⛔';
+    title.textContent = '관리자 권한이 없습니다';
+    desc.innerHTML = `현재 <b>${esc(user?.email || '')}</b> 계정으로 로그인되어 있습니다.<br>
+      강사·참가자 계정은 마이페이지를 이용해주세요.`;
+    acts.innerHTML = `<a class="btn btn-primary" href="mypage.html">마이페이지로 이동</a>
+      <button class="btn btn-outline" onclick="adminLogout()">다른 계정으로 로그인</button>`;
+  }
 }
 
 onAuthStateChanged(auth, async user => {
-  if (user){
-    const ok = await verifyAdmin(user);
-    if (!ok){
-      alert('관리자 계정이 아닙니다.\n강사·참가자 로그인은 [마이페이지]에서 해주세요.');
-      signOut(auth);
-      return;
-    }
-  }
-  const on = !!user;
-  $('loginSection').style.display = on ? 'none' : 'block';
-  $('admin-panel').classList.toggle('on', on);
-  $('adminSubtitle').textContent = on
-    ? '프로그램 등록, 공지 작성, 신청자·강사 회원을 관리합니다.'
-    : '사업단 관리자 계정으로 로그인해주세요.';
-  if (on){
-    $('adminEmail').textContent = user.email;
-    subscribeApplications();
-  } else {
+  if (!user){
     if (unsubApplications){ unsubApplications(); unsubApplications = null; }
     applications = []; members = []; membersLoaded = false; selected.clear();
+    showGate('anon');
+    return;
   }
+  const ok = await checkIsAdmin(user.uid);
+  if (!ok){ showGate('denied', user); return; }
+
+  $('gateSection').style.display = 'none';
+  $('admin-panel').classList.add('on');
+  $('adminSubtitle').textContent = '프로그램 등록, 공지 작성, 신청자·강사 배정을 관리합니다.';
+  $('adminEmail').textContent = user.email;
+  $('adminAva').textContent = (user.email || 'A').charAt(0).toUpperCase();
+  subscribeApplications();
 });
 
 /* ==================== 프로그램 ==================== */
@@ -821,6 +821,7 @@ function filteredCandidates(){
   const q = $('cd-q').value.trim().toLowerCase();
 
   return members.filter(m => {
+    if (roleOf(m) !== 'instructor') return false;
     if (rg && !(m.regions || []).includes(rg) && !(m.regions || []).includes('전국 가능')) return false;
     if (sp && !(m.specialties || []).includes(sp)) return false;
     if (cr >= 0 && careerRank(m.career) < cr) return false;
@@ -843,7 +844,7 @@ function renderCandidates(){
   const list = filteredCandidates();
   $('as-candCount').innerHTML = `<span class="status-chip review">후보 ${list.length}명</span>`;
   if (!list.length){
-    tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#6A776F;">조건에 맞는 강사 회원이 없습니다. 필터를 완화해보세요.</td></tr>';
+    tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#6A776F;">조건에 맞는 <b>강사</b> 회원이 없습니다. 필터를 완화해보세요.</td></tr>';
     return;
   }
   tb.innerHTML = list.slice(0, 60).map(m => {
@@ -965,16 +966,42 @@ function memberStats(m){
     hours: assigned.reduce((s, a) => s + (Number(a.assignHours) || 0), 0)
   };
 }
+function hasProfileOf(m){
+  const r = roleOf(m);
+  if (r === 'instructor') return !!(m.specialties?.length || m.career || m.regions?.length);
+  if (r === 'staff')      return !!(m.orgInterests?.length || m.groupSize || m.orgNote);
+  return !!(m.interests?.length || m.careNote);
+}
+/** 유형별 요약 정보 (표·CSV 공용) */
+function roleDetail(m){
+  const r = roleOf(m);
+  if (r === 'instructor'){
+    return [(m.specialties || []).join(', '), m.career, (m.regions || []).join(', ')]
+      .filter(Boolean).join(' · ');
+  }
+  if (r === 'staff'){
+    return [m.dept, m.duty, m.groupSize ? `단체 ${m.groupSize}명` : '',
+            (m.orgInterests || []).join(', ')].filter(Boolean).join(' · ');
+  }
+  if (r === 'parent'){
+    return [m.childName ? `자녀 ${m.childName}` : '', m.childGrade, m.childSchool,
+            (m.interests || []).join(', ')].filter(Boolean).join(' · ');
+  }
+  return [m.grade, m.school, m.guardianPhone ? `보호자 ${m.guardianPhone}` : '',
+          (m.interests || []).join(', ')].filter(Boolean).join(' · ');
+}
 function filteredMembers(){
   const q = $('mf-q').value.trim().toLowerCase();
   const fp = $('mf-profile').value;
+  const fr = $('mf-role').value;
   return members.filter(m => {
-    const hasProfile = !!(m.specialties?.length || m.career || m.regions?.length);
-    if (fp === 'done' && !hasProfile) return false;
-    if (fp === 'none' && hasProfile) return false;
+    if (fr && roleOf(m) !== fr) return false;
+    const hp = hasProfileOf(m);
+    if (fp === 'done' && !hp) return false;
+    if (fp === 'none' && hp) return false;
     if (q){
-      const hay = [m.name, m.email, m.org, m.orgType, m.phone, m.career,
-                   (m.specialties || []).join(' '), (m.regions || []).join(' '), m.bio]
+      const hay = [m.name, m.email, m.org, m.orgType, m.phone, m.career, roleDetail(m),
+                   ROLES[roleOf(m)].label, m.bio, m.careNote, m.orgNote]
         .map(v => String(v ?? '').toLowerCase()).join(' ');
       if (!hay.includes(q)) return false;
     }
@@ -986,42 +1013,43 @@ function renderMembers(){
   const list = filteredMembers();
   $('badgeMember').textContent = members.length;
   if (!list.length){
-    tb.innerHTML = `<tr><td colspan="11" style="text-align:center;color:#6A776F;">${
-      members.length ? '조건에 맞는 회원이 없습니다.' : '가입한 강사 회원이 없습니다.'}</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#6A776F;">${
+      members.length ? '조건에 맞는 회원이 없습니다.' : '가입한 회원이 없습니다.'}</td></tr>`;
     return;
   }
   tb.innerHTML = list.map(m => {
     const s = memberStats(m);
-    const sp = (m.specialties || []).join(', ');
-    const rg = (m.regions || []).join(', ');
+    const r = roleOf(m);
+    const detail = roleDetail(m);
     return `<tr>
       <td class="nowrap">${esc(tsText(m.createdAt, false))}</td>
+      <td><span class="role-chip ${r}">${ROLES[r].icon} ${ROLES[r].label}</span></td>
       <td><b>${esc(m.name || '-')}</b></td>
       <td class="cell-sub">${esc(m.email || '-')}</td>
-      <td>${esc(m.org || '-')}</td>
-      <td>${esc(m.orgType || '-')}</td>
       <td class="nowrap cell-sub">${esc(m.phone || '-')}</td>
-      <td class="cell-sub">${sp ? esc(sp) : '<span style="color:#A5B1A9;">미작성</span>'}</td>
-      <td class="nowrap">${esc(m.career || '-')}</td>
-      <td class="cell-sub">${rg ? esc(rg) : '-'}</td>
+      <td>${esc(m.org || m.childSchool || m.school || '-')}</td>
+      <td class="cell-sub">${detail ? esc(detail) : '<span style="color:#A5B1A9;">미작성</span>'}</td>
       <td class="nowrap">${s.total}건 / <b style="color:var(--leaf);">${s.done}</b></td>
-      <td class="nowrap">${s.assigned}건 / <b style="color:var(--navy);">${s.hours}</b>시수</td>
+      <td class="nowrap">${r === 'instructor' ? `${s.assigned}건 / <b style="color:var(--navy);">${s.hours}</b>시수` : '-'}</td>
     </tr>`;
   }).join('');
 }
 $('mf-q').addEventListener('input', () => { clearTimeout(qTimer); qTimer = setTimeout(renderMembers, 200); });
 $('mf-profile').addEventListener('change', renderMembers);
+$('mf-role').addEventListener('change', renderMembers);
 
 function downloadMemberCSV(){
   const list = filteredMembers();
   if (!list.length){ alert('내보낼 회원이 없습니다.'); return; }
-  const rows = [['가입일','이름','이메일','소속기관','소속유형','전화번호',
-                 '전문분야','경력','활동가능지역','자기소개','총 신청','수료 완료','배정 건수','누적 시수']];
+  const rows = [['가입일','회원 유형','이름','이메일','전화번호','소속/학교','소속유형',
+                 '유형별 정보','전문분야','경력','활동가능지역','자기소개/메모',
+                 '총 신청','수료 완료','배정 건수','누적 시수']];
   list.forEach(m => {
     const s = memberStats(m);
-    rows.push([tsText(m.createdAt, false), m.name, m.email, m.org || '', m.orgType || '', m.phone || '',
+    rows.push([tsText(m.createdAt, false), ROLES[roleOf(m)].label, m.name, m.email, m.phone || '',
+      m.org || m.childSchool || m.school || '', m.orgType || '', roleDetail(m),
       (m.specialties || []).join(' / '), m.career || '', (m.regions || []).join(' / '),
-      m.bio || '', s.total, s.done, s.assigned, s.hours]);
+      m.bio || m.careNote || m.orgNote || '', s.total, s.done, s.assigned, s.hours]);
   });
   saveCSV(rows, `디지털새싹_강사회원명단_${todayStr().replace(/\./g,'')}.csv`);
   toast(`CSV ${list.length}건을 내려받았습니다.`);
@@ -1051,7 +1079,8 @@ function renderDashboard(){
   $('d-fill').textContent = fills.length
     ? Math.round(fills.reduce((a,b) => a+b, 0) / fills.length * 100) + '%' : '0%';
   $('d-done').textContent = applications.filter(a => a.completed).length;
-  $('d-member').textContent = membersLoaded ? members.length : '—';
+  $('d-member').textContent = membersLoaded
+    ? `${members.filter(m => roleOf(m) === 'instructor').length}/${members.length}` : '—';
 
   makeChart('chartPrograms', {
     type: 'bar',
@@ -1128,6 +1157,7 @@ onSnapshot(
     renderAdminTable();
     renderDashboard();
     refreshAssignPrograms();
+    $('badgeProgram').textContent = programs.length;
     if ($('tab-assign').classList.contains('on')) renderAssign();
   },
   err => console.error('programs 구독 오류:', err)
@@ -1136,6 +1166,7 @@ onSnapshot(
   query(collection(db, 'notices'), orderBy('createdAt', 'desc')),
   snap => {
     notices = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    $('badgeNotice').textContent = notices.length;
     renderNoticeAdmin();
   },
   err => console.error('notices 구독 오류:', err)

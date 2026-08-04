@@ -12,7 +12,7 @@ import {
 import {
   initLayout, esc, ddayInfo, noticeIsNew, catClass, fbError,
   KIND, ORG_TYPES, openModal, closeModal, bindModalEvents, toast,
-  WEEKDAYS, TIMESLOTS
+  WEEKDAYS, TIMESLOTS, ROLES, roleOf
 } from './common.js';
 import { sendApplicationEmail, emailEnabled } from './email-config.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
@@ -46,52 +46,78 @@ onAuthStateChanged(auth, async user => {
 });
 
 /* ---------- 프로그램 카드 ---------- */
-function renderPrograms(){
-  const grid = $('programGrid');
-  if (!programs.length){
-    grid.innerHTML = '<div class="open-empty">현재 접수 중인 프로그램이 없습니다.<br>새로운 연수 일정은 공지사항을 통해 안내드립니다.</div>';
-    return;
+function cardHTML(p){
+  const applied = p.applied || 0;
+  const remain = p.capacity - applied;
+  const dd = ddayInfo(p);
+  const closed = !p.open || dd.closed || remain <= 0;
+  const pct = Math.min(100, Math.round(applied / p.capacity * 100));
+  const isRecruit = p.type === 'recruit';
+  const needLogin = p.loginOnly && !currentUser;
+  const wrongRole = isRecruit && currentUser && roleOf(userProfile) !== 'instructor';
+  const btnClass = p.type === 'camp' ? 'btn-primary' : 'btn-navy';
+
+  const seatText = isRecruit
+    ? (remain <= 0 ? '모집 마감' : `모집 <strong>${p.capacity}명</strong> · 현재 <strong>${applied}명</strong> 지원`)
+    : (remain <= 0 ? '정원 마감'
+        : (remain <= 10 ? `잔여 <strong>${remain}석</strong> · 마감 임박` : '회차별 선착순 마감'));
+
+  let action;
+  if (closed){
+    action = `<button class="btn ${btnClass}" disabled>${isRecruit ? '모집이 마감되었습니다' : '접수가 마감되었습니다'}</button>`;
+  } else if (needLogin){
+    action = `<a class="btn ${btnClass}" href="mypage.html?next=apply">🔐 로그인 후 ${isRecruit ? '지원하기' : '신청하기'}</a>`;
+  } else if (wrongRole){
+    action = `<button class="btn ${btnClass}" disabled title="강사 회원만 지원할 수 있습니다">강사 회원만 지원 가능</button>`;
+  } else {
+    action = `<button class="btn ${btnClass}" onclick="openApply('${p.id}')">${isRecruit ? '강사 지원하기' : '신청하기'}</button>`;
   }
-  grid.innerHTML = programs.map(p => {
-    const applied = p.applied || 0;
-    const remain = p.capacity - applied;
-    const dd = ddayInfo(p);
-    const closed = !p.open || dd.closed || remain <= 0;
-    const pct = Math.min(100, Math.round(applied / p.capacity * 100));
-    const seatText = remain <= 0 ? '정원 마감'
-      : (remain <= 10 ? `잔여 <strong>${remain}석</strong> · 마감 임박` : '회차별 선착순 마감');
-    const needLogin = p.loginOnly && !currentUser;
-    const btnClass = p.type === 'camp' ? 'btn-primary' : 'btn-navy';
-    return `
-    <div class="open-card ${p.type !== 'camp' ? 'workshop' : ''} ${closed ? 'closed' : ''}">
+
+  return `
+    <div class="open-card ${p.type !== 'camp' ? 'workshop' : ''} ${isRecruit ? 'recruit' : ''} ${closed ? 'closed' : ''}">
       <div class="open-top">
         ${closed
-          ? '<span class="status end">접수마감</span>'
-          : `<span class="status live">접수중</span><span class="dday ${dd.urgent ? '' : 'calm'}">${esc(dd.text)}</span>`}
+          ? `<span class="status end">${isRecruit ? '모집마감' : '접수마감'}</span>`
+          : `<span class="status live">${isRecruit ? '모집중' : '접수중'}</span><span class="dday ${dd.urgent ? '' : 'calm'}">${esc(dd.text)}</span>`}
         <span class="kind-label">${KIND[p.type] || ''}</span>
         ${p.loginOnly ? '<span class="kind-label lock">🔐 회원 전용</span>' : ''}
       </div>
       <h3>${esc(p.title)}</h3>
       <dl>
-        <dt>대상</dt><dd>${esc(p.target)}</dd>
-        <dt>운영</dt><dd>${esc(p.period)}</dd>
-        <dt>장소</dt><dd>${esc(p.place)}</dd>
-        <dt>내용</dt><dd>${esc(p.content)}</dd>
+        <dt>${isRecruit ? '모집대상' : '대상'}</dt><dd>${esc(p.target)}</dd>
+        <dt>${isRecruit ? '활동기간' : '운영'}</dt><dd>${esc(p.period)}</dd>
+        <dt>${isRecruit ? '활동장소' : '장소'}</dt><dd>${esc(p.place)}</dd>
+        <dt>${isRecruit ? '담당업무' : '내용'}</dt><dd>${esc(p.content)}</dd>
       </dl>
       <div class="seat-bar">
-        신청 현황 <strong>${applied} / ${p.capacity}명</strong> · ${seatText}
+        ${isRecruit ? '지원 현황' : '신청 현황'} <strong>${applied} / ${p.capacity}명</strong> · ${seatText}
         <div class="seat-track"><div class="seat-fill" style="width:${pct}%"></div></div>
       </div>
+      ${wrongRole ? `<p class="card-note">현재 <b>${ROLES[roleOf(userProfile)].label}</b> 회원으로 로그인되어 있습니다.
+        <a href="mypage.html">마이페이지</a>에서 회원 유형을 <b>강사</b>로 변경하면 지원할 수 있습니다.</p>` : ''}
       <div class="open-actions">
-        ${closed
-          ? `<button class="btn ${btnClass}" disabled>접수가 마감되었습니다</button>`
-          : (needLogin
-              ? `<a class="btn ${btnClass}" href="mypage.html?next=apply">🔐 로그인 후 신청하기</a>`
-              : `<button class="btn ${btnClass}" onclick="openApply('${p.id}')">신청하기</button>`)}
-        <a href="notice.html" class="btn btn-outline">모집 공고 보기</a>
+        ${action}
+        <a href="notice.html" class="btn btn-outline">${isRecruit ? '공고 상세 보기' : '모집 공고 보기'}</a>
       </div>
     </div>`;
-  }).join('');
+}
+
+function renderPrograms(){
+  const edu     = programs.filter(p => p.type !== 'recruit');
+  const recruit = programs.filter(p => p.type === 'recruit');
+
+  const grid = $('programGrid');
+  grid.innerHTML = edu.length
+    ? edu.map(cardHTML).join('')
+    : '<div class="open-empty">현재 접수 중인 프로그램이 없습니다.<br>새로운 연수 일정은 공지사항을 통해 안내드립니다.</div>';
+
+  const rSec = $('recruit-now');
+  if (recruit.length){
+    rSec.style.display = 'block';
+    $('recruitGrid').innerHTML = recruit.map(cardHTML).join('');
+  } else {
+    rSec.style.display = 'none';
+  }
 }
 
 onSnapshot(
@@ -110,8 +136,10 @@ onSnapshot(
 function paintAuthNote(){
   const box = $('applyAuthNote');
   if (currentUser){
+    const r = roleOf(userProfile);
     box.className = 'apply-auth on';
-    box.innerHTML = `✅ <b>${esc(userProfile?.name || currentUser.displayName || currentUser.email)}</b> 님으로 신청합니다.
+    box.innerHTML = `✅ <b>${esc(userProfile?.name || currentUser.displayName || currentUser.email)}</b> 님
+      <span class="role-chip ${r}">${ROLES[r].icon} ${ROLES[r].label}</span> 으로 신청합니다.
       이 신청은 <a href="mypage.html">마이페이지</a>에 자동으로 저장됩니다.`;
   } else {
     box.className = 'apply-auth off';
@@ -127,6 +155,11 @@ function openApply(programId){
   if (!p) return;
   if (p.loginOnly && !currentUser){
     location.href = 'mypage.html?next=apply';
+    return;
+  }
+  if (p.type === 'recruit' && currentUser && roleOf(userProfile) !== 'instructor'){
+    alert('강사 모집 공고는 강사 회원만 지원할 수 있습니다.\n마이페이지에서 회원 유형을 [강사]로 변경한 뒤 지원해주세요.');
+    location.href = 'mypage.html';
     return;
   }
   $('applyForm').reset();
@@ -155,11 +188,13 @@ function openApply(programId){
 
   paintAuthNote();
   if (currentUser){
-    $('a-name').value    = userProfile?.name || currentUser.displayName || '';
-    $('a-org').value     = userProfile?.org || '';
+    const r = roleOf(userProfile);
+    $('a-name').value  = (r === 'parent' ? (userProfile?.childName || userProfile?.name) : userProfile?.name)
+                         || currentUser.displayName || '';
+    $('a-org').value   = userProfile?.org || userProfile?.childSchool || userProfile?.school || '';
     $('a-orgtype').value = userProfile?.orgType || '';
-    $('a-phone').value   = userProfile?.phone || '';
-    $('a-email').value   = currentUser.email || '';
+    $('a-phone').value = userProfile?.phone || '';
+    $('a-email').value = currentUser.email || '';
     $('a-email').readOnly = true;
   } else {
     $('a-email').readOnly = false;
@@ -190,6 +225,7 @@ $('applyForm').addEventListener('submit', async e => {
       email: currentUser ? currentUser.email : $('a-email').value.trim(),
       memo: $('a-memo').value.trim(),
       uid: currentUser ? currentUser.uid : null,
+      applicantRole: currentUser ? roleOf(userProfile) : null,
       status: 'applied',
       completed: false,
       createdAt: serverTimestamp()

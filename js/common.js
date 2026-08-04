@@ -30,6 +30,52 @@ export const CAREER_LEVELS = [
   '경력 없음(신규)', '1년 미만', '1~3년', '3~5년', '5~10년', '10년 이상'
 ];
 
+/* ---------- v8: 회원 유형(역할) ---------- */
+export const ROLES = {
+  instructor: {
+    label: '강사', icon: '🧑‍🏫',
+    tag: '연수·캠프 강의',
+    desc: '연수·캠프에서 강의하거나 강사 모집 공고에 지원합니다.'
+  },
+  parent: {
+    label: '학부모', icon: '👨‍👩‍👧',
+    tag: '자녀 참여 관리',
+    desc: '자녀의 캠프·연수 참여를 신청하고 이력을 확인합니다.'
+  },
+  student: {
+    label: '학생', icon: '🎒',
+    tag: '직접 참여',
+    desc: '캠프·교육 프로그램에 직접 참여하는 학생입니다.'
+  },
+  staff: {
+    label: '교직원 / 기관 담당자', icon: '🏫',
+    tag: '단체 신청·협의',
+    desc: '학교·기관 담당자로 단체 참여나 협력 사업을 협의합니다.'
+  }
+};
+export const ROLE_ORDER = ['instructor', 'parent', 'student', 'staff'];
+export function roleOf(u){
+  return (u && u.role && ROLES[u.role]) ? u.role : 'instructor';
+}
+export function roleChip(u){
+  const k = roleOf(u);
+  return `<span class="role-chip ${k}">${ROLES[k].icon} ${ROLES[k].label}</span>`;
+}
+
+export const GRADES = [
+  '초등 1학년', '초등 2학년', '초등 3학년', '초등 4학년', '초등 5학년', '초등 6학년',
+  '중학 1학년', '중학 2학년', '중학 3학년',
+  '고등 1학년', '고등 2학년', '고등 3학년', '기타'
+];
+export const INTERESTS = [
+  '블록코딩', '피지컬컴퓨팅', '생성형 AI', '게임·앱 제작',
+  '데이터·AI 기초', '로보틱스', '메타버스·XR', 'AI 윤리'
+];
+export const STAFF_DUTIES = [
+  '정보·컴퓨터 교과', '담임', '진로진학', '방과후·돌봄',
+  '교육행정', '기관 사업 담당', '기타'
+];
+
 /* ---------- v6: 지원·배정 상태 ---------- */
 export const STATUS = {
   applied:  { label: '접수',     cls: 'wait',     desc: '지원서가 접수된 상태입니다.' },
@@ -74,10 +120,8 @@ export function initLayout(active){
         <a href="index.html"  class="${active === 'home'   ? 'active' : ''}">홈</a>
         <a href="notice.html" class="${active === 'notice' ? 'active' : ''}">공지사항</a>
         <a href="check.html"  class="${active === 'check'  ? 'active' : ''}">신청 확인</a>
-        <a href="mypage.html" class="${active === 'mypage' ? 'active' : ''}">마이페이지</a>
         <a href="about.html"  class="${active === 'about'  ? 'active' : ''}">사업단 소개</a>
-        <a href="admin.html"  class="${active === 'admin'  ? 'active' : ''}">관리자</a>
-        <span id="authChip" class="auth-chip"></span>
+        <span id="authChip" class="auth-chip"><span class="chip-skel"></span></span>
       </nav>
     </div>`;
     header.querySelectorAll('#gnb a').forEach(a => {
@@ -109,14 +153,25 @@ export function initLayout(active){
       </div>
       <div>
         <h4>바로가기</h4>
-        <p><a href="index.html">홈</a> · <a href="notice.html">공지사항</a> · <a href="check.html">신청 확인</a> · <a href="mypage.html">마이페이지</a> · <a href="about.html">사업단 소개</a> · <a href="admin.html">관리자</a></p>
+        <p><a href="index.html">홈</a> · <a href="notice.html">공지사항</a> · <a href="check.html">신청 확인</a> · <a href="mypage.html">마이페이지</a> · <a href="about.html">사업단 소개</a></p>
       </div>
     </div>
     <div class="footer-bottom">© 2026 Hanshin University Digital Saessak.</div>`;
   }
 }
 
-/* ---------- 헤더 로그인 상태 칩 ---------- */
+/* ---------- 헤더 로그인 상태 칩 (역할별 분기) ---------- */
+let _isAdminCache = null;
+export async function checkIsAdmin(uid){
+  try {
+    const [{ db }, { doc, getDoc }] = await Promise.all([
+      import('./firebase-init.js'),
+      import('https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js')
+    ]);
+    return (await getDoc(doc(db, 'admins', uid))).exists();
+  } catch (e) { return false; }
+}
+
 async function mountAuthChip(){
   const el = document.getElementById('authChip');
   if (!el) return;
@@ -125,10 +180,20 @@ async function mountAuthChip(){
       import('./firebase-init.js'),
       import('https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js')
     ]);
-    onAuthStateChanged(auth, u => {
-      el.innerHTML = u
-        ? `<a href="mypage.html" class="chip-on" title="${esc(u.email)}">${esc(shortName(u))} 님</a>`
-        : `<a href="mypage.html" class="chip-off">로그인</a>`;
+    onAuthStateChanged(auth, async u => {
+      if (!u){
+        _isAdminCache = null;
+        el.innerHTML = `<a href="mypage.html" class="chip-off">로그인</a>`;
+        return;
+      }
+      el.innerHTML = `<span class="chip-skel"></span>`;
+      const admin = await checkIsAdmin(u.uid);
+      _isAdminCache = admin;
+      el.innerHTML = admin
+        ? `<a href="admin.html" class="chip-admin" title="${esc(u.email)}">
+             <i>🔑</i>${esc(shortName(u))} <b>관리자</b></a>`
+        : `<a href="mypage.html" class="chip-on" title="${esc(u.email)}">
+             <i>👤</i>${esc(shortName(u))} 님</a>`;
     });
   } catch (e) { /* 파이어베이스 미로드 시 칩 생략 */ }
 }

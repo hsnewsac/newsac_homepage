@@ -1,10 +1,9 @@
 /* =========================================================
-   마이페이지 v5 — 강사 계정 허브
-   - 회원가입/로그인 (강사 계정)
-   - 활동 요약 · 내 정보 수정 · 강사 프로필(강사모집 대비)
-   - 신청 이력 조회 · 신청 취소 · 이수증
-   - 지난 신청 내역을 신청번호로 내 계정에 연결
-   - 비밀번호 변경
+   마이페이지 v8 — 회원 유형(강사·학부모·학생·교직원)별 구성
+   - 역할 선택형 회원가입, 역할별 입력 항목
+   - 역할별 마이페이지 구성 (강사 프로필 / 관심분야 / 기관 협력)
+   - 신청 이력 · 지원 진행 현황 · 강의활동 이력
+   - 지난 신청 연결 · 비밀번호 변경
 ========================================================= */
 import { db, auth } from './firebase-init.js';
 import {
@@ -19,7 +18,8 @@ import {
 import {
   initLayout, esc, fbError, toast, tsText, tsNum,
   ORG_TYPES, SPECIALTIES, REGIONS, CAREER_LEVELS,
-  STATUS, STATUS_ORDER, statusOf, statusChip
+  ROLES, ROLE_ORDER, roleOf, GRADES, INTERESTS, STAFF_DUTIES,
+  STATUS, STATUS_ORDER, statusOf, statusChip, checkIsAdmin
 } from './common.js';
 
 initLayout('mypage');
@@ -28,19 +28,43 @@ const $ = id => document.getElementById(id);
 let currentUser = null;
 let profile = {};
 let myApps = [];
+let joinRole = 'instructor';   // 회원가입 화면에서 선택된 유형
 
-/* ---------- 셀렉트/체크박스 초기화 ---------- */
-const orgOptions = '<option value="">선택</option>' + ORG_TYPES.map(t => `<option>${t}</option>`).join('');
-$('j-orgtype').innerHTML = orgOptions;
-$('e-orgtype').innerHTML = orgOptions;
-$('pf-career').innerHTML = '<option value="">선택</option>' +
-  CAREER_LEVELS.map(c => `<option>${c}</option>`).join('');
-$('pf-specialties').innerHTML = SPECIALTIES.map((s, i) =>
-  `<label class="chk"><input type="checkbox" name="sp" value="${esc(s)}" id="sp${i}"><span>${esc(s)}</span></label>`).join('');
-$('pf-regions').innerHTML = REGIONS.map((r, i) =>
-  `<label class="chk"><input type="checkbox" name="rg" value="${esc(r)}" id="rg${i}"><span>${esc(r)}</span></label>`).join('');
+/* =========================================================
+   셀렉트 / 체크박스 초기화
+========================================================= */
+const opt = (arr, ph = '선택') =>
+  `<option value="">${ph}</option>` + arr.map(v => `<option>${esc(v)}</option>`).join('');
 
-/* ---------- 공통 ---------- */
+['j-orgtype','e-orgtype'].forEach(id => $(id).innerHTML = opt(ORG_TYPES));
+['j-duty','e-duty'].forEach(id => $(id).innerHTML = opt(STAFF_DUTIES));
+['j-childGrade','e-childGrade','j-grade','e-grade','st-target'].forEach(id => $(id).innerHTML = opt(GRADES));
+$('pf-career').innerHTML = opt(CAREER_LEVELS);
+$('e-role').innerHTML = ROLE_ORDER.map(k =>
+  `<option value="${k}">${ROLES[k].icon} ${ROLES[k].label}</option>`).join('');
+
+const chkList = (arr, name) => arr.map((v, i) =>
+  `<label class="chk"><input type="checkbox" name="${name}" value="${esc(v)}" id="${name}${i}"><span>${esc(v)}</span></label>`).join('');
+$('pf-specialties').innerHTML = chkList(SPECIALTIES, 'sp');
+$('pf-regions').innerHTML     = chkList(REGIONS, 'rg');
+$('it-interests').innerHTML   = chkList(INTERESTS, 'it');
+$('st-interests').innerHTML   = chkList(INTERESTS, 'si');
+
+/* 회원 유형 선택 카드 */
+$('rolePicker').innerHTML = ROLE_ORDER.map(k => `
+  <button type="button" class="role-opt ${k === joinRole ? 'on' : ''}" data-role="${k}" onclick="pickRole('${k}')">
+    <i>${ROLES[k].icon}</i>
+    <b>${ROLES[k].label}</b>
+    <span>${ROLES[k].tag}</span>
+  </button>`).join('');
+
+/* 회원 유형 안내 리스트 */
+$('roleBenefits').innerHTML = ROLE_ORDER.map(k => `
+  <li><b>${ROLES[k].icon} ${ROLES[k].label}</b><span>${ROLES[k].desc}</span></li>`).join('');
+
+/* =========================================================
+   공통 유틸
+========================================================= */
 function showErr(id, msg, ok = false){
   const el = $(id);
   el.textContent = msg;
@@ -49,7 +73,16 @@ function showErr(id, msg, ok = false){
 }
 function hideErr(id){ $(id).style.display = 'none'; }
 
-/* ---------- 인증 탭 ---------- */
+/** data-role 속성에 해당 역할이 포함된 블록만 표시 */
+function applyRoleFields(scope, role){
+  scope.querySelectorAll('.role-fields').forEach(el => {
+    el.style.display = el.dataset.role.split(' ').includes(role) ? '' : 'none';
+  });
+}
+
+/* =========================================================
+   회원가입 · 로그인
+========================================================= */
 function switchAuthTab(tab){
   const login = tab === 'login';
   $('tabLogin').classList.toggle('active', login);
@@ -60,7 +93,45 @@ function switchAuthTab(tab){
 }
 window.switchAuthTab = switchAuthTab;
 
-/* ---------- 회원가입 ---------- */
+function pickRole(k){
+  joinRole = k;
+  document.querySelectorAll('.role-opt').forEach(b =>
+    b.classList.toggle('on', b.dataset.role === k));
+  $('roleNote').textContent = ROLES[k].desc;
+  $('j-nameLabel').innerHTML = (k === 'instructor' ? '이름 (강사명)' : '이름') + ' <span class="req">*</span>';
+  $('j-phoneLabel').textContent = k === 'student' ? '전화번호 (본인 또는 보호자)' : '전화번호';
+  $('j-orgLabel').textContent = k === 'staff' ? '소속 학교 / 기관' : '소속기관';
+  applyRoleFields($('joinForm'), k);
+}
+window.pickRole = pickRole;
+pickRole('instructor');
+
+/** 역할별 저장 데이터 수집 (prefix: 'j' = 가입, 'e' = 수정) */
+function collectRoleData(role, px){
+  const v = id => ($(`${px}-${id}`)?.value || '').trim();
+  const base = { role, phone: v('phone') };
+  if (px === 'j') base.name = v('name');
+  if (role === 'instructor' || role === 'staff'){
+    base.org = v('org');
+    base.orgType = $(`${px}-orgtype`).value;
+  }
+  if (role === 'staff'){
+    base.dept = v('dept');
+    base.duty = $(`${px}-duty`).value;
+  }
+  if (role === 'parent'){
+    base.childName = v('childName');
+    base.childGrade = $(`${px}-childGrade`).value;
+    base.childSchool = v('childSchool');
+  }
+  if (role === 'student'){
+    base.school = v('school');
+    base.grade = $(`${px}-grade`).value;
+    base.guardianPhone = v('guardian');
+  }
+  return base;
+}
+
 $('joinForm').addEventListener('submit', async e => {
   e.preventDefault();
   if ($('j-pw').value !== $('j-pw2').value){
@@ -72,17 +143,10 @@ $('joinForm').addEventListener('submit', async e => {
   try {
     const email = $('j-email').value.trim();
     const cred = await createUserWithEmailAndPassword(auth, email, $('j-pw').value);
-    await setDoc(doc(db, 'users', cred.user.uid), {
-      name: $('j-name').value.trim(),
-      email,
-      org: $('j-org').value.trim(),
-      orgType: $('j-orgtype').value,
-      phone: $('j-phone').value.trim(),
-      role: 'instructor',          // ★ 강사 계정 (향후 강사모집·강의배정 대상)
-      createdAt: serverTimestamp()
-    });
-    await updateProfile(cred.user, { displayName: $('j-name').value.trim() }).catch(()=>{});
-    toast('회원가입이 완료되었습니다. 환영합니다!');
+    const data = { ...collectRoleData(joinRole, 'j'), email, createdAt: serverTimestamp() };
+    await setDoc(doc(db, 'users', cred.user.uid), data);
+    await updateProfile(cred.user, { displayName: data.name }).catch(()=>{});
+    toast(`${ROLES[joinRole].label} 회원으로 가입되었습니다. 환영합니다!`);
   } catch (err) {
     const map = {
       'auth/email-already-in-use': '이미 가입된 이메일입니다. 로그인 탭을 이용해주세요.',
@@ -95,7 +159,6 @@ $('joinForm').addEventListener('submit', async e => {
   }
 });
 
-/* ---------- 로그인 ---------- */
 $('loginForm').addEventListener('submit', async e => {
   e.preventDefault();
   const btn = $('liBtn');
@@ -120,44 +183,89 @@ async function resetPassword(){
 function myLogout(){ signOut(auth); }
 Object.assign(window, { resetPassword, myLogout });
 
-/* ---------- 내 정보 ---------- */
-function paintInfo(){
-  $('m-name').textContent    = profile.name || '-';
-  $('m-email').textContent   = profile.email || currentUser?.email || '-';
-  $('m-org').textContent     = profile.org || '-';
-  $('m-orgtype').textContent = profile.orgType || '-';
-  $('m-phone').textContent   = profile.phone || '-';
+/* =========================================================
+   내 정보 (역할별)
+========================================================= */
+function infoRows(role){
+  const rows = [['이름', profile.name], ['이메일', profile.email || currentUser?.email]];
+  if (role === 'instructor' || role === 'staff'){
+    rows.push(['소속기관', profile.org], ['소속 유형', profile.orgType]);
+  }
+  if (role === 'staff') rows.push(['부서·직위', profile.dept], ['담당 업무', profile.duty]);
+  if (role === 'parent') rows.push(['자녀 이름', profile.childName],
+    ['자녀 학년', profile.childGrade], ['자녀 학교', profile.childSchool]);
+  if (role === 'student') rows.push(['학교', profile.school],
+    ['학년', profile.grade], ['보호자 연락처', profile.guardianPhone]);
+  rows.push(['전화번호', profile.phone]);
+  return rows;
 }
+function paintInfo(){
+  const role = roleOf(profile);
+  $('roleBadge').innerHTML = `<span class="role-chip ${role}">${ROLES[role].icon} ${ROLES[role].label}</span>`;
+  $('infoView').innerHTML = infoRows(role).map(([k, v]) =>
+    `<dt>${esc(k)}</dt><dd>${esc(v) || '-'}</dd>`).join('');
+  // 역할 전용 박스 표시
+  document.querySelectorAll('[data-rolebox]').forEach(el => {
+    const allowed = el.dataset.rolebox.split(' ').includes(role);
+    if (!allowed){ el.style.display = 'none'; }
+    else if (el.id !== 'statusBox' && el.id !== 'activityBox'){ el.style.display = 'block'; }
+  });
+  $('histTitle').childNodes[0].nodeValue =
+    role === 'instructor' ? '🎓 나의 신청·지원 이력\n      '
+      : (role === 'parent' ? '🎓 자녀 참여 이력\n      ' : '🎓 나의 참여 이력\n      ');
+  if (role === 'parent'){
+    $('interestTitle').textContent = '🌱 자녀 관심 분야';
+    $('interestDesc').textContent = '자녀에게 맞는 캠프·연수를 안내해 드리는 데 활용됩니다.';
+    $('it-noteLabel').textContent = '자녀 참여 시 참고사항';
+  } else {
+    $('interestTitle').textContent = '🌱 나의 관심 분야';
+    $('interestDesc').textContent = '관심 분야에 맞는 캠프·연수 소식을 안내해 드리는 데 활용됩니다.';
+    $('it-noteLabel').textContent = '참여 시 참고사항';
+  }
+}
+
 function toggleInfoEdit(on){
   $('infoView').style.display = on ? 'none' : 'grid';
   $('infoForm').style.display = on ? 'block' : 'none';
   $('editInfoBtn').style.display = on ? 'none' : 'inline-block';
   hideErr('infoError');
-  if (on){
-    $('e-name').value    = profile.name || '';
-    $('e-org').value     = profile.org || '';
-    $('e-orgtype').value = profile.orgType || '';
-    $('e-phone').value   = profile.phone || '';
-  }
+  if (!on) return;
+  const role = roleOf(profile);
+  $('e-role').value = role;
+  $('e-name').value = profile.name || '';
+  $('e-phone').value = profile.phone || '';
+  $('e-org').value = profile.org || '';
+  $('e-orgtype').value = profile.orgType || '';
+  $('e-dept').value = profile.dept || '';
+  $('e-duty').value = profile.duty || '';
+  $('e-childName').value = profile.childName || '';
+  $('e-childGrade').value = profile.childGrade || '';
+  $('e-childSchool').value = profile.childSchool || '';
+  $('e-school').value = profile.school || '';
+  $('e-grade').value = profile.grade || '';
+  $('e-guardian').value = profile.guardianPhone || '';
+  applyRoleFields($('infoForm'), role);
 }
 window.toggleInfoEdit = toggleInfoEdit;
+
+$('e-role').addEventListener('change', () => {
+  const k = $('e-role').value;
+  $('e-nameLabel').innerHTML = (k === 'instructor' ? '이름 (강사명)' : '이름') + ' <span class="req">*</span>';
+  $('e-orgLabel').textContent = k === 'staff' ? '소속 학교 / 기관' : '소속기관';
+  applyRoleFields($('infoForm'), k);
+});
 
 $('infoForm').addEventListener('submit', async e => {
   e.preventDefault();
   const btn = $('infoSaveBtn');
   btn.disabled = true; btn.textContent = '저장 중…';
   try {
-    const patch = {
-      name: $('e-name').value.trim(),
-      org: $('e-org').value.trim(),
-      orgType: $('e-orgtype').value,
-      phone: $('e-phone').value.trim(),
-      updatedAt: serverTimestamp()
-    };
+    const role = $('e-role').value;
+    const patch = { ...collectRoleData(role, 'e'), name: $('e-name').value.trim(), updatedAt: serverTimestamp() };
     await setDoc(doc(db, 'users', currentUser.uid), patch, { merge: true });
     await updateProfile(currentUser, { displayName: patch.name }).catch(()=>{});
     profile = { ...profile, ...patch };
-    paintInfo();
+    paintInfo(); paintCards(); paintApps();
     toggleInfoEdit(false);
     toast('내 정보를 저장했습니다.');
   } catch (err) {
@@ -167,10 +275,11 @@ $('infoForm').addEventListener('submit', async e => {
   }
 });
 
-/* ---------- 강사 프로필 ---------- */
+/* =========================================================
+   강사 프로필
+========================================================= */
 function paintProfileForm(){
-  const sp = profile.specialties || [];
-  const rg = profile.regions || [];
+  const sp = profile.specialties || [], rg = profile.regions || [];
   document.querySelectorAll('#pf-specialties input').forEach(c => c.checked = sp.includes(c.value));
   document.querySelectorAll('#pf-regions input').forEach(c => c.checked = rg.includes(c.value));
   $('pf-career').value = profile.career || '';
@@ -192,7 +301,6 @@ $('profileForm').addEventListener('submit', async e => {
       career: $('pf-career').value,
       certs: $('pf-cert').value.trim(),
       bio: $('pf-bio').value.trim(),
-      role: 'instructor',
       profileUpdatedAt: serverTimestamp()
     };
     await setDoc(doc(db, 'users', currentUser.uid), patch, { merge: true });
@@ -206,7 +314,71 @@ $('profileForm').addEventListener('submit', async e => {
   }
 });
 
-/* ---------- 신청 이력 ---------- */
+/* =========================================================
+   관심 분야 (학부모 · 학생)
+========================================================= */
+function paintInterestForm(){
+  const it = profile.interests || [];
+  document.querySelectorAll('#it-interests input').forEach(c => c.checked = it.includes(c.value));
+  $('it-note').value = profile.careNote || '';
+  $('it-alert').checked = !!profile.alertOptIn;
+}
+$('interestForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = $('itSaveBtn');
+  btn.disabled = true; btn.textContent = '저장 중…';
+  try {
+    const patch = {
+      interests: [...document.querySelectorAll('#it-interests input:checked')].map(c => c.value),
+      careNote: $('it-note').value.trim(),
+      alertOptIn: $('it-alert').checked,
+      profileUpdatedAt: serverTimestamp()
+    };
+    await setDoc(doc(db, 'users', currentUser.uid), patch, { merge: true });
+    profile = { ...profile, ...patch };
+    toast('저장했습니다.');
+  } catch (err) {
+    showErr('itError', fbError(err));
+  } finally {
+    btn.disabled = false; btn.textContent = '저장';
+  }
+});
+
+/* =========================================================
+   기관 협력 (교직원)
+========================================================= */
+function paintStaffForm(){
+  const si = profile.orgInterests || [];
+  document.querySelectorAll('#st-interests input').forEach(c => c.checked = si.includes(c.value));
+  $('st-students').value = profile.groupSize ?? '';
+  $('st-target').value = profile.groupGrade || '';
+  $('st-note').value = profile.orgNote || '';
+}
+$('staffForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = $('stSaveBtn');
+  btn.disabled = true; btn.textContent = '저장 중…';
+  try {
+    const patch = {
+      orgInterests: [...document.querySelectorAll('#st-interests input:checked')].map(c => c.value),
+      groupSize: $('st-students').value === '' ? null : Number($('st-students').value),
+      groupGrade: $('st-target').value,
+      orgNote: $('st-note').value.trim(),
+      profileUpdatedAt: serverTimestamp()
+    };
+    await setDoc(doc(db, 'users', currentUser.uid), patch, { merge: true });
+    profile = { ...profile, ...patch };
+    toast('저장했습니다.');
+  } catch (err) {
+    showErr('stError', fbError(err));
+  } finally {
+    btn.disabled = false; btn.textContent = '저장';
+  }
+});
+
+/* =========================================================
+   신청 이력
+========================================================= */
 async function loadMyApps(){
   const found = new Map();
   const runQ = async q_ => {
@@ -219,21 +391,19 @@ async function loadMyApps(){
   await runQ(query(collection(db, 'applications'), where('uid', '==', currentUser.uid)));
 
   myApps = [...found.values()].sort((a, b) => tsNum(b.createdAt) - tsNum(a.createdAt));
-  paintApps();
-  paintStats();
-  paintStatusCards();
-  paintActivity();
+  paintApps(); paintCards(); paintStatusCards(); paintActivity();
 }
 function paintApps(){
   const tb = $('myAppsBody');
+  const role = roleOf(profile);
   if (!myApps.length){
     tb.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#6A776F;">
-      신청 이력이 없습니다.<br><a href="index.html" style="color:var(--leaf);text-decoration:underline;">홈에서 접수 중인 프로그램</a>에 신청해보세요!</td></tr>`;
+      ${role === 'instructor' ? '신청·지원 이력이 없습니다.' : '참여 이력이 없습니다.'}<br>
+      <a href="index.html" style="color:var(--leaf);text-decoration:underline;">홈에서 접수 중인 프로그램</a>을 확인해보세요!</td></tr>`;
     return;
   }
   tb.innerHTML = myApps.map(a => {
-    const k = statusOf(a);
-    const locked = a.completed || k === 'assigned';
+    const locked = a.completed || statusOf(a) === 'assigned';
     return `<tr>
     <td class="nowrap">${esc(tsText(a.createdAt, false))}</td>
     <td><b>${esc(a.programTitle) || '-'}</b>${a.programType === 'recruit' ? '<span class="chip recruit">모집</span>' : ''}</td>
@@ -254,12 +424,38 @@ function paintApps(){
   }).join('');
 }
 
-/* ---------- 지원 진행 현황 카드 ---------- */
+/* 역할별 요약 카드 */
+function paintCards(){
+  const role = roleOf(profile);
+  const done = myApps.filter(a => a.completed).length;
+  const acts = myApps.filter(a => statusOf(a) === 'assigned');
+  const hours = acts.reduce((s, a) => s + (Number(a.assignHours) || 0), 0);
+  let cards;
+  if (role === 'instructor'){
+    cards = [['총 신청·지원', myApps.length], ['수료 완료', done],
+             ['배정 확정', acts.length], ['누적 강의 시수', hours]];
+  } else if (role === 'parent'){
+    cards = [['자녀 참여 신청', myApps.length], ['수료 완료', done],
+             ['참여 프로그램', new Set(myApps.map(a => a.programTitle).filter(Boolean)).size],
+             ['진행 중', myApps.filter(a => !a.completed).length]];
+  } else if (role === 'student'){
+    cards = [['참여 신청', myApps.length], ['수료 완료', done],
+             ['이수 강좌', new Set(myApps.filter(a => a.completed).map(a => a.course).filter(Boolean)).size],
+             ['진행 중', myApps.filter(a => !a.completed).length]];
+  } else {
+    cards = [['단체·개인 신청', myApps.length], ['수료 완료', done],
+             ['참여 프로그램', new Set(myApps.map(a => a.programTitle).filter(Boolean)).size],
+             ['진행 중', myApps.filter(a => !a.completed).length]];
+  }
+  $('myCards').innerHTML = cards.map(([l, n], i) =>
+    `<div class="dash-card a${i+1}"><div class="num">${n}</div><div class="lbl">${esc(l)}</div></div>`).join('');
+}
+
 function paintStatusCards(){
+  if (roleOf(profile) !== 'instructor'){ $('statusBox').style.display = 'none'; return; }
   const live = myApps.filter(a => a.programType === 'recruit' || a.status);
-  const box = $('statusBox');
-  if (!live.length){ box.style.display = 'none'; return; }
-  box.style.display = 'block';
+  if (!live.length){ $('statusBox').style.display = 'none'; return; }
+  $('statusBox').style.display = 'block';
   $('statusCards').innerHTML = live.slice(0, 6).map(a => {
     const k = statusOf(a);
     const steps = STATUS_ORDER.filter(s => s !== 'rejected');
@@ -281,12 +477,11 @@ function paintStatusCards(){
   }).join('');
 }
 
-/* ---------- 강의활동 이력 ---------- */
 function paintActivity(){
+  if (roleOf(profile) !== 'instructor'){ $('activityBox').style.display = 'none'; return; }
   const acts = myApps.filter(a => statusOf(a) === 'assigned');
-  const box = $('activityBox');
-  if (!acts.length){ box.style.display = 'none'; return; }
-  box.style.display = 'block';
+  if (!acts.length){ $('activityBox').style.display = 'none'; return; }
+  $('activityBox').style.display = 'block';
   const hours = acts.reduce((s, a) => s + (Number(a.assignHours) || 0), 0);
   const sess  = acts.reduce((s, a) => s + (Number(a.assignSessions) || 0), 0);
   $('actTotal').innerHTML =
@@ -302,13 +497,6 @@ function paintActivity(){
   </tr>`).join('');
 }
 
-function paintStats(){
-  $('s-total').textContent  = myApps.length;
-  $('s-done').textContent   = myApps.filter(a => a.completed).length;
-  const acts = myApps.filter(a => statusOf(a) === 'assigned');
-  $('s-assign').textContent = acts.length;
-  $('s-hours').textContent  = acts.reduce((s, a) => s + (Number(a.assignHours) || 0), 0);
-}
 function reloadMyApps(){
   $('myAppsBody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:#6A776F;">불러오는 중…</td></tr>';
   loadMyApps();
@@ -334,7 +522,9 @@ async function cancelMyApp(id){
 }
 window.cancelMyApp = cancelMyApp;
 
-/* ---------- 지난 신청 연결 ---------- */
+/* =========================================================
+   지난 신청 연결
+========================================================= */
 $('linkForm').addEventListener('submit', async e => {
   e.preventDefault();
   hideErr('linkError'); $('linkOk').style.display = 'none';
@@ -371,7 +561,9 @@ $('linkForm').addEventListener('submit', async e => {
   }
 });
 
-/* ---------- 비밀번호 변경 ---------- */
+/* =========================================================
+   비밀번호 변경
+========================================================= */
 $('pwForm').addEventListener('submit', async e => {
   e.preventDefault();
   hideErr('pwError');
@@ -400,7 +592,9 @@ $('pwForm').addEventListener('submit', async e => {
   }
 });
 
-/* ---------- 상태 전환 ---------- */
+/* =========================================================
+   상태 전환
+========================================================= */
 onAuthStateChanged(auth, async user => {
   currentUser = user;
   const on = !!user;
@@ -411,19 +605,32 @@ onAuthStateChanged(auth, async user => {
     : '로그인하면 나의 신청·수강 이력과 이수증을 확인할 수 있습니다.';
   if (!on) return;
 
+  const params = new URLSearchParams(location.search);
+  if (params.get('stay') !== '1'){
+    if (await checkIsAdmin(user.uid)){
+      $('mySection').style.display = 'none';
+      $('authSection').style.display = 'none';
+      $('adminRedirect').style.display = 'block';
+      $('mySubtitle').textContent = '관리자 계정으로 로그인하셨습니다.';
+      setTimeout(() => { location.href = 'admin.html'; }, 1200);
+      return;
+    }
+  }
+
   profile = { name: user.displayName || '', email: user.email };
   try {
     const p = await getDoc(doc(db, 'users', user.uid));
     if (p.exists()) profile = { ...profile, ...p.data() };
   } catch (e) { console.warn(e); }
+
   paintInfo();
   paintProfileForm();
+  paintInterestForm();
+  paintStaffForm();
   toggleInfoEdit(false);
   await loadMyApps();
 
-  // 신청 페이지에서 '로그인하고 신청' 으로 넘어온 경우 되돌려보내기
-  const next = new URLSearchParams(location.search).get('next');
-  if (next === 'apply'){
+  if (params.get('next') === 'apply'){
     toast('로그인되었습니다. 신청 페이지로 이동합니다.');
     setTimeout(() => location.href = 'index.html#open-now', 900);
   }

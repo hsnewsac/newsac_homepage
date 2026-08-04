@@ -21,6 +21,21 @@
   </div>
 </div>
 
+<!-- ===== 관리자 전환 안내 ===== -->
+<section id="adminRedirect" style="display:none;">
+  <div class="section">
+    <div class="gate-card">
+      <div class="gate-icon">🔑</div>
+      <h3>관리자 계정입니다</h3>
+      <p>관리자 페이지로 이동합니다. 잠시만 기다려주세요…</p>
+      <div class="gate-actions">
+        <a class="btn btn-navy" href="admin.html">지금 이동</a>
+        <a class="btn btn-outline" href="mypage.html?stay=1">마이페이지 계속 보기</a>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ===== 로그인 / 회원가입 (미로그인) ===== -->
 <section id="authSection">
   <div class="section">
@@ -46,19 +61,27 @@
           <button type="submit" class="btn btn-primary" style="width:100%" id="liBtn">로그인</button>
           <p class="form-note">비밀번호를 잊으셨나요?
             <a href="#" onclick="resetPassword();return false;" style="text-decoration:underline;">재설정 메일 받기</a></p>
+          <p class="form-note login-hint">🔑 사업단 관리자 계정도 이곳에서 로그인합니다. 로그인 후 관리자 페이지로 자동 전환됩니다.</p>
         </form>
 
         <!-- 회원가입 -->
         <form id="joinForm" style="display:none;">
           <div class="form-error" id="joinError"></div>
+
           <div class="form-row">
-            <label for="j-name">이름(강사명) <span class="req">*</span></label>
+            <label>회원 유형 <span class="req">*</span></label>
+            <div class="role-picker" id="rolePicker"></div>
+            <p class="form-note role-note" id="roleNote"></p>
+          </div>
+
+          <div class="form-row">
+            <label for="j-name" id="j-nameLabel">이름 <span class="req">*</span></label>
             <input id="j-name" type="text" placeholder="홍길동" required>
           </div>
           <div class="form-row">
             <label for="j-email">이메일 <span class="req">*</span></label>
             <input id="j-email" type="email" placeholder="example@hs.ac.kr" required autocomplete="username">
-            <p class="form-note" style="margin-top:6px;">연수 신청 시 사용한(할) 이메일로 가입하면 신청 이력이 자동으로 연결됩니다.</p>
+            <p class="form-note" style="margin-top:6px;">신청 시 사용한(할) 이메일로 가입하면 신청 이력이 자동으로 연결됩니다.</p>
           </div>
           <div class="form-2col">
             <div class="form-row">
@@ -69,8 +92,16 @@
               <label for="j-pw2">비밀번호 확인 <span class="req">*</span></label>
               <input id="j-pw2" type="password" placeholder="비밀번호 재입력" required autocomplete="new-password">
             </div>
+          </div>
+          <div class="form-row">
+            <label for="j-phone" id="j-phoneLabel">전화번호</label>
+            <input id="j-phone" type="tel" placeholder="010-0000-0000">
+          </div>
+
+          <!-- 강사 · 교직원 -->
+          <div class="form-2col role-fields" data-role="instructor staff">
             <div class="form-row">
-              <label for="j-org">소속기관</label>
+              <label for="j-org" id="j-orgLabel">소속기관</label>
               <input id="j-org" type="text" placeholder="○○초등학교">
             </div>
             <div class="form-row">
@@ -78,24 +109,63 @@
               <select id="j-orgtype"><option value="">선택</option></select>
             </div>
           </div>
-          <div class="form-row">
-            <label for="j-phone">전화번호</label>
-            <input id="j-phone" type="tel" placeholder="010-0000-0000">
+
+          <!-- 교직원 -->
+          <div class="form-2col role-fields" data-role="staff">
+            <div class="form-row">
+              <label for="j-dept">부서 / 직위</label>
+              <input id="j-dept" type="text" placeholder="예) 교무부 정보담당 · 교사">
+            </div>
+            <div class="form-row">
+              <label for="j-duty">담당 업무</label>
+              <select id="j-duty"><option value="">선택</option></select>
+            </div>
           </div>
+
+          <!-- 학부모 -->
+          <div class="form-2col role-fields" data-role="parent">
+            <div class="form-row">
+              <label for="j-childName">자녀 이름</label>
+              <input id="j-childName" type="text" placeholder="홍아무">
+            </div>
+            <div class="form-row">
+              <label for="j-childGrade">자녀 학년</label>
+              <select id="j-childGrade"><option value="">선택</option></select>
+            </div>
+            <div class="form-row">
+              <label for="j-childSchool">자녀 학교</label>
+              <input id="j-childSchool" type="text" placeholder="○○초등학교">
+            </div>
+          </div>
+
+          <!-- 학생 -->
+          <div class="form-2col role-fields" data-role="student">
+            <div class="form-row">
+              <label for="j-school">학교</label>
+              <input id="j-school" type="text" placeholder="○○중학교">
+            </div>
+            <div class="form-row">
+              <label for="j-grade">학년</label>
+              <select id="j-grade"><option value="">선택</option></select>
+            </div>
+            <div class="form-row">
+              <label for="j-guardian">보호자 연락처</label>
+              <input id="j-guardian" type="tel" placeholder="010-0000-0000">
+            </div>
+          </div>
+
           <button type="submit" class="btn btn-primary" style="width:100%" id="jBtn">회원가입</button>
         </form>
       </div>
 
-      <!-- 회원 안내 -->
+      <!-- 회원 유형 안내 -->
       <aside class="auth-aside">
-        <h3>강사 계정으로 무엇을 할 수 있나요?</h3>
-        <ul class="auth-benefits">
-          <li><b>신청이 자동 저장됩니다</b><span>신청번호를 따로 보관하지 않아도 언제든 내역을 확인할 수 있어요.</span></li>
-          <li><b>수강·수료 이력이 쌓입니다</b><span>참여한 연수와 강의활동이 한곳에 모여 경력처럼 관리됩니다.</span></li>
-          <li><b>이수증을 언제든 재발급</b><span>수료한 과정의 이수증을 다시 내려받을 수 있습니다.</span></li>
-          <li><b>강사 모집에 지원할 수 있습니다</b><span>전문분야·경력·활동지역을 등록해두면 향후 강의배정 시 후보로 검토됩니다.</span></li>
-        </ul>
-        <p class="auth-aside-note">※ 회원가입 없이도 연수 신청은 가능하지만, 신청번호를 분실하면 확인·취소가 어렵습니다.</p>
+        <h3>어떤 회원으로 가입하나요?</h3>
+        <ul class="role-benefits" id="roleBenefits"></ul>
+        <p class="auth-aside-note">
+          ※ 회원가입 없이도 신청은 가능하지만, 신청번호를 분실하면 확인·취소가 어렵습니다.<br>
+          ※ 가입 후에도 마이페이지에서 회원 유형을 바꿀 수 있습니다.
+        </p>
       </aside>
 
     </div>
@@ -107,49 +177,46 @@
   <div class="section">
 
     <!-- 활동 요약 -->
-    <div class="dash-cards my-cards">
-      <div class="dash-card"><div class="num" id="s-total">0</div><div class="lbl">총 신청·지원</div></div>
-      <div class="dash-card"><div class="num" id="s-done">0</div><div class="lbl">수료 완료</div></div>
-      <div class="dash-card"><div class="num" id="s-assign">0</div><div class="lbl">배정 확정</div></div>
-      <div class="dash-card"><div class="num" id="s-hours">0</div><div class="lbl">누적 강의 시수</div></div>
-    </div>
+    <div class="dash-cards my-cards" id="myCards"></div>
 
-    <!-- 진행 중인 지원 현황 -->
-    <div class="admin-box" id="statusBox" style="display:none;">
+    <!-- 지원 진행 현황 (강사) -->
+    <div class="admin-box" id="statusBox" data-rolebox="instructor" style="display:none;">
       <h3>🎯 지원 진행 현황</h3>
       <div id="statusCards" class="status-cards"></div>
     </div>
 
     <!-- 내 정보 -->
     <div class="admin-box">
-      <h3>👤 내 정보
+      <h3>👤 내 정보 <span id="roleBadge"></span>
         <span class="box-actions">
           <button class="btn btn-outline btn-sm" id="editInfoBtn" onclick="toggleInfoEdit(true)">정보 수정</button>
           <button class="btn btn-outline btn-sm" onclick="myLogout()">로그아웃</button>
         </span>
       </h3>
 
-      <dl class="my-info" id="infoView">
-        <dt>이름</dt><dd id="m-name">-</dd>
-        <dt>이메일</dt><dd id="m-email">-</dd>
-        <dt>소속기관</dt><dd id="m-org">-</dd>
-        <dt>유형</dt><dd id="m-orgtype">-</dd>
-        <dt>전화번호</dt><dd id="m-phone">-</dd>
-      </dl>
+      <dl class="my-info" id="infoView"></dl>
 
       <form id="infoForm" style="display:none;">
         <div class="form-error" id="infoError"></div>
+        <div class="form-row">
+          <label for="e-role">회원 유형</label>
+          <select id="e-role"></select>
+          <p class="form-note" style="margin-top:6px;">유형을 바꾸면 입력 항목과 마이페이지 구성이 함께 바뀝니다.</p>
+        </div>
         <div class="form-2col">
           <div class="form-row">
-            <label for="e-name">이름(강사명) <span class="req">*</span></label>
+            <label for="e-name" id="e-nameLabel">이름 <span class="req">*</span></label>
             <input id="e-name" type="text" required>
           </div>
           <div class="form-row">
             <label for="e-phone">전화번호</label>
             <input id="e-phone" type="tel" placeholder="010-0000-0000">
           </div>
+        </div>
+
+        <div class="form-2col role-fields" data-role="instructor staff">
           <div class="form-row">
-            <label for="e-org">소속기관</label>
+            <label for="e-org" id="e-orgLabel">소속기관</label>
             <input id="e-org" type="text" placeholder="○○초등학교">
           </div>
           <div class="form-row">
@@ -157,6 +224,48 @@
             <select id="e-orgtype"><option value="">선택</option></select>
           </div>
         </div>
+
+        <div class="form-2col role-fields" data-role="staff">
+          <div class="form-row">
+            <label for="e-dept">부서 / 직위</label>
+            <input id="e-dept" type="text" placeholder="예) 교무부 정보담당 · 교사">
+          </div>
+          <div class="form-row">
+            <label for="e-duty">담당 업무</label>
+            <select id="e-duty"><option value="">선택</option></select>
+          </div>
+        </div>
+
+        <div class="form-2col role-fields" data-role="parent">
+          <div class="form-row">
+            <label for="e-childName">자녀 이름</label>
+            <input id="e-childName" type="text">
+          </div>
+          <div class="form-row">
+            <label for="e-childGrade">자녀 학년</label>
+            <select id="e-childGrade"><option value="">선택</option></select>
+          </div>
+          <div class="form-row">
+            <label for="e-childSchool">자녀 학교</label>
+            <input id="e-childSchool" type="text">
+          </div>
+        </div>
+
+        <div class="form-2col role-fields" data-role="student">
+          <div class="form-row">
+            <label for="e-school">학교</label>
+            <input id="e-school" type="text">
+          </div>
+          <div class="form-row">
+            <label for="e-grade">학년</label>
+            <select id="e-grade"><option value="">선택</option></select>
+          </div>
+          <div class="form-row">
+            <label for="e-guardian">보호자 연락처</label>
+            <input id="e-guardian" type="tel">
+          </div>
+        </div>
+
         <p class="form-note">※ 이메일(로그인 아이디)은 변경할 수 없습니다. 변경이 필요하면 사업단으로 문의해주세요.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
           <button type="submit" class="btn btn-primary btn-sm" id="infoSaveBtn">저장</button>
@@ -165,23 +274,19 @@
       </form>
     </div>
 
-    <!-- 강사 프로필 -->
-    <div class="admin-box">
-      <h3>🧑‍🏫 강사 프로필
-        <span class="pf-state" id="pfState"></span>
-      </h3>
-      <p class="form-note" style="margin-bottom:16px;">
-        전문분야·경력·활동가능지역을 등록해두시면 <b>향후 강사 모집 및 강의배정</b> 시 후보 검토 자료로 활용됩니다.
-        지금 채워두시면 모집 공고가 열렸을 때 지원 절차가 훨씬 간단해집니다.
+    <!-- 강사 프로필 (강사 전용) -->
+    <div class="admin-box" id="profileBox" data-rolebox="instructor" style="display:none;">
+      <h3>🧑‍🏫 강사 프로필 <span class="pf-state" id="pfState"></span></h3>
+      <p class="box-desc">
+        전문분야·경력·활동가능지역을 등록해두시면 <b>강사 모집 및 강의배정</b> 시 후보 검토 자료로 활용됩니다.
+        미리 채워두시면 모집 공고가 열렸을 때 지원 절차가 훨씬 간단해집니다.
       </p>
       <form id="profileForm">
         <div class="form-error" id="pfError"></div>
-
         <div class="form-row">
           <label>전문분야 <span class="hint">(복수 선택 가능)</span></label>
           <div class="chk-grid" id="pf-specialties"></div>
         </div>
-
         <div class="form-2col">
           <div class="form-row">
             <label for="pf-career">강의 경력</label>
@@ -192,27 +297,74 @@
             <input id="pf-cert" type="text" placeholder="예) 정보·컴퓨터 정교사 2급, 교육공학 석사">
           </div>
         </div>
-
         <div class="form-row">
           <label>활동 가능 지역 <span class="hint">(복수 선택 가능)</span></label>
           <div class="chk-grid" id="pf-regions"></div>
         </div>
-
         <div class="form-row">
           <label for="pf-bio">자기소개 · 주요 강의 이력</label>
           <textarea id="pf-bio" rows="4"
             placeholder="예) 2024~2025 경기권 초등 대상 엔트리 코딩 캠프 40시간 진행 / 생성형 AI 활용 교원연수 강의 경험"></textarea>
         </div>
+        <button type="submit" class="btn btn-primary btn-sm" id="pfSaveBtn">강사 프로필 저장</button>
+      </form>
+    </div>
 
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button type="submit" class="btn btn-primary btn-sm" id="pfSaveBtn">강사 프로필 저장</button>
+    <!-- 관심 분야 (학부모 · 학생) -->
+    <div class="admin-box" id="interestBox" data-rolebox="parent student" style="display:none;">
+      <h3 id="interestTitle">🌱 관심 분야</h3>
+      <p class="box-desc" id="interestDesc"></p>
+      <form id="interestForm">
+        <div class="form-error" id="itError"></div>
+        <div class="form-row">
+          <label>관심 있는 교육 분야 <span class="hint">(복수 선택 가능)</span></label>
+          <div class="chk-grid" id="it-interests"></div>
         </div>
+        <div class="form-row">
+          <label for="it-note" id="it-noteLabel">참여 시 참고사항</label>
+          <textarea id="it-note" rows="3"
+            placeholder="예) 알레르기·건강상 유의사항, 이동 지원 필요 여부 등"></textarea>
+        </div>
+        <label class="form-check">
+          <input type="checkbox" id="it-alert">
+          <span>📧 새로운 캠프·연수 모집이 열리면 이메일로 알려주세요</span>
+        </label>
+        <button type="submit" class="btn btn-primary btn-sm" id="itSaveBtn">저장</button>
+      </form>
+    </div>
+
+    <!-- 기관 협력 (교직원) -->
+    <div class="admin-box" id="staffBox" data-rolebox="staff" style="display:none;">
+      <h3>🏫 기관 · 협력 정보</h3>
+      <p class="box-desc">단체 참여 협의와 찾아가는 연수 안내에 활용됩니다.</p>
+      <form id="staffForm">
+        <div class="form-error" id="stError"></div>
+        <div class="form-2col">
+          <div class="form-row">
+            <label for="st-students">단체 참여 예상 인원</label>
+            <input id="st-students" type="number" min="0" placeholder="예) 30">
+          </div>
+          <div class="form-row">
+            <label for="st-target">대상 학년</label>
+            <select id="st-target"><option value="">선택</option></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>관심 있는 프로그램 <span class="hint">(복수 선택 가능)</span></label>
+          <div class="chk-grid" id="st-interests"></div>
+        </div>
+        <div class="form-row">
+          <label for="st-note">협의 요청사항</label>
+          <textarea id="st-note" rows="3"
+            placeholder="예) 2학기 중 방과후 시간대 찾아가는 연수 협의 희망"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm" id="stSaveBtn">저장</button>
       </form>
     </div>
 
     <!-- 신청·수강 이력 -->
     <div class="admin-box">
-      <h3>🎓 나의 신청·수강 이력
+      <h3 id="histTitle">🎓 나의 신청·수강 이력
         <button class="btn btn-outline btn-sm" style="margin-left:auto;" onclick="reloadMyApps()">🔄 새로고침</button>
       </h3>
       <div class="table-scroll">
@@ -231,14 +383,10 @@
       </p>
     </div>
 
-    <!-- 강의활동 이력 -->
-    <div class="admin-box" id="activityBox" style="display:none;">
-      <h3>📚 나의 강의활동 이력
-        <span class="pf-state" id="actTotal"></span>
-      </h3>
-      <p class="form-note" style="margin-bottom:14px;">
-        배정이 확정된 강의 활동입니다. 누적 차수·시수는 경력 자료로 활용하실 수 있습니다.
-      </p>
+    <!-- 강의활동 이력 (강사) -->
+    <div class="admin-box" id="activityBox" data-rolebox="instructor" style="display:none;">
+      <h3>📚 나의 강의활동 이력 <span class="pf-state" id="actTotal"></span></h3>
+      <p class="box-desc">배정이 확정된 강의 활동입니다. 누적 차수·시수는 경력 자료로 활용하실 수 있습니다.</p>
       <div class="table-scroll">
         <table class="admin-table">
           <thead>
@@ -252,7 +400,7 @@
     <!-- 지난 신청 연결 -->
     <div class="admin-box">
       <h3>🔗 지난 신청 내역 연결</h3>
-      <p class="form-note" style="margin-bottom:14px;">
+      <p class="box-desc">
         가입 이메일과 <b>다른 이메일로 신청</b>했거나 <b>비회원으로 신청</b>한 내역은 위 목록에 나타나지 않습니다.
         신청 시 받은 <b>신청번호</b>를 입력하면 내 계정으로 가져올 수 있습니다.
       </p>

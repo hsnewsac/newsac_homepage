@@ -13,70 +13,63 @@
 
 <header id="site-header"></header>
 
-<div class="page-title">
+<div class="page-title admin-hero">
   <div class="page-title-inner">
     <span class="tag" style="color:var(--navy);">ADMIN</span>
     <h1>관리자</h1>
-    <p id="adminSubtitle">사업단 관리자 계정으로 로그인해주세요.</p>
+    <p id="adminSubtitle">권한 확인 중입니다…</p>
   </div>
 </div>
 
-<!-- ===== 로그인 (미로그인 시) ===== -->
-<section id="loginSection">
+<!-- ===== 접근 게이트 (미로그인 / 권한 없음) ===== -->
+<section id="gateSection" style="display:none;">
   <div class="section">
-    <div class="login-wrap">
-      <div class="login-card">
-        <h3>🔒 관리자 로그인</h3>
-        <form id="loginForm">
-          <div class="form-error" id="loginError"></div>
-          <div class="form-row">
-            <label for="l-email">이메일</label>
-            <input id="l-email" type="email" placeholder="hello@hsnewsac.com" required autocomplete="username">
-          </div>
-          <div class="form-row">
-            <label for="l-pw">비밀번호</label>
-            <input id="l-pw" type="password" placeholder="비밀번호" required autocomplete="current-password">
-          </div>
-          <button type="submit" class="btn btn-navy" style="width:100%" id="loginBtn">로그인</button>
-          <p class="form-note">※ 관리자 계정은 Firebase 콘솔 → Authentication에서 관리합니다.<br>
-            참가자·강사 로그인은 <a href="mypage.html" style="text-decoration:underline;">마이페이지</a>를 이용하세요.</p>
-        </form>
-      </div>
+    <div class="gate-card" id="gateCard">
+      <div class="gate-icon" id="gateIcon">🔒</div>
+      <h3 id="gateTitle">로그인이 필요합니다</h3>
+      <p id="gateDesc">사업단 관리자 계정으로 로그인하시면 관리자 페이지가 열립니다.</p>
+      <div class="gate-actions" id="gateActions"></div>
     </div>
   </div>
 </section>
 
 <!-- ===== 관리자 패널 (로그인 시) ===== -->
 <section id="admin-panel">
-  <div class="section">
-    <div class="admin-bar on" style="border-radius:12px;margin-bottom:18px;">
-      <div class="admin-bar-inner">
-        <span>🔑 <strong>관리자 모드</strong> — <span id="adminEmail"></span></span>
-        <button class="logout" onclick="adminLogout()">로그아웃</button>
+  <div class="section admin-section">
+    <div class="admin-top">
+      <div class="admin-ava" id="adminAva">A</div>
+      <div class="admin-who">
+        <b id="adminEmail"></b>
+        <span>사업단 관리자 · 프로그램, 공지, 신청자, 강사 배정을 관리합니다</span>
+      </div>
+      <div class="admin-top-actions">
+        <a class="at-btn" href="index.html">🏠 사이트 보기</a>
+        <button class="at-btn danger" onclick="adminLogout()">로그아웃</button>
       </div>
     </div>
 
     <!-- ===== 탭 ===== -->
     <div class="admin-tabs" role="tablist">
       <button class="atab active" data-tab="dash"    onclick="switchTab('dash')">📊 대시보드</button>
-      <button class="atab"        data-tab="program" onclick="switchTab('program')">📌 프로그램</button>
-      <button class="atab"        data-tab="notice"  onclick="switchTab('notice')">📢 공지사항</button>
+      <button class="atab"        data-tab="program" onclick="switchTab('program')">📌 프로그램 <span class="tab-badge" id="badgeProgram">0</span></button>
+      <button class="atab"        data-tab="notice"  onclick="switchTab('notice')">📢 공지사항 <span class="tab-badge" id="badgeNotice">0</span></button>
       <button class="atab"        data-tab="apply"   onclick="switchTab('apply')">👥 신청자 <span class="tab-badge" id="badgeApply">0</span></button>
       <button class="atab"        data-tab="assign"  onclick="switchTab('assign')">🎯 강사 배정 <span class="tab-badge" id="badgeAssign">0</span></button>
-      <button class="atab"        data-tab="member"  onclick="switchTab('member')">🧑‍🏫 강사 회원 <span class="tab-badge" id="badgeMember">0</span></button>
+      <button class="atab"        data-tab="member"  onclick="switchTab('member')">🧑‍🏫 회원 관리 <span class="tab-badge" id="badgeMember">0</span></button>
     </div>
 
     <!-- ================= 대시보드 ================= -->
     <div class="tab-panel on" id="tab-dash">
       <div class="admin-box">
         <h3>📊 신청 현황 대시보드</h3>
+        <p class="box-desc">전체 접수 흐름을 한눈에 확인합니다. 숫자는 실시간으로 갱신됩니다.</p>
         <div class="dash-cards">
-          <div class="dash-card"><div class="num" id="d-total">0</div><div class="lbl">총 신청 건수</div></div>
-          <div class="dash-card"><div class="num" id="d-today">0</div><div class="lbl">오늘 신청</div></div>
-          <div class="dash-card"><div class="num" id="d-open">0</div><div class="lbl">접수중 프로그램</div></div>
-          <div class="dash-card"><div class="num" id="d-fill">0%</div><div class="lbl">평균 충원율</div></div>
-          <div class="dash-card"><div class="num" id="d-done">0</div><div class="lbl">수료 처리 완료</div></div>
-          <div class="dash-card"><div class="num" id="d-member">0</div><div class="lbl">가입 강사 회원</div></div>
+          <div class="dash-card a1"><div class="num" id="d-total">0</div><div class="lbl">총 신청 건수</div></div>
+          <div class="dash-card a2"><div class="num" id="d-today">0</div><div class="lbl">오늘 신청</div></div>
+          <div class="dash-card a3"><div class="num" id="d-open">0</div><div class="lbl">접수중 프로그램</div></div>
+          <div class="dash-card a4"><div class="num" id="d-fill">0%</div><div class="lbl">평균 충원율</div></div>
+          <div class="dash-card a5"><div class="num" id="d-done">0</div><div class="lbl">수료 처리 완료</div></div>
+          <div class="dash-card a6"><div class="num" id="d-member">0</div><div class="lbl">강사 / 전체 회원</div></div>
         </div>
         <div class="dash-grid">
           <div class="dash-chart"><h4>프로그램별 신청 / 정원</h4><div class="chart-box"><canvas id="chartPrograms"></canvas></div></div>
@@ -91,6 +84,7 @@
     <div class="tab-panel" id="tab-program">
       <div class="admin-box">
         <h3 id="pFormTitle">📌 새 프로그램 등록</h3>
+        <p class="box-desc">집합형 연수·강사 워크샵·강사 모집 공고를 등록합니다. 등록 즉시 홈 화면에 노출됩니다.</p>
         <form id="programForm">
           <input type="hidden" id="p-id">
           <div class="form-2col">
@@ -168,6 +162,7 @@
     <div class="tab-panel" id="tab-notice">
       <div class="admin-box">
         <h3 id="nFormTitle">📢 공지사항 작성</h3>
+        <p class="box-desc">줄바꿈이 그대로 반영됩니다. 고정한 공지는 게시판 최상단에 표시됩니다.</p>
         <form id="noticeForm">
           <input type="hidden" id="n-id">
           <div class="form-2col">
@@ -210,6 +205,7 @@
     <div class="tab-panel" id="tab-apply">
       <div class="admin-box">
         <h3>👥 신청자 명단 · 수료 관리</h3>
+        <p class="box-desc">필터·검색으로 대상을 좁힌 뒤 체크박스로 선택해 일괄 처리할 수 있습니다.</p>
 
         <!-- 필터 -->
         <div class="filter-bar">
@@ -302,6 +298,7 @@
 
       <div class="admin-box">
         <h3>🎯 강사 모집 공고 선택</h3>
+        <p class="box-desc">유형이 <b>강사 모집</b>인 공고만 표시됩니다. 공고를 고르면 지원자 관리와 후보 검색이 열립니다.</p>
         <div class="filter-bar">
           <div class="filter-item grow">
             <label for="as-program">모집 공고</label>
@@ -367,11 +364,16 @@
     <!-- ================= 강사 회원 ================= -->
     <div class="tab-panel" id="tab-member">
       <div class="admin-box">
-        <h3>🧑‍🏫 강사 회원 명단</h3>
+        <h3>🧑‍🏫 회원 관리</h3>
+        <p class="box-desc">강사·학부모·학생·교직원 회원을 유형별로 조회합니다. 조회 전용이며 수정은 회원 본인이 마이페이지에서 합니다.</p>
         <div class="filter-bar">
           <div class="filter-item grow">
             <label for="mf-q">통합 검색</label>
             <input id="mf-q" type="search" placeholder="이름 · 이메일 · 소속 · 전문분야 · 활동지역">
+          </div>
+          <div class="filter-item">
+            <label for="mf-role">회원 유형</label>
+            <select id="mf-role"><option value="">전체</option></select>
           </div>
           <div class="filter-item">
             <label for="mf-profile">프로필</label>
@@ -387,18 +389,18 @@
         <div class="table-scroll">
           <table class="admin-table">
             <thead>
-              <tr><th>가입일</th><th>이름</th><th>이메일</th><th>소속기관</th><th>유형</th><th>연락처</th>
-                  <th>전문분야</th><th>경력</th><th>활동지역</th><th>신청/수료</th><th>배정/시수</th></tr>
+              <tr><th>가입일</th><th>회원 유형</th><th>이름</th><th>이메일</th><th>연락처</th>
+                  <th>소속 / 학교</th><th>유형별 정보</th><th>신청/수료</th><th>배정/시수</th></tr>
             </thead>
             <tbody id="memberTableBody">
-              <tr><td colspan="11" style="text-align:center;color:#6A776F;">불러오는 중…</td></tr>
+              <tr><td colspan="9" style="text-align:center;color:#6A776F;">불러오는 중…</td></tr>
             </tbody>
           </table>
         </div>
         <p class="form-note">
-          ※ 강사 회원은 마이페이지에서 직접 가입·프로필 작성을 합니다. 강사 프로필(전문분야·경력·활동지역)은
-          향후 <b>강사 모집 및 강의배정</b> 시 후보 검색 자료로 사용됩니다.<br>
-          ※ 회원 정보는 이곳에서 조회만 가능하며, 수정은 회원 본인이 마이페이지에서 진행합니다.
+          ※ <b>강사</b> 회원의 프로필(전문분야·경력·활동지역)은 [🎯 강사 배정] 탭의 후보 검색에 사용됩니다.<br>
+          ※ <b>학부모·학생</b> 회원의 관심 분야와 <b>교직원</b> 회원의 단체 참여 정보는 모집 안내 대상 선정에 활용됩니다.<br>
+          ※ 회원 정보는 조회만 가능하며, 수정은 회원 본인이 마이페이지에서 진행합니다.
         </p>
       </div>
     </div>
