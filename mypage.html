@@ -179,11 +179,54 @@
     <!-- 활동 요약 -->
     <div class="dash-cards my-cards" id="myCards"></div>
 
+    <!-- v14: 탭 내비게이션 — 정보가 세로로 길게 쌓이지 않도록 영역별로 나눕니다 -->
+    <div class="admin-tabs my-tabs">
+      <button class="atab active" data-mytab="home"    onclick="switchMyTab('home')">🏠 활동 현황</button>
+      <button class="atab"        data-mytab="apps"    onclick="switchMyTab('apps')">🎓 신청 내역 <span class="tab-badge" id="myBadgeApps">0</span></button>
+      <button class="atab"        data-mytab="info"    onclick="switchMyTab('info')">👤 내 정보</button>
+      <button class="atab"        data-mytab="account" onclick="switchMyTab('account')">🔒 계정 설정</button>
+    </div>
+
+    <!-- ===== 탭 1: 활동 현황 ===== -->
+    <div class="tab-panel on" id="mytab-home">
+
     <!-- 지원 진행 현황 (강사) -->
     <div class="admin-box" id="statusBox" data-rolebox="instructor" style="display:none;">
       <h3>🎯 지원 진행 현황</h3>
       <div id="statusCards" class="status-cards"></div>
     </div>
+
+    <!-- 내 강의실 -->
+    <div class="admin-box" id="classroomBox" style="display:none;">
+      <h3>📚 내 강의실
+        <span class="box-actions">
+          <button class="btn btn-outline btn-sm" onclick="reloadMyApps()">🔄 새로고침</button>
+        </span>
+      </h3>
+      <p class="box-desc">신청하신 <b>상시 온라인 워크샵</b> 과목입니다.
+        교구 실습 차시는 오프라인 워크샵에서, 나머지 차시는 여기서 영상으로 이수하실 수 있습니다.
+        새 과목은 <a href="workshop.html#online" style="text-decoration:underline;color:var(--leaf);font-weight:700;">강사 워크샵 안내</a>에서 신청할 수 있습니다.</p>
+      <div class="cr-cards" id="classroomCards"></div>
+    </div>
+
+    <!-- 강의활동 이력 (강사) -->
+    <div class="admin-box" id="activityBox" data-rolebox="instructor" style="display:none;">
+      <h3>📚 나의 강의활동 이력 <span class="pf-state" id="actTotal"></span></h3>
+      <p class="box-desc">배정이 확정된 강의 활동입니다. 누적 차수·시수는 경력 자료로 활용하실 수 있습니다.</p>
+      <div class="table-scroll">
+        <table class="admin-table">
+          <thead>
+            <tr><th>공고/프로그램</th><th>분야</th><th>배정 학교·기관</th><th>운영 기간</th><th>차수</th><th>시수</th><th>안내</th></tr>
+          </thead>
+          <tbody id="activityBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    </div><!-- /mytab-home -->
+
+    <!-- ===== 탭 3: 내 정보 ===== -->
+    <div class="tab-panel" id="mytab-info">
 
     <!-- 내 정보 -->
     <div class="admin-box">
@@ -362,18 +405,10 @@
       </form>
     </div>
 
-    <!-- 내 강의실 -->
-    <div class="admin-box" id="classroomBox" style="display:none;">
-      <h3>📚 내 강의실
-        <span class="box-actions">
-          <button class="btn btn-outline btn-sm" onclick="reloadMyApps()">🔄 새로고침</button>
-        </span>
-      </h3>
-      <p class="box-desc">신청하신 <b>상시 온라인 워크샵</b> 과목입니다.
-        교구 실습 차시는 오프라인 워크샵에서, 나머지 차시는 여기서 영상으로 이수하실 수 있습니다.
-        새 과목은 <a href="workshop.html#online" style="text-decoration:underline;color:var(--leaf);font-weight:700;">강사 워크샵 안내</a>에서 신청할 수 있습니다.</p>
-      <div class="cr-cards" id="classroomCards"></div>
-    </div>
+    </div><!-- /mytab-info -->
+
+    <!-- ===== 탭 2: 신청 내역 ===== -->
+    <div class="tab-panel" id="mytab-apps">
 
     <!-- 신청·수강 이력 -->
     <div class="admin-box">
@@ -396,20 +431,6 @@
       </p>
     </div>
 
-    <!-- 강의활동 이력 (강사) -->
-    <div class="admin-box" id="activityBox" data-rolebox="instructor" style="display:none;">
-      <h3>📚 나의 강의활동 이력 <span class="pf-state" id="actTotal"></span></h3>
-      <p class="box-desc">배정이 확정된 강의 활동입니다. 누적 차수·시수는 경력 자료로 활용하실 수 있습니다.</p>
-      <div class="table-scroll">
-        <table class="admin-table">
-          <thead>
-            <tr><th>공고/프로그램</th><th>분야</th><th>배정 학교·기관</th><th>운영 기간</th><th>차수</th><th>시수</th><th>안내</th></tr>
-          </thead>
-          <tbody id="activityBody"></tbody>
-        </table>
-      </div>
-    </div>
-
     <!-- 지난 신청 연결 -->
     <div class="admin-box" id="linkBox">
       <h3>🔗 지난 신청 내역 연결</h3>
@@ -424,6 +445,11 @@
       <div class="form-error" id="linkError" style="margin-top:12px;"></div>
       <div class="form-note" id="linkOk" style="display:none;color:var(--leaf);font-weight:700;margin-top:12px;"></div>
     </div>
+
+    </div><!-- /mytab-apps -->
+
+    <!-- ===== 탭 4: 계정 설정 ===== -->
+    <div class="tab-panel" id="mytab-account">
 
     <!-- 비밀번호 변경 -->
     <div class="admin-box">
@@ -447,6 +473,8 @@
         <button type="submit" class="btn btn-primary btn-sm" id="pwBtn">비밀번호 변경</button>
       </form>
     </div>
+
+    </div><!-- /mytab-account -->
 
   </div>
 </section>

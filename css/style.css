@@ -1049,6 +1049,9 @@ nav a.active{background:var(--sprout-soft);color:var(--leaf);}
 
 /* 마이페이지 — 내 강의실 카드 */
 .cr-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:14px;}
+.cr-empty{grid-column:1/-1;padding:26px;text-align:center;background:var(--paper);
+  border:1px dashed var(--line);border-radius:var(--radius);font-size:.9rem;line-height:1.9;color:#6A776F;}
+.my-tabs{margin-top:8px;}
 .cr-card{padding:20px 22px;background:#fff;border:1.5px solid var(--line);
   border-radius:14px;display:flex;flex-direction:column;gap:10px;}
 .cr-card h4{font-size:1.02rem;font-weight:800;color:#28352E;letter-spacing:-.01em;line-height:1.45;}
