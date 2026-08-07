@@ -1081,8 +1081,8 @@ nav a.active{background:var(--sprout-soft);color:var(--leaf);}
 .att-table th{background:var(--sprout-soft);font-weight:800;height:30px;color:#1E5C3C;
   print-color-adjust:exact;-webkit-print-color-adjust:exact;}
 .att-table td:nth-child(2){text-align:left;}
-.att-no{width:48px;}.att-role{width:116px;}.att-name{width:100px;}.att-sign{width:132px;}
-.att-role-td{font-size:.78rem;color:#3A4842;white-space:nowrap;padding:0 6px !important;}
+.att-no{width:48px;}.att-role{width:132px;}.att-name{width:96px;}.att-sign{width:176px;}
+.att-role-td{font-size:.82rem;color:#3A4842;white-space:nowrap;padding:0 6px !important;}
 .att-count{margin-top:8px;text-align:right;font-size:.78rem;color:#6A776F;}
 .att-foot{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);
   text-align:center;font-size:.76rem;color:#6A776F;letter-spacing:.02em;}
