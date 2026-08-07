@@ -7,7 +7,7 @@
 ========================================================= */
 import { db, auth } from './firebase-init.js';
 import {
-  collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, getDoc,
+  collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, getDoc, setDoc,
   query, orderBy, where, getDocs, increment, serverTimestamp,
   runTransaction, deleteField
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
@@ -184,6 +184,7 @@ function switchTab(name){
   window.scrollTo({ top: 0, behavior: 'smooth' });
   if ((name === 'member' || name === 'assign') && !membersLoaded) loadMembers();
   if (name === 'assign') renderAssign();
+  if (name === 'class'){ refreshClassPrograms(); renderClassroom(); }
 }
 window.switchTab = switchTab;
 
@@ -229,6 +230,7 @@ onAuthStateChanged(auth, async user => {
   $('adminSubtitle').textContent = '프로그램 등록, 공지 작성, 신청자·강사 배정을 관리합니다.';
   $('adminEmail').textContent = user.email;
   $('adminAva').textContent = (user.email || 'A').charAt(0).toUpperCase();
+  myUid = user.uid;
   subscribeApplications();
   loadMembers();          // v11: 대시보드·뱃지 숫자를 위해 로그인 직후 회원도 불러옵니다
 });
@@ -1492,6 +1494,61 @@ function downloadCSV(scope = 'filtered'){
 window.downloadCSV = downloadCSV;
 
 /* ==================== 강사 회원 ==================== */
+/* ---------- v12: 관리자 명단 ---------- */
+let adminUids = new Set();
+let adminDocs = [];
+let myUid = null;
+
+async function loadAdmins(){
+  try {
+    const snap = await getDocs(collection(db, 'admins'));
+    adminDocs = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+    adminUids = new Set(adminDocs.map(a => a.uid));
+  } catch (err){
+    console.warn('관리자 명단 조회 실패:', err);
+  }
+}
+const isAdminUid = uid => adminUids.has(uid);
+
+/** 관리자 지정 / 해제 */
+async function toggleAdmin(uid){
+  const m = members.find(x => x.uid === uid);
+  if (!m) return;
+  const on = isAdminUid(uid);
+
+  if (on && uid === myUid){
+    alert('본인의 관리자 권한은 해제할 수 없습니다.\n다른 관리자에게 요청하거나 Firebase 콘솔에서 처리해주세요.');
+    return;
+  }
+  const msg = on
+    ? `${m.name || m.email} 님의 관리자 권한을 해제할까요?\n\n해제하면 관리자 페이지에 접근할 수 없게 됩니다.`
+    : `${m.name || m.email} 님을 관리자로 지정할까요?\n\n` +
+      `⚠️ 관리자는 전체 신청자의 개인정보 조회, 프로그램·공지 등록, 수료 처리를 모두 할 수 있습니다.\n` +
+      `신뢰할 수 있는 담당자에게만 부여해주세요.`;
+  if (!confirm(msg)) return;
+
+  try {
+    if (on){
+      await deleteDoc(doc(db, 'admins', uid));
+      toast('관리자 권한을 해제했습니다.');
+    } else {
+      await setDoc(doc(db, 'admins', uid), {
+        email: m.email || '',
+        name: m.name || '',
+        grantedAt: serverTimestamp(),
+        grantedBy: auth.currentUser ? auth.currentUser.email : ''
+      });
+      toast('관리자로 지정했습니다.');
+    }
+    await loadAdmins();
+    renderMembers();
+    if ($('memberDetailModal').classList.contains('on')) openMemberDetail(uid);
+  } catch (err){
+    alert(fbError(err) + '\n\n보안 규칙이 최신인지 확인해주세요. (site_extras/firestore_보안규칙_v5.txt)');
+  }
+}
+window.toggleAdmin = toggleAdmin;
+
 async function loadMembers(){
   const tb = $('memberTableBody');
   tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#6A776F;">불러오는 중…</td></tr>';
@@ -1499,6 +1556,7 @@ async function loadMembers(){
     const snap = await getDocs(collection(db, 'users'));
     members = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
     membersLoaded = true;
+    await loadAdmins();
     renderMembers();
     renderDashboard();
     if ($('tab-assign').classList.contains('on')) renderCandidates();
@@ -1585,7 +1643,8 @@ function renderMemberStats(){
     { k: '워크샵 이수 강사', v: instCompleted,    u: '명' },
     { k: '학부모',           v: byRole('parent').length,  u: '명' },
     { k: '학생',             v: byRole('student').length, u: '명' },
-    { k: '교직원',           v: byRole('staff').length,   u: '명' }
+    { k: '교직원',           v: byRole('staff').length,   u: '명' },
+    { k: '관리자',           v: adminUids.size,           u: '명' }
   ];
   box.innerHTML = cards.map(c => `
     <div class="ms-card${c.main ? ' main' : ''}">
@@ -1611,7 +1670,7 @@ function renderMembers(){
     return `<tr class="row-click" data-member="${esc(m.uid)}" title="클릭하면 회원 상세를 볼 수 있습니다">
       <td class="nowrap">${esc(tsText(m.createdAt, false))}</td>
       <td><span class="role-chip ${r}">${ROLES[r].icon} ${ROLES[r].label}</span></td>
-      <td><b>${esc(m.name || '-')}</b></td>
+      <td><b>${esc(m.name || '-')}</b>${isAdminUid(m.uid) ? '<span class="chip admin">🔑 관리자</span>' : ''}</td>
       <td class="cell-sub">${esc(m.email || '-')}</td>
       <td class="nowrap cell-sub">${esc(m.phone || '-')}</td>
       <td>${esc(m.org || m.childSchool || m.school || '-')}</td>
@@ -1700,8 +1759,24 @@ function openMemberDetail(uid){
       <ul class="member-list">${assigned.map(appLine).join('')}</ul>`);
   }
 
+  /* v12: 관리자 권한 */
+  const isAdm = isAdminUid(m.uid);
+  const self = m.uid === myUid;
+  out.push(`<h4 class="detail-h">관리자 권한</h4>
+    <div class="admin-grant ${isAdm ? 'on' : ''}">
+      <div>
+        <b>${isAdm ? '🔑 관리자입니다' : '일반 회원입니다'}</b>
+        <span>${isAdm
+          ? '관리자 페이지에서 신청자 개인정보 조회, 프로그램·공지 등록, 수료 처리를 할 수 있습니다.'
+          : '관리자로 지정하면 관리자 페이지의 모든 기능을 사용할 수 있게 됩니다.'}</span>
+      </div>
+      <button class="btn ${isAdm ? 'btn-outline' : 'btn-navy'} btn-sm"
+        onclick="toggleAdmin('${m.uid}')" ${self && isAdm ? 'disabled title="본인 권한은 해제할 수 없습니다"' : ''}>
+        ${isAdm ? (self ? '본인 계정' : '관리자 해제') : '🔑 관리자로 지정'}</button>
+    </div>`);
+
   $('md-kind').textContent = ROLES[r].label;
-  $('md-title').textContent = `${m.name || '이름 없음'} 님`;
+  $('md-title').textContent = `${m.name || '이름 없음'} 님${isAdm ? ' · 관리자' : ''}`;
   $('md-body').innerHTML = out.join('');
   openModal('memberDetailModal');
 }
@@ -1713,12 +1788,13 @@ $('mf-role').addEventListener('change', renderMembers);
 function downloadMemberCSV(){
   const list = filteredMembers();
   if (!list.length){ alert('내보낼 회원이 없습니다.'); return; }
-  const rows = [['가입일','회원 유형','이름','이메일','전화번호','소속/학교','소속유형',
+  const rows = [['가입일','회원 유형','관리자','이름','이메일','전화번호','소속/학교','소속유형',
                  '유형별 정보','전문분야','경력','활동가능지역','자기소개/메모',
                  '총 신청','수료 완료','배정 건수','누적 시수']];
   list.forEach(m => {
     const s = memberStats(m);
-    rows.push([tsText(m.createdAt, false), ROLES[roleOf(m)].label, m.name, m.email, m.phone || '',
+    rows.push([tsText(m.createdAt, false), ROLES[roleOf(m)].label,
+      isAdminUid(m.uid) ? '관리자' : '', m.name, m.email, m.phone || '',
       m.org || m.childSchool || m.school || '', m.orgType || '', roleDetail(m),
       (m.specialties || []).join(' / '), m.career || '', (m.regions || []).join(' / '),
       m.bio || m.careNote || m.orgNote || '', s.total, s.done, s.assigned, s.hours]);
@@ -1830,6 +1906,7 @@ onSnapshot(
     renderApplicants();      // v10: 신청자 표의 운영기간 열 갱신
     renderDashboard();
     refreshAssignPrograms();
+    refreshClassPrograms();
     $('badgeProgram').textContent = programs.length;
     if ($('tab-assign').classList.contains('on')) renderAssign();
   },
@@ -1844,3 +1921,401 @@ onSnapshot(
   },
   err => console.error('notices 구독 오류:', err)
 );
+
+/* =========================================================
+   v12: 온라인 강의실 (블렌디드 워크샵)
+   - 교구 실습 차시는 오프라인 출석 체크
+   - 그 외 차시는 온라인 영상 시청 진도 자동 기록
+   - 차시별 과제 제출물 확인
+========================================================= */
+
+let clLessons = [];      // 현재 선택한 워크샵의 차시
+let clApps = [];         // 승인완료 수강생
+let clProgress = {};     // { appId: { lessonId: progressDoc } }
+
+/** 워크샵(type: workshop)만 강의실 대상 */
+function classroomPrograms(){ return programs.filter(p => p.type === 'workshop'); }
+
+function refreshClassPrograms(){
+  const sel = $('cl-program');
+  const cur = sel.value;
+  const list = classroomPrograms();
+  sel.innerHTML = '<option value="">워크샵을 선택하세요</option>' +
+    list.map(p => `<option value="${p.id}">${esc(p.title)}${p.hasClassroom ? ' · 강의실 운영중' : ''}</option>`).join('');
+  if (list.some(p => p.id === cur)) sel.value = cur;
+  $('badgeClass').textContent = list.filter(p => p.hasClassroom).length;
+}
+
+$('cl-program').addEventListener('change', () => { renderClassroom(); });
+
+async function renderClassroom(){
+  const pid = $('cl-program').value;
+  const box = $('cl-summary');
+  if (!pid){
+    box.innerHTML = '<div class="assign-empty">위에서 워크샵을 선택하면 차시 구성과 학습 현황이 열립니다.</div>';
+    $('cl-lessonBox').style.display = 'none';
+    $('cl-progressBox').style.display = 'none';
+    return;
+  }
+  const p = programs.find(x => x.id === pid);
+  if (!p) return;
+
+  box.innerHTML = `
+    <div><span>워크샵</span><b>${esc(p.title)}</b></div>
+    <div><span>운영</span><b>${esc(p.period || '-')}</b></div>
+    <div><span>장소</span><b>${esc(p.place || '-')}</b></div>
+    <div><span>신청</span><b>${p.applied || 0} / ${p.capacity || 0}명</b></div>`;
+
+  $('cl-lessonBox').style.display = 'block';
+  $('cl-progressBox').style.display = 'block';
+  await loadLessons();
+  await loadClassProgress();
+}
+
+/* ---------- 차시 CRUD ---------- */
+async function loadLessons(){
+  const pid = $('cl-program').value;
+  if (!pid) return;
+  const tb = $('lessonTableBody');
+  tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#6A776F;">불러오는 중…</td></tr>';
+  try {
+    const snap = await getDocs(collection(db, 'programs', pid, 'lessons'));
+    clLessons = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+    renderLessonTable();
+  } catch (err){
+    tb.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#C64B3C;">${esc(fbError(err))}</td></tr>`;
+  }
+}
+
+function renderLessonTable(){
+  const tb = $('lessonTableBody');
+  const on = clLessons.filter(l => l.mode !== 'offline').length;
+  const off = clLessons.length - on;
+  $('cl-lessonCount').textContent = clLessons.length
+    ? `총 ${clLessons.length}차시 · 온라인 ${on} · 오프라인 ${off}` : '';
+
+  if (!clLessons.length){
+    tb.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#6A776F;">
+      등록된 차시가 없습니다. [＋ 차시 추가]로 첫 차시를 만들어보세요.</td></tr>`;
+    return;
+  }
+  tb.innerHTML = clLessons.map(l => {
+    const online = l.mode !== 'offline';
+    return `<tr>
+      <td class="nowrap"><b>${l.order || '-'}차시</b></td>
+      <td class="nowrap"><span class="lesson-mode ${online ? 'on' : 'off'}">
+        ${online ? '💻 온라인' : '🧰 오프라인'}</span></td>
+      <td><b>${esc(l.title)}</b>${l.desc ? `<br><span class="cell-sub">${esc(l.desc)}</span>` : ''}</td>
+      <td class="cell-sub">${online
+        ? (l.videoId ? `<code class="detail-code">${esc(l.videoId)}</code>${l.durationSec ? ` · ${fmtDur(l.durationSec)}` : ''}` : '<span style="color:#C64B3C;">영상 미등록</span>')
+        : esc(l.place || '-')}</td>
+      <td class="nowrap">${l.required !== false ? '✅' : '—'}</td>
+      <td class="nowrap">${l.hasTask ? '📝' : '—'}</td>
+      <td><div class="t-actions">
+        <button class="mini-btn" onclick="editLesson('${l.id}')">수정</button>
+        <button class="mini-btn danger" onclick="deleteLesson('${l.id}')">삭제</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function fmtDur(sec){
+  const s = Number(sec) || 0;
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+/** '12:30' 또는 '750' → 750(초) */
+function parseDur(v){
+  const t = String(v || '').trim();
+  if (!t) return 0;
+  if (t.includes(':')){
+    const [m, s] = t.split(':');
+    return (Number(m) || 0) * 60 + (Number(s) || 0);
+  }
+  return Number(t) || 0;
+}
+/** YouTube 링크에서 영상 ID 추출 */
+function parseVideoId(v){
+  const t = String(v || '').trim();
+  if (!t) return '';
+  const m = t.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{11})/);
+  if (m) return m[1];
+  if (/^[A-Za-z0-9_-]{11}$/.test(t)) return t;
+  return '';
+}
+
+function toggleLessonForm(force){
+  const f = $('lessonForm');
+  const open = force === undefined ? f.style.display === 'none' : !!force;
+  f.style.display = open ? 'block' : 'none';
+  $('cl-addBtn').textContent = open ? '✕ 닫기' : '＋ 차시 추가';
+  if (open){
+    if (!$('l-id').value){
+      $('l-order').value = (clLessons.reduce((m, l) => Math.max(m, l.order || 0), 0)) + 1;
+    }
+    f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } else resetLessonForm();
+}
+function resetLessonForm(){
+  $('lessonForm').reset();
+  $('l-id').value = '';
+  $('l-required').checked = true;
+  $('lessonError').style.display = 'none';
+  $('lessonSaveBtn').textContent = '차시 저장';
+  paintLessonMode();
+}
+function paintLessonMode(){
+  const online = $('l-mode').value !== 'offline';
+  $('l-onlineFields').style.display  = online ? '' : 'none';
+  $('l-offlineFields').style.display = online ? 'none' : '';
+  $('l-url').required = false;
+  $('l-taskRow').style.display = $('l-hasTask').checked ? '' : 'none';
+}
+$('l-mode').addEventListener('change', paintLessonMode);
+$('l-hasTask').addEventListener('change', paintLessonMode);
+
+function editLesson(id){
+  const l = clLessons.find(x => x.id === id);
+  if (!l) return;
+  $('l-id').value      = l.id;
+  $('l-order').value   = l.order || 1;
+  $('l-mode').value    = l.mode || 'online';
+  $('l-title').value   = l.title || '';
+  $('l-desc').value    = l.desc || '';
+  $('l-url').value     = l.videoId || '';
+  $('l-duration').value = l.durationSec ? fmtDur(l.durationSec) : '';
+  $('l-place').value   = l.place || '';
+  $('l-required').checked = l.required !== false;
+  $('l-hasTask').checked  = !!l.hasTask;
+  $('l-task').value    = l.taskDesc || '';
+  $('lessonSaveBtn').textContent = '수정 저장';
+  paintLessonMode();
+  toggleLessonForm(true);
+}
+
+$('lessonForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const pid = $('cl-program').value;
+  if (!pid) return;
+  const online = $('l-mode').value !== 'offline';
+  const videoId = online ? parseVideoId($('l-url').value) : '';
+
+  if (online && $('l-url').value.trim() && !videoId){
+    $('lessonError').textContent = 'YouTube 주소를 인식하지 못했습니다. 링크 전체 또는 11자리 영상 ID를 입력해주세요.';
+    $('lessonError').style.display = 'block';
+    return;
+  }
+  const data = {
+    order: Number($('l-order').value),
+    mode: $('l-mode').value,
+    title: $('l-title').value.trim(),
+    desc: $('l-desc').value.trim(),
+    videoId,
+    durationSec: online ? parseDur($('l-duration').value) : 0,
+    place: online ? '' : $('l-place').value.trim(),
+    required: $('l-required').checked,
+    hasTask: $('l-hasTask').checked,
+    taskDesc: $('l-hasTask').checked ? $('l-task').value.trim() : ''
+  };
+  const btn = $('lessonSaveBtn');
+  btn.disabled = true;
+  try {
+    const id = $('l-id').value;
+    if (id) await updateDoc(doc(db, 'programs', pid, 'lessons', id), data);
+    else    await addDoc(collection(db, 'programs', pid, 'lessons'), { ...data, createdAt: serverTimestamp() });
+    /* 첫 차시를 만들면 프로그램에 강의실 사용 표시 */
+    await updateDoc(doc(db, 'programs', pid), { hasClassroom: true }).catch(()=>{});
+    toast(id ? '차시를 수정했습니다.' : '차시를 추가했습니다.');
+    resetLessonForm();
+    toggleLessonForm(false);
+    await loadLessons();
+    await loadClassProgress();
+  } catch (err){
+    $('lessonError').textContent = fbError(err);
+    $('lessonError').style.display = 'block';
+  } finally { btn.disabled = false; }
+});
+
+async function deleteLesson(id){
+  const pid = $('cl-program').value;
+  const l = clLessons.find(x => x.id === id);
+  if (!l || !confirm(`[${l.order}차시 · ${l.title}]\n차시를 삭제할까요?\n수강생의 해당 차시 학습 기록은 남지만 화면에서는 보이지 않게 됩니다.`)) return;
+  try {
+    await deleteDoc(doc(db, 'programs', pid, 'lessons', id));
+    toast('차시를 삭제했습니다.');
+    await loadLessons();
+    await loadClassProgress();
+  } catch (err){ alert(fbError(err)); }
+}
+Object.assign(window, { toggleLessonForm, editLesson, deleteLesson, resetLessonForm });
+
+/* ---------- 학습 현황 ---------- */
+async function loadClassProgress(){
+  const pid = $('cl-program').value;
+  if (!pid) return;
+  clApps = applications.filter(a => a.programId === pid && statusOf(a) === 'assigned');
+  $('cl-progCount').textContent = clApps.length ? `승인완료 ${clApps.length}명` : '';
+
+  const head = $('progHead'), body = $('progBody');
+  if (!clLessons.length){
+    head.innerHTML = '';
+    body.innerHTML = '<tr><td style="text-align:center;color:#6A776F;padding:24px;">먼저 차시를 등록해주세요.</td></tr>';
+    return;
+  }
+  head.innerHTML = `<tr>
+    <th>수강생</th>
+    ${clLessons.map(l => `<th class="prog-col" title="${esc(l.title)}">
+      ${l.order}<br><span class="cell-sub">${l.mode === 'offline' ? '🧰' : '💻'}</span></th>`).join('')}
+    <th>진도</th></tr>`;
+
+  if (!clApps.length){
+    body.innerHTML = `<tr><td colspan="${clLessons.length + 2}" style="text-align:center;color:#6A776F;padding:24px;">
+      승인완료된 수강생이 없습니다. [👥 신청자] 탭에서 신청을 승인해주세요.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = `<tr><td colspan="${clLessons.length + 2}" style="text-align:center;color:#6A776F;padding:20px;">학습 기록을 불러오는 중…</td></tr>`;
+  clProgress = {};
+  for (const a of clApps){
+    try {
+      const snap = await getDocs(collection(db, 'applications', a.id, 'progress'));
+      clProgress[a.id] = Object.fromEntries(snap.docs.map(d => [d.id, d.data()]));
+    } catch { clProgress[a.id] = {}; }
+  }
+  renderProgressTable();
+}
+window.loadClassProgress = loadClassProgress;
+
+function lessonDone(appId, l){
+  const pr = (clProgress[appId] || {})[l.id];
+  if (!pr) return false;
+  if (l.mode === 'offline') return !!pr.done;
+  if (pr.done) return true;
+  if (!l.durationSec) return !!pr.done;
+  return (pr.watchedSec || 0) >= l.durationSec * 0.9;
+}
+function progRate(appId){
+  const req = clLessons.filter(l => l.required !== false);
+  if (!req.length) return 0;
+  return Math.round(req.filter(l => lessonDone(appId, l)).length / req.length * 100);
+}
+
+function renderProgressTable(){
+  $('progBody').innerHTML = clApps.map(a => {
+    const rate = progRate(a.id);
+    return `<tr>
+      <td class="nowrap"><b>${esc(a.name)}</b><br><span class="cell-sub">${esc(a.org || '')}</span></td>
+      ${clLessons.map(l => {
+        const pr = (clProgress[a.id] || {})[l.id] || {};
+        const done = lessonDone(a.id, l);
+        const pct = l.mode !== 'offline' && l.durationSec
+          ? Math.min(100, Math.round((pr.watchedSec || 0) / l.durationSec * 100)) : null;
+        const task = l.hasTask
+          ? (pr.taskAt ? `<button class="task-mark ok" onclick="openTask('${a.id}','${l.id}')" title="제출한 과제 보기">📝</button>`
+                       : '<span class="task-mark none" title="과제 미제출">📝</span>')
+          : '';
+        const cell = l.mode === 'offline'
+          ? `<button class="att-btn ${done ? 'on' : ''}" onclick="toggleAttend('${a.id}','${l.id}')"
+               title="${done ? '출석 취소' : '출석 체크'}">${done ? '✅' : '○'}</button>`
+          : `<span class="pr-cell ${done ? 'done' : ''}" title="${pct != null ? pct + '% 시청' : '기록 없음'}">
+               ${done ? '✅' : (pct != null && pct > 0 ? pct + '%' : '—')}</span>`;
+        return `<td class="prog-col">${cell}${task}</td>`;
+      }).join('')}
+      <td class="nowrap"><div class="rate-wrap"><div class="rate-bar"><i style="width:${rate}%"></i></div>
+        <b class="${rate === 100 ? 'full' : ''}">${rate}%</b></div></td>
+    </tr>`;
+  }).join('');
+}
+
+/** 오프라인 차시 출석 토글 */
+async function toggleAttend(appId, lessonId){
+  const cur = (clProgress[appId] || {})[lessonId] || {};
+  const next = !cur.done;
+  try {
+    await setDoc(doc(db, 'applications', appId, 'progress', lessonId), {
+      done: next,
+      doneAt: next ? serverTimestamp() : null,
+      checkedBy: 'admin',
+      lastAt: serverTimestamp()
+    }, { merge: true });
+    clProgress[appId] = clProgress[appId] || {};
+    clProgress[appId][lessonId] = { ...cur, done: next };
+    renderProgressTable();
+    toast(next ? '출석 처리했습니다.' : '출석을 취소했습니다.');
+  } catch (err){ alert(fbError(err)); }
+}
+window.toggleAttend = toggleAttend;
+
+/** 제출 과제 확인 */
+function openTask(appId, lessonId){
+  const a = clApps.find(x => x.id === appId);
+  const l = clLessons.find(x => x.id === lessonId);
+  const pr = (clProgress[appId] || {})[lessonId] || {};
+  if (!a || !l) return;
+
+  $('tk-title').textContent = `${a.name} 님 · ${l.order}차시 과제`;
+  $('tk-body').innerHTML = `
+    <h4 class="detail-h">과제 안내</h4>
+    <p class="member-empty" style="border-style:solid;">${esc(l.taskDesc || '(안내 없음)')}</p>
+    <h4 class="detail-h">제출 내용</h4>
+    <dl class="detail-dl">
+      ${pr.taskAt ? `<dt>제출 일시</dt><dd>${esc(tsText(pr.taskAt))}</dd>` : ''}
+      ${pr.taskUrl ? `<dt>제출 링크</dt><dd><a href="${esc(pr.taskUrl)}" target="_blank" rel="noopener">${esc(pr.taskUrl)}</a></dd>` : ''}
+      ${pr.taskText ? `<dt>작성 내용</dt><dd>${esc(pr.taskText).replace(/\n/g, '<br>')}</dd>` : ''}
+      ${!pr.taskAt ? '<dt>상태</dt><dd><span class="cell-sub">아직 제출하지 않았습니다.</span></dd>' : ''}
+      ${pr.taskReview ? `<dt>검토 메모</dt><dd>${esc(pr.taskReview)}</dd>` : ''}
+    </dl>`;
+  $('tk-actions').innerHTML = pr.taskAt
+    ? `<button class="btn btn-navy btn-sm" onclick="reviewTask('${appId}','${lessonId}',true)">✅ 과제 인정 (차시 완료 처리)</button>
+       <button class="btn btn-outline btn-sm" onclick="reviewTask('${appId}','${lessonId}',false)">↩️ 보완 요청</button>`
+    : '';
+  openModal('taskModal');
+}
+window.openTask = openTask;
+
+async function reviewTask(appId, lessonId, ok){
+  const memo = prompt(ok ? '검토 메모 (선택)' : '보완 요청 사유를 적어주세요.', '');
+  if (!ok && memo === null) return;
+  try {
+    await setDoc(doc(db, 'applications', appId, 'progress', lessonId), {
+      taskReview: memo || '',
+      taskOk: ok,
+      ...(ok ? { done: true, doneAt: serverTimestamp() } : {}),
+      lastAt: serverTimestamp()
+    }, { merge: true });
+    closeModal('taskModal');
+    toast(ok ? '과제를 인정했습니다.' : '보완 요청을 남겼습니다.');
+    await loadClassProgress();
+  } catch (err){ alert(fbError(err)); }
+}
+window.reviewTask = reviewTask;
+
+function downloadProgressCSV(){
+  if (!clApps.length){ alert('내보낼 수강생이 없습니다.'); return; }
+  const p = programs.find(x => x.id === $('cl-program').value);
+  const head = ['강사명', '소속', '이메일', '전화번호',
+    ...clLessons.map(l => `${l.order}차시 ${l.mode === 'offline' ? '(오프라인)' : '(온라인)'} ${l.title}`),
+    ...clLessons.filter(l => l.hasTask).map(l => `${l.order}차시 과제`),
+    '진도율(%)'];
+  const rows = [head];
+  clApps.forEach(a => {
+    const pg = clProgress[a.id] || {};
+    rows.push([a.name, a.org || '', a.email || '', a.phone || '',
+      ...clLessons.map(l => {
+        const pr = pg[l.id] || {};
+        if (l.mode === 'offline') return pr.done ? '출석' : '미출석';
+        if (lessonDone(a.id, l)) return '완료';
+        if (l.durationSec && pr.watchedSec) return `${Math.round(pr.watchedSec / l.durationSec * 100)}%`;
+        return '미시청';
+      }),
+      ...clLessons.filter(l => l.hasTask).map(l => {
+        const pr = pg[l.id] || {};
+        if (!pr.taskAt) return '미제출';
+        return (pr.taskUrl || pr.taskText || '제출').toString().slice(0, 200);
+      }),
+      progRate(a.id)]);
+  });
+  saveCSV(rows, `디지털새싹_학습현황_${(p?.title || '워크샵').replace(/[\\/:*?"<>|]/g, '')}_${todayStr().replace(/\./g, '')}.csv`);
+  toast(`CSV ${clApps.length}건을 내려받았습니다.`);
+}
+window.downloadProgressCSV = downloadProgressCSV;

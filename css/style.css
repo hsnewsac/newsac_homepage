@@ -1003,3 +1003,64 @@ nav a.active{background:var(--sprout-soft);color:var(--leaf);}
   border-radius:10px;font-size:.85rem;line-height:1.6;}
 .apply-terms dt{font-weight:700;color:var(--navy);}
 .apply-terms dd{color:#3A4842;}
+
+/* ================= v12: 온라인 강의실 ================= */
+/* 관리자 — 차시 표 */
+.lesson-mode{display:inline-block;font-size:.73rem;font-weight:800;padding:3px 9px;border-radius:6px;}
+.lesson-mode.on{background:var(--navy-soft,#E7EDF5);color:var(--navy);}
+.lesson-mode.off{background:#FDF3E8;color:#9A6420;}
+
+/* 관리자 — 학습 현황 표 */
+.admin-table th.prog-col,.admin-table td.prog-col{text-align:center;min-width:56px;padding:8px 5px;}
+.pr-cell{display:inline-block;font-size:.78rem;font-weight:700;color:#8A968E;}
+.pr-cell.done{color:var(--leaf);}
+.att-btn{border:1px solid var(--line);background:#fff;border-radius:7px;
+  width:30px;height:26px;cursor:pointer;font-size:.8rem;color:#A5B1A9;transition:all .12s;}
+.att-btn:hover{border-color:var(--leaf);background:#F4FAF6;}
+.att-btn.on{border-color:var(--leaf);background:#F1FAF4;color:var(--leaf);}
+.task-mark{display:inline-block;margin-left:3px;font-size:.78rem;line-height:1;
+  background:none;border:0;padding:0;}
+.task-mark.ok{cursor:pointer;filter:none;}
+.task-mark.none{opacity:.25;}
+.rate-wrap{display:flex;align-items:center;gap:8px;}
+.rate-bar{width:58px;height:7px;border-radius:99px;background:#E9EFEA;overflow:hidden;}
+.rate-bar i{display:block;height:100%;background:var(--leaf);border-radius:99px;}
+.rate-wrap b{font-size:.8rem;font-weight:800;color:#6A776F;}
+.rate-wrap b.full{color:var(--leaf);}
+
+/* 마이페이지 — 내 강의실 카드 */
+.cr-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:14px;}
+.cr-card{padding:20px 22px;background:#fff;border:1.5px solid var(--line);
+  border-radius:14px;display:flex;flex-direction:column;gap:10px;}
+.cr-card h4{font-size:1.02rem;font-weight:800;color:#28352E;letter-spacing:-.01em;line-height:1.45;}
+.cr-card .cc-course{font-size:.83rem;font-weight:600;color:#6A776F;}
+.cr-card .cc-bar{height:8px;border-radius:99px;background:#E9EFEA;overflow:hidden;}
+.cr-card .cc-bar i{display:block;height:100%;background:var(--leaf);border-radius:99px;transition:width .35s;}
+.cr-card .cc-tx{display:flex;justify-content:space-between;font-size:.79rem;font-weight:700;color:#6A776F;}
+.cr-card .cc-tx b{color:var(--leaf);}
+.cr-card .btn{margin-top:2px;text-align:center;text-decoration:none;}
+.cr-card .cc-done{padding:8px 12px;border-radius:8px;background:#F1FAF4;
+  border:1px solid #B9E2C8;font-size:.79rem;font-weight:700;color:var(--leaf);text-align:center;}
+
+/* ================= v12: 관리자 권한 관리 ================= */
+.chip.admin{background:var(--navy-soft,#E7EDF5);color:var(--navy);
+  font-weight:800;margin-left:5px;}
+.admin-grant{display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  justify-content:space-between;padding:16px 18px;border-radius:11px;
+  background:var(--paper);border:1px solid var(--line);}
+.admin-grant.on{background:#F5F8FC;border-color:var(--navy);}
+.admin-grant b{display:block;font-size:.9rem;font-weight:800;color:#28352E;}
+.admin-grant.on b{color:var(--navy);}
+.admin-grant span{display:block;margin-top:4px;font-size:.8rem;line-height:1.6;color:#6A776F;}
+.admin-grant .btn{flex:none;}
+.admin-grant .btn[disabled]{opacity:.5;cursor:not-allowed;}
+
+/* 마이페이지 관리자 안내 배너 */
+.admin-banner{display:flex;align-items:center;gap:15px;flex-wrap:wrap;
+  padding:16px 20px;border-radius:13px;background:#F5F8FC;
+  border:1.5px solid var(--navy);}
+.admin-banner .ab-ic{font-size:1.3rem;flex:none;}
+.admin-banner .ab-tx{flex:1;min-width:210px;}
+.admin-banner .ab-tx b{display:block;font-size:.92rem;font-weight:800;color:var(--navy);}
+.admin-banner .ab-tx span{display:block;margin-top:3px;font-size:.82rem;line-height:1.6;color:#5A6862;}
+.admin-banner .btn{flex:none;text-decoration:none;}

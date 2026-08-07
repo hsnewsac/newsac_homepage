@@ -44,6 +44,7 @@
       </div>
       <div class="admin-top-actions">
         <a class="at-btn" href="index.html">🏠 사이트 보기</a>
+        <a class="at-btn" href="mypage.html">👤 내 마이페이지</a>
         <button class="at-btn danger" onclick="adminLogout()">로그아웃</button>
       </div>
     </div>
@@ -55,6 +56,7 @@
       <button class="atab"        data-tab="notice"  onclick="switchTab('notice')">📢 공지사항 <span class="tab-badge" id="badgeNotice">0</span></button>
       <button class="atab"        data-tab="apply"   onclick="switchTab('apply')">👥 신청자 <span class="tab-badge" id="badgeApply">0</span></button>
       <button class="atab"        data-tab="assign"  onclick="switchTab('assign')">🎯 강사 배정 <span class="tab-badge" id="badgeAssign">0</span></button>
+      <button class="atab"        data-tab="class"   onclick="switchTab('class')">📚 온라인 강의실 <span class="tab-badge" id="badgeClass">0</span></button>
       <button class="atab"        data-tab="member"  onclick="switchTab('member')">🧑‍🏫 회원 관리 <span class="tab-badge" id="badgeMember">0</span></button>
     </div>
 
@@ -488,6 +490,146 @@
     </div>
 
     <!-- ================= 강사 회원 ================= -->
+    <!-- ==================== 온라인 강의실 ==================== -->
+    <div class="tab-panel" id="tab-class">
+
+      <div class="admin-box">
+        <h3>📚 온라인 강의실</h3>
+        <p class="box-desc">교구 실습은 <b>오프라인</b>으로, 나머지 차시는 <b>온라인</b>으로 이수하는
+          블렌디드 워크샵을 운영합니다. 차시를 등록하면 수강생 마이페이지의
+          <b>내 강의실</b>에 바로 나타나고, 시청 진도와 과제 제출이 자동으로 기록됩니다.</p>
+        <div class="filter-bar">
+          <div class="filter-item grow">
+            <label for="cl-program">강의실을 운영할 워크샵</label>
+            <select id="cl-program"><option value="">워크샵을 선택하세요</option></select>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="switchTab('program')">＋ 새 워크샵 등록</button>
+        </div>
+        <div id="cl-summary" class="assign-summary"></div>
+      </div>
+
+      <!-- 차시 관리 -->
+      <div class="admin-box" id="cl-lessonBox" style="display:none;">
+        <h3>🎬 차시 구성 <span class="pf-state" id="cl-lessonCount"></span>
+          <span class="box-actions">
+            <button class="btn btn-outline btn-sm" onclick="toggleLessonForm()" id="cl-addBtn">＋ 차시 추가</button>
+          </span>
+        </h3>
+        <p class="box-desc">순서대로 표시됩니다. <b>온라인</b> 차시는 영상 시청 진도가 자동 기록되고,
+          <b>오프라인</b> 차시는 관리자가 출석을 체크합니다.</p>
+
+        <form id="lessonForm" style="display:none;">
+          <input type="hidden" id="l-id">
+          <div class="form-error" id="lessonError"></div>
+          <div class="form-2col">
+            <div class="form-row">
+              <label for="l-order">차시 번호 <span class="req">*</span></label>
+              <input id="l-order" type="number" min="1" required>
+            </div>
+            <div class="form-row">
+              <label for="l-mode">이수 방식 <span class="req">*</span></label>
+              <select id="l-mode" required>
+                <option value="online">온라인 (영상 시청)</option>
+                <option value="offline">오프라인 (교구 실습·출석)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <label for="l-title">차시명 <span class="req">*</span></label>
+            <input id="l-title" type="text" placeholder="예) 생성형 AI 이해와 프롬프트 기초" required>
+          </div>
+          <div class="form-row">
+            <label for="l-desc">차시 설명</label>
+            <textarea id="l-desc" rows="2" placeholder="이 차시에서 무엇을 배우는지 간단히 적어주세요."></textarea>
+          </div>
+
+          <!-- 온라인 전용 -->
+          <div id="l-onlineFields">
+            <div class="form-2col">
+              <div class="form-row">
+                <label for="l-url">영상 주소 <span class="req">*</span>
+                  <span class="help" tabindex="0" role="button" aria-label="영상 주소 안내">?
+                    <span class="help-pop"><b class="pop-title">지원하는 주소</b>
+                      YouTube 링크를 그대로 붙여넣으세요.<br>
+                      <b>일반</b> youtube.com/watch?v=<b>영상ID</b><br>
+                      <b>단축</b> youtu.be/<b>영상ID</b><br>
+                      <b>영상ID</b>만 입력해도 됩니다.
+                      <em>영상은 '미등록(Unlisted)'으로 올리면 검색에 노출되지 않으면서
+                        수강생은 시청할 수 있습니다.</em></span>
+                  </span>
+                </label>
+                <input id="l-url" type="text" placeholder="https://youtu.be/xxxxxxxxxxx">
+              </div>
+              <div class="form-row">
+                <label for="l-duration">영상 길이 <span class="hint">(분:초 또는 초)</span></label>
+                <input id="l-duration" type="text" placeholder="예) 12:30">
+              </div>
+            </div>
+          </div>
+
+          <!-- 오프라인 전용 -->
+          <div id="l-offlineFields" style="display:none;">
+            <div class="form-row">
+              <label for="l-place">실습 장소 / 안내</label>
+              <input id="l-place" type="text" placeholder="예) 한신대학교 AI·SW관 302호 · 허밍블럭스 교구 제공">
+            </div>
+          </div>
+
+          <label class="form-check">
+            <input type="checkbox" id="l-required" checked>
+            <span>✅ <b>수료 필수 차시</b> (미이수 시 학습 완료로 집계되지 않음)</span>
+          </label>
+          <label class="form-check">
+            <input type="checkbox" id="l-hasTask">
+            <span>📝 <b>과제 제출</b> 받기</span>
+          </label>
+          <div class="form-row" id="l-taskRow" style="display:none;">
+            <label for="l-task">과제 안내</label>
+            <textarea id="l-task" rows="2"
+              placeholder="예) 오늘 실습한 프롬프트로 만든 이미지를 캔바 링크로 제출해주세요."></textarea>
+          </div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button type="submit" class="btn btn-navy btn-sm" id="lessonSaveBtn" style="flex:1;">차시 저장</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="toggleLessonForm(false)">취소</button>
+          </div>
+        </form>
+
+        <div class="table-scroll" style="margin-top:16px;">
+          <table class="admin-table">
+            <thead>
+              <tr><th>차시</th><th>이수 방식</th><th>차시명</th><th>영상/장소</th>
+                  <th>필수</th><th>과제</th><th>관리</th></tr>
+            </thead>
+            <tbody id="lessonTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 학습 현황 -->
+      <div class="admin-box" id="cl-progressBox" style="display:none;">
+        <h3>📊 수강생 학습 현황 <span class="pf-state" id="cl-progCount"></span>
+          <span class="box-actions">
+            <button class="btn btn-outline btn-sm" onclick="loadClassProgress()">🔄 새로고침</button>
+            <button class="btn btn-outline btn-sm" onclick="downloadProgressCSV()">CSV 다운로드</button>
+          </span>
+        </h3>
+        <p class="box-desc"><b>승인완료</b>된 신청자만 표시됩니다.
+          차시 칸을 클릭하면 오프라인 출석을 체크하거나 해제할 수 있고,
+          📝 표시를 클릭하면 제출한 과제를 확인할 수 있습니다.</p>
+        <div class="table-scroll">
+          <table class="admin-table compact">
+            <thead id="progHead"></thead>
+            <tbody id="progBody"></tbody>
+          </table>
+        </div>
+        <p class="form-note">
+          ※ 진도는 참고 지표이며, <b>수료 확정은 [👥 신청자] 탭에서 관리자가 직접</b> 처리합니다.<br>
+          ※ 영상 시청 기록은 수강생 브라우저에서 저장되므로, 최종 이수 판단 시 과제 제출물을 함께 확인해주세요.
+        </p>
+      </div>
+    </div>
+
     <div class="tab-panel" id="tab-member">
       <div class="admin-box">
         <h3>🧑‍🏫 회원 관리</h3>
@@ -606,6 +748,19 @@
         <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('assignModal')">취소</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- ===== 과제 확인 모달 (v12) ===== -->
+<div class="modal-back" id="taskModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="kind-chip">과제 확인</span>
+      <h3 id="tk-title">제출 과제</h3>
+      <button class="modal-close" onclick="closeModal('taskModal')" aria-label="닫기">✕</button>
+    </div>
+    <div id="tk-body"></div>
+    <div class="detail-actions" id="tk-actions"></div>
   </div>
 </div>
 

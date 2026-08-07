@@ -279,9 +279,12 @@ async function mountAuthChip(){
       el.innerHTML = `<span class="chip-skel"></span>`;
       const admin = await checkIsAdmin(u.uid);
       _isAdminCache = admin;
+      /* v12: 관리자도 마이페이지를 쓸 수 있도록 링크를 둘 다 노출합니다 */
       el.innerHTML = admin
-        ? `<a href="admin.html" class="chip-admin" title="${esc(u.email)}">
-             <i>🔑</i>${esc(shortName(u))} <b>관리자</b></a>`
+        ? `<a href="admin.html" class="chip-admin" title="관리자 페이지">
+             <i>🔑</i><b>관리자</b></a>
+           <a href="mypage.html" class="chip-on" title="${esc(u.email)}">
+             <i>👤</i>${esc(shortName(u))} 님</a>`
         : `<a href="mypage.html" class="chip-on" title="${esc(u.email)}">
              <i>👤</i>${esc(shortName(u))} 님</a>`;
     });

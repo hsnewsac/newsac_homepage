@@ -392,6 +392,67 @@ async function loadMyApps(){
 
   myApps = [...found.values()].sort((a, b) => tsNum(b.createdAt) - tsNum(a.createdAt));
   paintApps(); paintCards(); paintStatusCards(); paintActivity();
+  paintClassroom();
+}
+
+/* =========================================================
+   v12: 내 강의실
+   승인완료 + 강의실이 열린 워크샵만 카드로 보여줍니다.
+========================================================= */
+async function paintClassroom(){
+  const box = $('classroomBox'), grid = $('classroomCards');
+  if (!box) return;
+
+  const live = myApps.filter(a => statusOf(a) === 'assigned' && a.programId);
+  if (!live.length){ box.style.display = 'none'; return; }
+
+  /* 각 신청 건의 프로그램·차시·진도를 모읍니다 */
+  const cards = [];
+  for (const a of live){
+    try {
+      const ps = await getDoc(doc(db, 'programs', a.programId));
+      if (!ps.exists()) continue;
+      const p = { id: ps.id, ...ps.data() };
+      if (!p.hasClassroom) continue;
+
+      const ls = await getDocs(collection(db, 'programs', a.programId, 'lessons'));
+      const lessons = ls.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((x, y) => (x.order || 0) - (y.order || 0));
+      if (!lessons.length) continue;
+
+      const pr = await getDocs(collection(db, 'applications', a.id, 'progress'));
+      const prog = Object.fromEntries(pr.docs.map(d => [d.id, d.data()]));
+
+      const done = l => {
+        const q = prog[l.id];
+        if (!q) return false;
+        if (l.mode === 'offline') return !!q.done;
+        if (q.done) return true;
+        return !!l.durationSec && (q.watchedSec || 0) >= l.durationSec * 0.9;
+      };
+      const req = lessons.filter(l => l.required !== false);
+      const doneN = req.filter(done).length;
+      const rate = req.length ? Math.round(doneN / req.length * 100) : 0;
+      const nextL = lessons.find(l => !done(l) && l.mode !== 'offline');
+      cards.push({ a, p, total: req.length, doneN, rate, nextL });
+    } catch (e) { console.warn('강의실 조회 오류:', e); }
+  }
+
+  if (!cards.length){ box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  grid.innerHTML = cards.map(c => `
+    <div class="cr-card">
+      <h4>${esc(c.p.title)}</h4>
+      <span class="cc-course">${esc(c.a.course || c.a.session || '')}</span>
+      <div class="cc-bar"><i style="width:${c.rate}%"></i></div>
+      <div class="cc-tx"><span>필수 ${c.doneN} / ${c.total}차시</span><b>${c.rate}%</b></div>
+      ${c.rate === 100
+        ? '<div class="cc-done">✅ 학습 완료 · 수료 확정은 사업단에서 진행합니다</div>'
+        : ''}
+      <a class="btn ${c.rate === 100 ? 'btn-outline' : 'btn-navy'} btn-sm"
+         href="classroom.html?app=${c.a.id}">
+        ${c.rate === 100 ? '다시 보기' : (c.doneN ? '이어서 학습' : '학습 시작')}</a>
+    </div>`).join('');
 }
 function paintApps(){
   const tb = $('myAppsBody');
@@ -605,17 +666,15 @@ onAuthStateChanged(auth, async user => {
     : '로그인하면 나의 신청·수강 이력과 이수증을 확인할 수 있습니다.';
   if (!on) return;
 
+  /* v12: 관리자도 마이페이지를 그대로 이용합니다.
+     예전에는 관리자면 admin.html로 자동 이동시켰는데,
+     관리자 계정으로도 워크샵을 수강하거나 이수증을 받을 수 있어야 하므로
+     이동 대신 상단에 '관리자 페이지로 가기' 안내만 띄웁니다. */
   const params = new URLSearchParams(location.search);
-  if (params.get('stay') !== '1'){
-    if (await checkIsAdmin(user.uid)){
-      $('mySection').style.display = 'none';
-      $('authSection').style.display = 'none';
-      $('adminRedirect').style.display = 'block';
-      $('mySubtitle').textContent = '관리자 계정으로 로그인하셨습니다.';
-      setTimeout(() => { location.href = 'admin.html'; }, 1200);
-      return;
-    }
-  }
+  const isAdm = await checkIsAdmin(user.uid);
+  $('adminNotice').style.display = isAdm ? 'block' : 'none';
+  if (isAdm) $('mySubtitle').textContent =
+    `${user.displayName || user.email} 님, 환영합니다. (관리자 계정)`;
 
   profile = { name: user.displayName || '', email: user.email };
   try {
