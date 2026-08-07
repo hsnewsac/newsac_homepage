@@ -12,7 +12,7 @@ export const EMAILJS = {
   serviceId:        "service_jqaqp6k",
   templateId:       "template_159qnew",
   templateCertId:   "",          // ← 수료 안내 메일 템플릿 ID (예: "template_cert01")
-  templateStatusId: ""           // ← 배정 결과 안내 메일 템플릿 ID (예: "template_assign01")
+  templateStatusId: ""           // ← v10부터 사용하지 않음 (승인/배정 결과는 CSV로 직접 안내)
 };
 
 export function emailEnabled(){

@@ -855,3 +855,80 @@ nav a.active{background:var(--sprout-soft);color:var(--leaf);}
 .prog-keys li b{color:var(--leaf);font-weight:800;margin-right:3px;}
 .prog-card.special .prog-keys li b{color:#B4553C;}
 .prog-group span{font-weight:700;}
+
+/* ================= v10: 신청자 명단 '관리' 열 고정 =================
+   열이 많아 가로 스크롤이 생겨도 관리 버튼이 잘리지 않도록
+   오른쪽에 고정(sticky)합니다. */
+.admin-table th.c-act,
+.admin-table td.c-act{
+  position:sticky; right:0; z-index:3;
+  min-width:104px; width:104px; padding-left:10px; padding-right:12px;
+  background:#fff;
+  box-shadow:-7px 0 9px -7px rgba(24,40,32,.18);
+}
+.admin-table thead th.c-act{ z-index:5; background:var(--paper); }
+.admin-table tbody tr:hover td.c-act{ background:#FAFCFA; }
+.admin-table tbody tr.row-sel td.c-act{ background:#F1FAF3; }
+.admin-table td.c-act .t-actions{ flex-direction:column; align-items:stretch; gap:5px; }
+.admin-table td.c-act .mini-btn{ width:100%; text-align:center; white-space:nowrap; }
+@media (max-width:640px){
+  .admin-table th.c-act,.admin-table td.c-act{ min-width:92px; width:92px; }
+  .admin-table td.c-act .mini-btn{ padding:5px 6px; font-size:.74rem; }
+}
+
+/* v10: 신청자 명단 운영기간 열 */
+.admin-table td.c-period{ white-space:nowrap; font-size:.83rem; line-height:1.5; }
+.admin-table td.c-period b{ font-weight:700; color:#33413A; }
+
+/* ================= v11: 등록 폼 보조 UI ================= */
+/* 물음표 도움말 툴팁 */
+.help{display:inline-flex;align-items:center;justify-content:center;
+  width:17px;height:17px;margin-left:5px;border-radius:50%;
+  background:var(--navy-soft,#E7EDF5);color:var(--navy,#28405E);
+  font-size:.7rem;font-weight:800;cursor:help;position:relative;vertical-align:middle;}
+.help:hover,.help:focus{background:var(--navy,#28405E);color:#fff;outline:none;}
+.help-pop{position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);
+  width:max(260px,20vw);max-width:330px;padding:11px 13px;
+  background:#25332C;color:#F4F7F5;border-radius:9px;
+  font-size:.78rem;font-weight:500;line-height:1.65;text-align:left;letter-spacing:-.01em;
+  box-shadow:0 8px 22px rgba(20,32,26,.28);
+  opacity:0;visibility:hidden;transition:opacity .15s,visibility .15s;z-index:60;cursor:auto;}
+.help-pop::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
+  border:6px solid transparent;border-top-color:#25332C;}
+.help-pop b{color:#9FE3B8;font-weight:800;}
+.help-pop em{display:block;font-style:normal;color:#C8D2CC;margin-top:7px;
+  padding-top:7px;border-top:1px solid rgba(255,255,255,.16);font-size:.75rem;}
+.help:hover .help-pop,.help:focus .help-pop{opacity:1;visibility:visible;}
+@media (max-width:640px){ .help-pop{width:min(74vw,300px);} }
+
+/* 강좌 체크박스 선택 */
+.course-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:8px;}
+.course-pick label{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;
+  border:1px solid var(--line);border-radius:10px;background:#fff;
+  cursor:pointer;transition:border-color .12s,background .12s;}
+.course-pick label:hover{border-color:#9FD3B2;background:#FAFDFB;}
+.course-pick input{margin-top:2px;width:16px;height:16px;accent-color:var(--leaf);cursor:pointer;flex:none;}
+.course-pick label:has(input:checked){border-color:var(--leaf);background:#F1FAF4;}
+.course-pick .cp-name{font-size:.83rem;font-weight:700;color:#33413A;line-height:1.5;}
+.course-pick .cp-meta{display:block;margin-top:3px;font-size:.74rem;font-weight:600;color:#7A867F;}
+.course-pick .cp-meta .cp-sp{color:#B4553C;}
+.course-tools{display:flex;align-items:center;gap:7px;margin-top:9px;}
+.course-count{margin-left:auto;font-size:.78rem;font-weight:700;color:#6A776F;}
+.course-count.on{color:var(--leaf);}
+.course-extra{margin-top:9px;}
+
+/* 학교급 등 칩형 다중 선택 */
+.chip-pick{display:flex;flex-wrap:wrap;gap:8px;}
+.chip-pick label{display:inline-flex;align-items:center;gap:7px;
+  padding:7px 13px;border:1px solid var(--line);border-radius:999px;background:#fff;
+  font-size:.8rem;font-weight:700;color:#4A5850;cursor:pointer;transition:all .12s;}
+.chip-pick input{width:15px;height:15px;accent-color:var(--leaf);cursor:pointer;}
+.chip-pick label:has(input:checked){border-color:var(--leaf);background:#F1FAF4;color:var(--leaf);}
+
+/* v11: 워크샵 카드 지원 자격 안내 */
+.qual-note{margin-top:12px;padding:11px 13px;border-radius:10px;
+  background:var(--paper);border:1px solid var(--line);
+  font-size:.79rem;line-height:1.7;color:#4A5850;}
+.qual-note > b{display:block;margin-bottom:5px;font-size:.76rem;
+  font-weight:800;color:var(--leaf);letter-spacing:.02em;}
+.qual-note b{color:#33413A;font-weight:800;margin-right:4px;}

@@ -17,12 +17,13 @@ import {
 import {
   initLayout, esc, ddayInfo, todayStr, catClass, fbError,
   KIND, ORG_TYPES, SPECIALTIES, REGIONS, CAREER_LEVELS,
+  COURSES_2026, WORKSHOP_TARGET, qualificationHTML,
+  SCHOOL_LEVELS, CAMP_MODES, RECRUIT_ROLES, fmtPeriodKo,
   STATUS, STATUS_ORDER, statusOf, statusChip, APPROVE_STATUS, statusSet, isRecruit,
   ROLES, ROLE_ORDER, roleOf,
   tsText, tsNum, toast, openModal, closeModal, bindModalEvents, checkIsAdmin
 } from './common.js';
-import { sendCertificateEmail, certEmailEnabled,
-         sendStatusEmail, statusEmailEnabled } from './email-config.js';
+import { sendCertificateEmail, certEmailEnabled } from './email-config.js';
 
 initLayout('admin');
 bindModalEvents();
@@ -48,6 +49,66 @@ $('f-astatus').innerHTML = '<option value="">전체</option>' +
   STATUS_ORDER.map(k => `<option value="${k}">${dualLabel(k)}</option>`).join('');
 $('bulkStatus').innerHTML = '<option value="">승인 상태 일괄 변경…</option>' +
   STATUS_ORDER.map(k => `<option value="${k}">→ ${dualLabel(k)}(으)로 변경</option>`).join('');
+/* ---------- v11: 강좌 체크박스 · 학교급 칩 · 지원자격 툴팁 ---------- */
+function courseListHTML(prefix){
+  return COURSES_2026.map((c, i) => `
+    <label>
+      <input type="checkbox" data-course="${prefix}" value="${esc(c.name)}"
+             onchange="updateCourseCount('${prefix}')" id="${prefix}-c${i}">
+      <span>
+        <span class="cp-name">${esc(c.name)}</span>
+        <span class="cp-meta">
+          <span class="${c.group === '특화' ? 'cp-sp' : ''}">${esc(c.group)}과정</span> · ${esc(c.level)}
+        </span>
+      </span>
+    </label>`).join('');
+}
+$('p-courseList').innerHTML = courseListHTML('p');
+$('r-courseList').innerHTML = courseListHTML('r');
+
+$('r-levelList').innerHTML = SCHOOL_LEVELS.map((l, i) => `
+  <label><input type="checkbox" data-level="r" value="${esc(l)}" id="r-l${i}"><span>${esc(l)}</span></label>`).join('');
+
+$('r-role').innerHTML = RECRUIT_ROLES.map(v => `<option>${esc(v)}</option>`).join('');
+$('r-mode').innerHTML = CAMP_MODES.map(v => `<option>${esc(v)}</option>`).join('');
+
+/* 워크샵 대상 기본값 + 지원 자격 툴팁 */
+$('p-qualPop').innerHTML = qualificationHTML() +
+  '<em>워크샵 신청 안내에 그대로 노출할 수 있는 문구입니다.</em>';
+$('p-target').value = WORKSHOP_TARGET;
+
+function pickedCourses(prefix){
+  return [...document.querySelectorAll(`input[data-course="${prefix}"]:checked`)].map(c => c.value);
+}
+function setPickedCourses(prefix, list){
+  const set = new Set(list || []);
+  document.querySelectorAll(`input[data-course="${prefix}"]`).forEach(c => { c.checked = set.has(c.value); });
+  updateCourseCount(prefix);
+  /* 목록에 없는 강좌는 직접 입력 칸으로 (워크샵만 해당) */
+  if (prefix === 'p'){
+    const known = new Set(COURSES_2026.map(c => c.name));
+    $('p-courseExtra').value = (list || []).filter(v => !known.has(v)).join(', ');
+  }
+}
+function updateCourseCount(prefix){
+  const n = pickedCourses(prefix).length;
+  const el = $(`${prefix}-courseCount`);
+  el.textContent = `${n}개 선택`;
+  el.classList.toggle('on', n > 0);
+}
+function pickAllCourses(prefix, on){
+  document.querySelectorAll(`input[data-course="${prefix}"]`).forEach(c => { c.checked = on; });
+  updateCourseCount(prefix);
+}
+function pickedLevels(){
+  return [...document.querySelectorAll('input[data-level="r"]:checked')].map(c => c.value);
+}
+function setPickedLevels(list){
+  const set = new Set(list || []);
+  document.querySelectorAll('input[data-level="r"]').forEach(c => { c.checked = set.has(c.value); });
+}
+Object.assign(window, { pickAllCourses, updateCourseCount });
+
 $('cd-region').innerHTML = '<option value="">전체</option>' +
   REGIONS.map(r => `<option>${r}</option>`).join('');
 $('cd-specialty').innerHTML = '<option value="">전체</option>' +
@@ -118,19 +179,24 @@ onAuthStateChanged(auth, async user => {
 $('programForm').addEventListener('submit', async e => {
   e.preventDefault();
   const idVal = $('p-id').value;
+  const extra = $('p-courseExtra').value.split(',').map(v => v.trim()).filter(Boolean);
+  const start = $('p-start').value, end = $('p-end').value;
+  if (start && end && start > end){ alert('운영 종료일이 시작일보다 빠릅니다.'); return; }
   const data = {
     type: $('p-type').value,
     title: $('p-title').value.trim(),
     target: $('p-target').value.trim(),
-    period: $('p-period').value.trim(),
+    startDate: start,
+    endDate: end,
+    period: fmtPeriodKo(start, end),
     place: $('p-place').value.trim(),
     content: $('p-content').value.trim(),
     deadline: $('p-deadline').value,
     capacity: Number($('p-capacity').value),
     loginOnly: $('p-loginonly').checked,
-    courses: $('p-courses').value.split('\n').map(v => v.trim()).filter(Boolean)
+    courses: [...pickedCourses('p'), ...extra]
   };
-  if (!data.courses.length){ alert('개설 강좌를 1개 이상 입력해주세요.'); return; }
+  if (!data.courses.length){ alert('개설 강좌를 1개 이상 선택해주세요.'); return; }
   try {
     if (idVal){
       await updateDoc(doc(db, 'programs', idVal), data);
@@ -150,32 +216,51 @@ $('programForm').addEventListener('submit', async e => {
 function editProgram(id){
   const p = programs.find(x => x.id === id);
   if (!p) return;
+  /* v10: 강사 모집 공고는 [강사 배정] 탭의 전용 폼에서 수정합니다 */
+  if (p.type === 'recruit'){ editRecruit(id); return; }
   switchTab('program');
   $('p-id').value = p.id;
+  /* v10: '집합형 연수(camp)'는 신규 등록에서 제외했지만,
+     기존에 등록된 camp 프로그램을 수정할 때는 유형이 비어버리지 않도록
+     임시 옵션을 넣어줍니다. (저장하면 그대로 camp로 유지됩니다) */
+  if (p.type && !$('p-type').querySelector(`option[value="${p.type}"]`)){
+    const opt = document.createElement('option');
+    opt.value = p.type;
+    opt.textContent = `${KIND[p.type] || p.type} (이전 유형)`;
+    opt.dataset.legacy = '1';
+    $('p-type').prepend(opt);
+  }
   $('p-type').value = p.type;
   $('p-title').value = p.title;
-  $('p-target').value = p.target;
-  $('p-period').value = p.period;
+  $('p-target').value = p.target || WORKSHOP_TARGET;
+  $('p-start').value = p.startDate || '';
+  $('p-end').value   = p.endDate || '';
   $('p-place').value = p.place;
   $('p-content').value = p.content;
   $('p-deadline').value = p.deadline;
   $('p-capacity').value = p.capacity;
   $('p-loginonly').checked = !!p.loginOnly;
-  $('p-courses').value = Array.isArray(p.courses) ? p.courses.join('\n')
-    : Array.from({length: p.sessions || 1}, (_, i) => `${i+1}회차`).join('\n'); // 구버전 데이터 호환
+  setPickedCourses('p', Array.isArray(p.courses) ? p.courses : []);
+  /* 구버전 데이터: startDate/endDate 없이 period 문자열만 있는 경우 안내 */
+  if (!p.startDate && p.period) toast(`이전 형식의 운영 기간(${p.period})입니다. 날짜를 다시 선택해주세요.`, 'warn');
   $('p-applied').value = p.applied || 0;
   $('p-applied').disabled = true; // 신청 인원은 접수와 함께 자동 관리
-  $('pFormTitle').textContent = '✏️ 프로그램 수정 — ' + p.title;
+  $('pFormTitle').textContent = '✏️ 워크샵 수정 — ' + p.title;
   $('pFormSubmit').textContent = '수정 저장';
   setTimeout(() => $('programForm').scrollIntoView({behavior:'smooth', block:'center'}), 120);
 }
 function resetProgramForm(){
   $('programForm').reset();
   $('p-id').value = '';
+  /* 수정 중 추가된 이전 유형 옵션 제거 */
+  $('p-type').querySelectorAll('option[data-legacy]').forEach(o => o.remove());
   $('p-applied').value = 0;
   $('p-applied').disabled = false;
-  $('pFormTitle').textContent = '📌 새 프로그램 등록';
-  $('pFormSubmit').textContent = '프로그램 등록';
+  $('p-target').value = WORKSHOP_TARGET;   // 기본 대상 문구 복원
+  setPickedCourses('p', []);
+  $('p-courseExtra').value = '';
+  $('pFormTitle').textContent = '📌 새 강사 워크샵 등록';
+  $('pFormSubmit').textContent = '워크샵 등록';
 }
 async function deleteProgram(id){
   const p = programs.find(x => x.id === id);
@@ -356,6 +441,26 @@ function resetFilters(){
 }
 window.resetFilters = resetFilters;
 
+/* ---------- v10: 신청건 → 프로그램 일정 조회 ----------
+   applications 문서에는 programId가 저장되어 있으므로
+   programs 컬렉션에서 운영 기간·장소를 찾아 함께 보여줍니다. */
+function progOf(a){
+  if (!a) return null;
+  return programs.find(p => p.id === a.programId)
+      || programs.find(p => p.title === a.programTitle)
+      || null;
+}
+/** 운영 기간 (없으면 신청건에 저장된 값 → '-') */
+function progPeriod(a){
+  const p = progOf(a);
+  return (p && p.period) || a.programPeriod || '';
+}
+/** 운영 장소 */
+function progPlace(a){
+  const p = progOf(a);
+  return (p && p.place) || a.programPlace || '';
+}
+
 function filteredApps(){
   const q = $('f-q').value.trim().toLowerCase();
   const fp = $('f-program').value, fc = $('f-course').value;
@@ -374,7 +479,7 @@ function filteredApps(){
     if (q){
       const hay = [a.name, a.org, a.email, a.phone, a.id, a.programTitle,
                    a.course || a.session, a.orgType, a.certNo, a.memo,
-                   a.assignPlace, a.statusMemo]
+                   a.assignPlace, a.statusMemo, progPeriod(a), progPlace(a)]
         .map(v => String(v ?? '').toLowerCase()).join(' ');
       if (!hay.includes(q)) return false;
     }
@@ -390,6 +495,7 @@ function filteredApps(){
       va = STATUS_ORDER.indexOf(statusOf(a)); vb = STATUS_ORDER.indexOf(statusOf(b));
     }
     else if (sortKey === 'course'){ va = a.course || a.session || ''; vb = b.course || b.session || ''; }
+    else if (sortKey === 'period'){ va = progPeriod(a); vb = progPeriod(b); }
     else { va = a[sortKey] ?? ''; vb = b[sortKey] ?? ''; }
     if (typeof va === 'string') return va.localeCompare(vb, 'ko') * dir;
     return (va - vb) * dir;
@@ -425,7 +531,7 @@ function renderApplicants(){
   });
 
   if (!list.length){
-    tb.innerHTML = `<tr><td colspan="11" style="text-align:center;color:#6A776F;">
+    tb.innerHTML = `<tr><td colspan="12" style="text-align:center;color:#6A776F;">
       ${total ? '조건에 맞는 신청이 없습니다. 필터를 조정해보세요.' : '아직 접수된 신청이 없습니다.'}</td></tr>`;
     $('applyPager').innerHTML = '';
     return;
@@ -440,6 +546,9 @@ function renderApplicants(){
       ${selected.has(a.id) ? 'checked' : ''} onchange="toggleOne('${a.id}', this.checked)"></td>
     <td class="nowrap">${esc(tsText(a.createdAt))}</td>
     <td>${esc(a.programTitle) || '-'}${a.programType === 'recruit' ? '<span class="chip recruit">모집</span>' : ''}</td>
+    <td class="c-period">${progPeriod(a)
+      ? `<b>${esc(progPeriod(a))}</b>${progPlace(a) ? `<br><span class="cell-sub">📍 ${esc(progPlace(a))}</span>` : ''}`
+      : '<span class="cell-sub">일정 미등록</span>'}</td>
     <td>${esc(a.course || a.session) || '-'}</td>
     <td><b>${esc(a.name)}</b>${a.uid ? '<span class="chip member" title="회원 계정으로 신청">회원</span>' : ''}</td>
     <td>${esc(a.org)}</td>
@@ -449,7 +558,7 @@ function renderApplicants(){
     <td>${a.completed
       ? `<span class="status-chip done">수료</span><br><span class="cell-sub">${esc(a.certNo || '')}</span>`
       : '<span class="status-chip wait">미수료</span>'}</td>
-    <td><div class="t-actions">
+    <td class="c-act"><div class="t-actions">
       <button class="mini-btn" onclick="openAssign('${a.id}')">${a.programType === 'recruit' ? '배정/상태' : '승인/상태'}</button>
       ${a.completed
         ? `<a class="mini-btn" href="cert.html?id=${a.id}" target="_blank" rel="noopener">이수증</a>
@@ -627,29 +736,13 @@ async function bulkDelete(){
 Object.assign(window, { deleteApplicant, completeApp, uncompleteApp, bulkComplete, bulkUncomplete, bulkDelete });
 
 /* ==================== 진행 상태 · 배정 ==================== */
-/** 상태/배정 정보 저장 + (선택) 결과 안내 메일 */
-async function applyStatus(id, patch, sendMail){
+/** 상태/배정 정보 저장
+    v10: 승인·배정 결과 안내 메일 자동 발송은 제거했습니다.
+         (관리자가 CSV를 내려받아 직접 안내하는 방식) */
+async function applyStatus(id, patch){
   const a = applications.find(x => x.id === id);
   if (!a) return;
   await updateDoc(doc(db, 'applications', id), { ...patch, statusAt: serverTimestamp() });
-  if (sendMail && statusEmailEnabled() && a.email){
-    const k = patch.status || statusOf(a);
-    const S = statusSet(a);
-    await sendStatusEmail({
-      to_email: a.email,
-      name: a.name,
-      program: a.programTitle || '',
-      course: a.course || a.session || '',
-      status: S[k].label,
-      status_desc: S[k].desc,
-      assign_place:    patch.assignPlace    ?? a.assignPlace    ?? '-',
-      assign_period:   patch.assignPeriod   ?? a.assignPeriod   ?? '-',
-      assign_sessions: patch.assignSessions ?? a.assignSessions ?? '-',
-      assign_hours:    patch.assignHours    ?? a.assignHours    ?? '-',
-      memo: patch.statusMemo ?? a.statusMemo ?? '',
-      date: new Date().toLocaleDateString('ko-KR', { dateStyle: 'long' })
-    }).catch(()=>{});
-  }
 }
 
 /* 현재 모달이 다루는 신청건 (모드 판별용) */
@@ -674,6 +767,8 @@ function openAssign(id){
   /* 신청 요약 */
   $('asm-info').innerHTML = [
     ['프로그램', a.programTitle || '-'],
+    ['운영 기간', progPeriod(a) || '일정 미등록'],
+    ['운영 장소', progPlace(a) || '-'],
     [assignMode ? '지원 분야' : '강좌', a.course || a.session || '-'],
     ['소속 유형', a.orgType || '-'],
     ['연락처', `${a.phone || '-'} · ${a.email || '-'}`],
@@ -706,10 +801,9 @@ function openAssign(id){
     : '예) 8/21(목) 10:00 한신대 AI·SW관 302호로 오시면 됩니다. 노트북 지참.';
   $('asm-memo').value = a.statusMemo || '';
 
-  $('asm-mail').checked   = statusEmailEnabled();
-  $('asm-mail').disabled  = !statusEmailEnabled();
-  $('asm-mailNote').textContent = statusEmailEnabled()
-    ? '' : '(메일 템플릿 미설정 — email-config.js의 templateStatusId를 채우면 활성화됩니다)';
+  $('asm-noMail').textContent = assignMode
+    ? '📄 배정 결과 메일은 자동 발송하지 않습니다. 명단을 CSV로 내려받아 직접 안내해주세요.'
+    : '📄 승인 결과 메일은 자동 발송하지 않습니다. 명단을 CSV로 내려받아 직접 안내해주세요.';
   $('asmError').style.display = 'none';
   paintStatusDesc();
   openModal('assignModal');
@@ -755,7 +849,7 @@ $('assignForm').addEventListener('submit', async e => {
         }
       : { status: k, statusMemo: $('asm-memo').value.trim() };
 
-    await applyStatus(id, patch, $('asm-mail').checked);
+    await applyStatus(id, patch);
     closeModal('assignModal');
     toast(assignMode
       ? `배정 정보를 저장했습니다 · ${STATUS[k].label}`
@@ -776,11 +870,10 @@ $('bulkStatus').addEventListener('change', async e => {
   if (!k) return;
   const list = applications.filter(a => selected.has(a.id));
   if (!list.length){ alert('먼저 표에서 대상을 선택해주세요.'); return; }
-  const mailNote = statusEmailEnabled() ? '\n결과 안내 메일도 함께 발송됩니다.' : '';
-  if (!confirm(`선택한 ${list.length}명의 상태를 [${dualLabel(k)}](으)로 변경할까요?${mailNote}`)) return;
+  if (!confirm(`선택한 ${list.length}명의 상태를 [${dualLabel(k)}](으)로 변경할까요?`)) return;
   let ok = 0, fail = 0;
   for (const a of list){
-    try { await applyStatus(a.id, { status: k }, true); ok++; }
+    try { await applyStatus(a.id, { status: k }); ok++; }
     catch (err){ console.error(err); fail++; }
   }
   selected.clear();
@@ -797,10 +890,112 @@ function refreshAssignPrograms(){
   const list = recruitPrograms();
   sel.innerHTML = '<option value="">공고를 선택하세요</option>' +
     list.map(p => `<option value="${p.id}">${esc(p.title)} (마감 ${esc(p.deadline)})</option>`).join('');
-  if (list.some(p => p.id === cur)) sel.value = cur;
+  if (pendingSelectId && list.some(p => p.id === pendingSelectId)){
+    sel.value = pendingSelectId;
+    pendingSelectId = null;
+    renderAssign();
+  } else if (list.some(p => p.id === cur)) sel.value = cur;
   $('badgeAssign').textContent = list.length;
 }
 $('as-program').addEventListener('change', renderAssign);
+
+/* ---------- v10: 모집 공고 등록/수정 (프로그램 탭에서 이관) ---------- */
+let pendingSelectId = null;   // 등록 직후 자동 선택할 공고 id
+
+function toggleRecruitForm(force){
+  const box = $('recruitBox');
+  const openIt = force === undefined ? box.style.display === 'none' : !!force;
+  box.style.display = openIt ? '' : 'none';
+  $('rToggleBtn').textContent = openIt ? '✕ 공고 등록 닫기' : '＋ 새 모집 공고 등록';
+  if (openIt) setTimeout(() => box.scrollIntoView({behavior:'smooth', block:'center'}), 120);
+  else resetRecruitForm();
+}
+
+function resetRecruitForm(){
+  $('recruitForm').reset();
+  $('r-id').value = '';
+  $('r-loginonly').checked = true;
+  setPickedCourses('r', []);
+  setPickedLevels([]);
+  $('rFormTitle').textContent = '📣 새 강사 모집 공고 등록';
+  $('rFormSubmit').textContent = '모집 공고 등록';
+}
+
+function editRecruit(id){
+  const p = programs.find(x => x.id === id);
+  if (!p) return;
+  switchTab('assign');
+  $('recruitBox').style.display = '';
+  $('rToggleBtn').textContent = '✕ 공고 등록 닫기';
+  $('r-id').value        = p.id;
+  $('r-title').value     = p.title || '';
+  $('r-target').value    = p.target || '';
+  $('r-role').value      = p.role || RECRUIT_ROLES[0];
+  $('r-mode').value      = p.mode || CAMP_MODES[0];
+  $('r-start').value     = p.startDate || '';
+  $('r-end').value       = p.endDate || '';
+  $('r-place').value     = p.place || '';
+  $('r-content').value   = p.content || '';
+  $('r-hours').value     = p.hours || '';
+  $('r-qual').value      = p.qualification || '';
+  $('r-deadline').value  = p.deadline || '';
+  $('r-capacity').value  = p.capacity ?? '';
+  $('r-loginonly').checked = !!p.loginOnly;
+  setPickedCourses('r', Array.isArray(p.courses) ? p.courses : []);
+  setPickedLevels(p.levels || []);
+  if (!p.startDate && p.period) toast(`이전 형식의 활동 기간(${p.period})입니다. 날짜를 다시 선택해주세요.`, 'warn');
+  $('rFormTitle').textContent = '✏️ 모집 공고 수정 — ' + p.title;
+  $('rFormSubmit').textContent = '수정 저장';
+  setTimeout(() => $('recruitForm').scrollIntoView({behavior:'smooth', block:'center'}), 120);
+}
+
+$('recruitForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const idVal = $('r-id').value;
+  const start = $('r-start').value, end = $('r-end').value;
+  if (start && end && start > end){ alert('활동 종료일이 시작일보다 빠릅니다.'); return; }
+  const data = {
+    type: 'recruit',
+    title:   $('r-title').value.trim(),
+    target:  $('r-target').value.trim(),
+    role:    $('r-role').value,
+    mode:    $('r-mode').value,
+    startDate: start,
+    endDate:   end,
+    period:  fmtPeriodKo(start, end),
+    place:   $('r-place').value.trim(),
+    content: $('r-content').value.trim(),
+    hours:   $('r-hours').value.trim(),
+    qualification: $('r-qual').value.trim(),
+    levels:  pickedLevels(),
+    deadline: $('r-deadline').value,
+    capacity: Number($('r-capacity').value),
+    loginOnly: $('r-loginonly').checked,
+    courses: pickedCourses('r')
+  };
+  if (!data.levels.length){ alert('대상 학교급을 1개 이상 선택해주세요.'); return; }
+  if (!data.courses.length){ alert('담당 과정을 1개 이상 선택해주세요.'); return; }
+  const btn = $('rFormSubmit');
+  btn.disabled = true;
+  try {
+    if (idVal){
+      await updateDoc(doc(db, 'programs', idVal), data);
+      toast('모집 공고를 수정했습니다.');
+      resetRecruitForm();
+      toggleRecruitForm(false);
+    } else {
+      const ref = await addDoc(collection(db, 'programs'), {
+        ...data, applied: 0, open: true, createdAt: serverTimestamp()
+      });
+      pendingSelectId = ref.id;        // 목록 갱신 후 자동 선택
+      toast('모집 공고를 등록했습니다.');
+      resetRecruitForm();
+      toggleRecruitForm(false);
+    }
+  } catch (err) { alert(fbError(err)); }
+  finally { btn.disabled = false; }
+});
+Object.assign(window, { toggleRecruitForm, resetRecruitForm, editRecruit });
 
 function renderAssign(){
   const pid = $('as-program').value;
@@ -809,7 +1004,7 @@ function renderAssign(){
 
   if (!list.length){
     box.innerHTML = `<div class="assign-empty">등록된 <b>강사 모집</b> 공고가 없습니다.<br>
-      [📌 프로그램] 탭에서 프로그램 유형을 <b>‘강사 모집 (강의배정)’</b> 으로 선택해 공고를 등록하세요.</div>`;
+      위 <b>[＋ 새 모집 공고 등록]</b> 버튼을 눌러 첫 공고를 만들어보세요.</div>`;
     $('as-applicantBox').style.display = 'none';
     $('as-candidateBox').style.display = 'none';
     return;
@@ -987,12 +1182,13 @@ function saveCSV(rows, filename){
 function downloadCSV(scope = 'filtered'){
   const list = scope === 'all' ? applications : filteredApps();
   if (!list.length){ alert('내보낼 신청 내역이 없습니다.'); return; }
-  const rows = [['접수일시','신청번호','프로그램','유형','강좌/지원분야','강사명','소속기관','소속기관 유형',
+  const rows = [['접수일시','신청번호','프로그램','운영기간','운영장소','유형','강좌/지원분야','강사명','소속기관','소속기관 유형',
                  '전화번호','전자메일','회원가입 여부','승인/진행 상태','배정 학교/기관','배정 기간',
                  '배정 차수','배정 시수','안내 메모','가능 요일','가능 시간대','희망 지역',
                  '수료여부','이수증 발급번호','요청사항']];
   list.forEach(a => {
-    rows.push([tsText(a.createdAt), a.id, a.programTitle || '', KIND[a.programType] || '',
+    rows.push([tsText(a.createdAt), a.id, a.programTitle || '',
+      progPeriod(a), progPlace(a), KIND[a.programType] || '',
       a.course || a.session || '', a.name, a.org, a.orgType || '', a.phone, a.email,
       a.uid ? '회원' : '비회원', statusSet(a)[statusOf(a)].label,
       a.assignPlace || '', a.assignPeriod || '', a.assignSessions ?? '', a.assignHours ?? '',
@@ -1222,6 +1418,7 @@ onSnapshot(
   snap => {
     programs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderAdminTable();
+    renderApplicants();      // v10: 신청자 표의 운영기간 열 갱신
     renderDashboard();
     refreshAssignPrograms();
     $('badgeProgram').textContent = programs.length;

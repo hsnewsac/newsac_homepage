@@ -9,12 +9,61 @@
 ========================================================= */
 
 export const KIND = {
-  camp:     '집합형 연수',
   workshop: '강사 워크샵',
-  recruit:  '강사 모집'          // ★ v5: 강의배정용 강사모집 공고
+  recruit:  '강사 모집',         // ★ v5: 강의배정용 강사모집 공고
+  camp:     '집합형 연수'        // ※ v10: 신규 등록에서 제외 (기존 데이터 표시용으로만 유지)
 };
 
 export const ORG_TYPES = ['초중고등 교원', '대학생/대학원생', '기업/기관 종사자', '프리랜서'];
+
+/* ---------- v11: 2026 교육과정 7종 ----------
+   강사 워크샵의 '개설 강좌', 강사 모집 공고의 '담당 과정' 선택에 함께 사용합니다. */
+export const COURSES_2026 = [
+  { group: '기본', level: '초등 고학년',   name: 'AI문학코딩: 미래 작가의 따뜻한 마음그림여행' },
+  { group: '기본', level: '초등 저학년',   name: 'AI음악코딩: 유쾌한 창작자의 싱어송여행' },
+  { group: '기본', level: '초등 고학년',   name: 'AI과학코딩: VRAI로 떠나는 우주여행' },
+  { group: '기본', level: '중학교',        name: 'AI과학코딩: 호기심 많은 과학자의 바이브여행' },
+  { group: '기본', level: '고등학교',      name: 'AI과학코딩: 바이브실험으로 과학자의 평행우주여행' },
+  { group: '특화', level: '특수교육대상',  name: 'AI문학코딩: 특수아이의 따뜻한 마음그림여행' },
+  { group: '특화', level: '특수교육대상',  name: 'AI음악코딩: 특수아이의 유쾌한 음악여행' }
+];
+
+/* ---------- v11: 강사 워크샵 지원 자격 ---------- */
+export const WORKSHOP_TARGET = '강사를 희망하고 있는 교원, 프리랜서 등';
+export const WORKSHOP_QUALIFICATION = {
+  main:    ['현직 교사', '초·중등교원 자격 소지자', '민간·기업 전문가', '석사 학위 이상 대학원생'],
+  assist:  ['학부생 이상'],
+  exclude: ['현직 학원 운영자']
+};
+/** 지원 자격 안내를 HTML로 (툴팁·안내문 공용) */
+export function qualificationHTML(){
+  const Q = WORKSHOP_QUALIFICATION;
+  return `<b>주강사</b> ${Q.main.join(' · ')}<br>
+          <b>보조강사</b> ${Q.assist.join(' · ')}<br>
+          <b>제외</b> ${Q.exclude.join(' · ')}`;
+}
+
+/* ---------- v11: 강사 모집 공고용 선택지 ---------- */
+export const SCHOOL_LEVELS  = ['초등 저학년', '초등 고학년', '중학교', '고등학교', '특수교육대상'];
+export const CAMP_MODES     = ['방문형 (학교 방문 운영)', '집합형 (캠프 운영)', '방문형 + 집합형 병행'];
+export const RECRUIT_ROLES  = ['주강사', '보조강사', '주강사 + 보조강사'];
+
+/* ---------- v11: 날짜 → 한글 표기 ---------- */
+/** '2026-08-03' → '2026.08.03(월)' */
+export function fmtDateKo(v){
+  if (!v) return '';
+  const d = new Date(v + 'T00:00:00');
+  if (isNaN(d)) return v;
+  const w = '일월화수목금토'[d.getDay()];
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}(${w})`;
+}
+/** 시작·종료일 → '2026.08.03(월) ~ 2026.08.21(금)' */
+export function fmtPeriodKo(start, end){
+  if (!start && !end) return '';
+  if (start && end)   return `${fmtDateKo(start)} ~ ${fmtDateKo(end)}`;
+  return fmtDateKo(start || end);
+}
 
 /* ---------- 강사 프로필 공통 상수 (강사모집 대비) ---------- */
 export const SPECIALTIES = [

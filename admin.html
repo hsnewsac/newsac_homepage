@@ -83,34 +83,41 @@
     <!-- ================= 프로그램 ================= -->
     <div class="tab-panel" id="tab-program">
       <div class="admin-box">
-        <h3 id="pFormTitle">📌 새 프로그램 등록</h3>
-        <p class="box-desc">집합형 연수·강사 워크샵·강사 모집 공고를 등록합니다. 등록 즉시 홈 화면에 노출됩니다.</p>
+        <h3 id="pFormTitle">📌 새 강사 워크샵 등록</h3>
+        <p class="box-desc">강사 워크샵을 등록합니다. 등록 즉시 홈 화면에 노출됩니다.
+          <b>강사 모집 공고</b>는 <b>[🎯 강사 배정]</b> 탭에서 등록·수정합니다.</p>
         <form id="programForm">
           <input type="hidden" id="p-id">
           <div class="form-2col">
             <div class="form-row">
               <label for="p-type">프로그램 유형 <span class="req">*</span></label>
               <select id="p-type" required>
-                <option value="camp">집합형 연수 (캠프)</option>
                 <option value="workshop">강사 워크샵</option>
-                <option value="recruit">강사 모집 (강의배정)</option>
               </select>
             </div>
             <div class="form-row">
               <label for="p-title">프로그램명 <span class="req">*</span></label>
-              <input id="p-title" type="text" placeholder="예) 2026 하계 SW·AI 집합형 캠프" required>
+              <input id="p-title" type="text" placeholder="예) 2026 디지털새싹 강사 역량강화 워크샵" required>
             </div>
             <div class="form-row">
-              <label for="p-target">대상 <span class="req">*</span></label>
-              <input id="p-target" type="text" placeholder="예) 초등 3~6학년 · 중등 1~3학년" required>
-            </div>
-            <div class="form-row">
-              <label for="p-period">운영 기간 <span class="req">*</span></label>
-              <input id="p-period" type="text" placeholder="예) 2026.08.03(월) ~ 08.21(금)" required>
+              <label for="p-target">대상 <span class="req">*</span>
+                <span class="help" tabindex="0" role="button" aria-label="지원 자격 상세 보기">?
+                  <span class="help-pop" id="p-qualPop"></span>
+                </span>
+              </label>
+              <input id="p-target" type="text" required>
             </div>
             <div class="form-row">
               <label for="p-place">장소 <span class="req">*</span></label>
-              <input id="p-place" type="text" placeholder="예) 한신대학교 캠퍼스" required>
+              <input id="p-place" type="text" placeholder="예) 한신대학교 AI·SW관" required>
+            </div>
+            <div class="form-row">
+              <label for="p-start">운영 시작일 <span class="req">*</span></label>
+              <input id="p-start" type="date" required>
+            </div>
+            <div class="form-row">
+              <label for="p-end">운영 종료일 <span class="req">*</span></label>
+              <input id="p-end" type="date" required>
             </div>
             <div class="form-row">
               <label for="p-deadline">접수 마감일 <span class="req">*</span></label>
@@ -130,16 +137,24 @@
             <input id="p-content" type="text" placeholder="예) 블록코딩 · 피지컬컴퓨팅 · 생성형 AI" required>
           </div>
           <div class="form-row">
-            <label for="p-courses">개설 강좌 목록 <span class="req">*</span></label>
-            <textarea id="p-courses" rows="4" required
-              placeholder="한 줄에 강좌 하나씩 입력하세요. 신청자가 이 목록에서 희망 강좌를 선택합니다.&#10;예)&#10;생성형 AI 이미지 제작 기초&#10;블록코딩으로 배우는 알고리즘&#10;피지컬컴퓨팅 실습 (아두이노)"></textarea>
+            <label>개설 강좌 <span class="req">*</span>
+              <span class="hint">— 이번 워크샵에서 다룰 과정을 체크하세요. 신청자는 이 목록에서 희망 강좌를 고릅니다.</span>
+            </label>
+            <div class="course-pick" id="p-courseList"></div>
+            <div class="course-tools">
+              <button type="button" class="mini-btn" onclick="pickAllCourses('p', true)">전체 선택</button>
+              <button type="button" class="mini-btn" onclick="pickAllCourses('p', false)">전체 해제</button>
+              <span class="course-count" id="p-courseCount">0개 선택</span>
+            </div>
+            <input id="p-courseExtra" type="text" class="course-extra"
+              placeholder="목록에 없는 강좌가 있으면 쉼표(,)로 구분해 입력 — 선택 사항">
           </div>
           <label class="form-check">
             <input type="checkbox" id="p-loginonly">
-            <span>🔐 <b>로그인 회원만 신청 가능</b>하게 제한 (강사 모집 공고 권장)</span>
+            <span>🔐 <b>로그인 회원만 신청 가능</b>하게 제한</span>
           </label>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button type="submit" class="btn btn-navy btn-sm" id="pFormSubmit">프로그램 등록</button>
+            <button type="submit" class="btn btn-navy btn-sm" id="pFormSubmit">워크샵 등록</button>
             <button type="button" class="btn btn-outline btn-sm" onclick="resetProgramForm()">입력 초기화</button>
           </div>
         </form>
@@ -147,6 +162,8 @@
 
       <div class="admin-box">
         <h3>📋 등록된 프로그램</h3>
+        <p class="box-desc">강사 워크샵과 강사 모집 공고가 함께 표시됩니다.
+          모집 공고의 [수정]을 누르면 <b>[🎯 강사 배정]</b> 탭의 공고 편집 폼으로 이동합니다.</p>
         <div class="table-scroll">
           <table class="admin-table">
             <thead>
@@ -205,7 +222,7 @@
     <div class="tab-panel" id="tab-apply">
       <div class="admin-box">
         <h3>👥 신청자 명단 · 승인 · 수료 관리</h3>
-        <p class="box-desc">강사 워크샵·집합형 연수 <b>신청 승인</b>과 수료 처리를 여기서 합니다.
+        <p class="box-desc">강사 워크샵 <b>신청 승인</b>과 수료 처리를 여기서 합니다.
           필터·검색으로 대상을 좁힌 뒤 체크박스로 선택해 일괄 처리할 수 있습니다.
           학교별 강의 배정은 <b>[🎯 강사 배정]</b> 탭에서 관리합니다.</p>
 
@@ -276,6 +293,7 @@
                 <th class="c-check"><input type="checkbox" id="chkAll" onchange="toggleAll(this.checked)"></th>
                 <th class="sort" data-key="createdAt">접수일시</th>
                 <th class="sort" data-key="programTitle">프로그램</th>
+                <th class="sort" data-key="period">운영기간</th>
                 <th class="sort" data-key="course">강좌</th>
                 <th class="sort" data-key="name">강사명</th>
                 <th class="sort" data-key="org">소속기관</th>
@@ -283,7 +301,7 @@
                 <th>연락처</th>
                 <th class="sort" data-key="status">진행</th>
                 <th class="sort" data-key="completed">수료</th>
-                <th>관리</th>
+                <th class="c-act">관리</th>
               </tr>
             </thead>
             <tbody id="applicantTableBody"></tbody>
@@ -291,7 +309,8 @@
         </div>
         <div class="pager" id="applyPager"></div>
         <p class="form-note">※ <b>[승인/상태]</b> 버튼으로 신청접수 → 검토중 → 승인완료(또는 반려)를 처리합니다.
-          승인 결과는 신청자 마이페이지에 즉시 반영되며, 메일 템플릿이 설정되어 있으면 안내 메일도 함께 발송됩니다.<br>
+          승인 결과는 신청자 마이페이지에 즉시 반영되며, <b>안내 메일은 자동 발송되지 않습니다.</b>
+          위 <b>CSV</b> 버튼으로 명단을 내려받아 직접 안내해주세요.<br>
           ※ 신청자 개인정보는 로그인한 관리자만 조회할 수 있습니다. 연수 종료 후에는 데이터를 파기해주세요.<br>
           ※ 수료 처리 시 이수증 발급번호가 자동 채번되며, 수료 안내 메일 템플릿이 설정되어 있으면 메일도 함께 발송됩니다.</p>
       </div>
@@ -308,9 +327,96 @@
             <label for="as-program">모집 공고</label>
             <select id="as-program"><option value="">공고를 선택하세요</option></select>
           </div>
-          <button class="btn btn-outline btn-sm" onclick="switchTab('program')">＋ 새 모집 공고 등록</button>
+          <button class="btn btn-outline btn-sm" onclick="toggleRecruitForm()" id="rToggleBtn">＋ 새 모집 공고 등록</button>
         </div>
         <div id="as-summary" class="assign-summary"></div>
+      </div>
+
+      <!-- ===== 모집 공고 등록/수정 (v10: 프로그램 탭에서 이관) ===== -->
+      <div class="admin-box" id="recruitBox" style="display:none;">
+        <h3 id="rFormTitle">📣 새 강사 모집 공고 등록</h3>
+        <p class="box-desc">실제 운영되는 <b>방문형·집합형 캠프</b>에 투입할 강사를 모집하는 공고입니다.
+          워크샵과 달리 운영 형태·학교급·담당 과정·시수 조건을 함께 입력합니다.</p>
+        <form id="recruitForm">
+          <input type="hidden" id="r-id">
+          <div class="form-2col">
+            <div class="form-row">
+              <label for="r-title">공고명 <span class="req">*</span></label>
+              <input id="r-title" type="text" placeholder="예) 2026 하반기 디지털새싹 캠프 강사 모집" required>
+            </div>
+            <div class="form-row">
+              <label for="r-role">모집 구분 <span class="req">*</span></label>
+              <select id="r-role" required></select>
+            </div>
+            <div class="form-row">
+              <label for="r-mode">운영 형태 <span class="req">*</span></label>
+              <select id="r-mode" required></select>
+            </div>
+            <div class="form-row">
+              <label for="r-place">활동 지역 / 운영 학교 <span class="req">*</span></label>
+              <input id="r-place" type="text" placeholder="예) 경기 남부권(오산·화성·수원) 초·중학교" required>
+            </div>
+            <div class="form-row">
+              <label for="r-start">활동 시작일 <span class="req">*</span></label>
+              <input id="r-start" type="date" required>
+            </div>
+            <div class="form-row">
+              <label for="r-end">활동 종료일 <span class="req">*</span></label>
+              <input id="r-end" type="date" required>
+            </div>
+            <div class="form-row">
+              <label for="r-deadline">지원 마감일 <span class="req">*</span></label>
+              <input id="r-deadline" type="date" required>
+            </div>
+            <div class="form-row">
+              <label for="r-capacity">모집 인원 <span class="req">*</span></label>
+              <input id="r-capacity" type="number" min="1" placeholder="예) 20" required>
+            </div>
+            <div class="form-row">
+              <label for="r-hours">운영 조건 / 시수 <span class="req">*</span></label>
+              <input id="r-hours" type="text" placeholder="예) 1개교당 8차시 · 회차별 일정 협의" required>
+            </div>
+            <div class="form-row">
+              <label for="r-target">모집 대상 <span class="req">*</span></label>
+              <input id="r-target" type="text" placeholder="예) SW·AI 교육 경력 1년 이상 강사" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>대상 학교급 <span class="req">*</span>
+              <span class="hint">— 이 공고로 배정될 학교급을 모두 선택하세요.</span>
+            </label>
+            <div class="chip-pick" id="r-levelList"></div>
+          </div>
+          <div class="form-row">
+            <label>담당 과정 <span class="req">*</span>
+              <span class="hint">— 지원자는 이 목록에서 희망 과정을 선택합니다.</span>
+            </label>
+            <div class="course-pick" id="r-courseList"></div>
+            <div class="course-tools">
+              <button type="button" class="mini-btn" onclick="pickAllCourses('r', true)">전체 선택</button>
+              <button type="button" class="mini-btn" onclick="pickAllCourses('r', false)">전체 해제</button>
+              <span class="course-count" id="r-courseCount">0개 선택</span>
+            </div>
+          </div>
+          <div class="form-row">
+            <label for="r-content">주요 담당 업무 <span class="req">*</span></label>
+            <input id="r-content" type="text" placeholder="예) 학교 방문 캠프 강의 · 교구 운영 · 결과보고서 작성" required>
+          </div>
+          <div class="form-row">
+            <label for="r-qual">지원 자격 / 우대 사항</label>
+            <textarea id="r-qual" rows="3"
+              placeholder="예) 초·중등교원 자격 소지자 또는 SW·AI 교육 경력 1년 이상&#10;우대: 특수교육 경험, 경기 남부권 거주, 차량 소지"></textarea>
+          </div>
+          <label class="form-check">
+            <input type="checkbox" id="r-loginonly" checked>
+            <span>🔐 <b>로그인한 강사 회원만 지원 가능</b>하게 제한 <span class="hint">(권장)</span></span>
+          </label>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button type="submit" class="btn btn-navy btn-sm" id="rFormSubmit" style="flex:1;">모집 공고 등록</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="resetRecruitForm()">입력 초기화</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="toggleRecruitForm(false)">닫기</button>
+          </div>
+        </form>
       </div>
 
       <div class="admin-box" id="as-applicantBox" style="display:none;">
@@ -415,7 +521,7 @@
 <footer id="site-footer"></footer>
 
 <!-- ===== 신청 승인 / 배정 정보 모달 (2가지 모드) =====
-     · 강사 워크샵·집합형 연수 신청  → '신청 승인' 모드 (승인/반려 처리)
+     · 강사 워크샵 신청              → '신청 승인' 모드 (승인/반려 처리)
      · 강사 모집(recruit) 공고 지원   → '강사 배정' 모드 (학교·차수·시수 입력)  -->
 <div class="modal-back" id="assignModal">
   <div class="modal">
@@ -475,10 +581,7 @@
         <label for="asm-memo" id="asm-memoLabel">안내 메모 <span class="hint">(신청자에게 전달됩니다)</span></label>
         <textarea id="asm-memo" rows="3"></textarea>
       </div>
-      <label class="form-check">
-        <input type="checkbox" id="asm-mail" checked>
-        <span>📧 저장과 함께 신청자에게 결과 안내 메일 발송 <span id="asm-mailNote" class="hint"></span></span>
-      </label>
+      <p class="form-note" id="asm-noMail">📄 승인 결과 메일은 자동 발송하지 않습니다. 명단을 <b>CSV로 내려받아</b> 직접 안내해주세요.</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button type="submit" class="btn btn-navy btn-sm" id="asmSaveBtn" style="flex:1;">승인 상태 저장</button>
         <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('assignModal')">취소</button>

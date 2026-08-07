@@ -12,7 +12,7 @@ import {
 import {
   initLayout, esc, ddayInfo, noticeIsNew, catClass, fbError,
   KIND, ORG_TYPES, openModal, closeModal, bindModalEvents, toast,
-  WEEKDAYS, TIMESLOTS, ROLES, roleOf
+  WEEKDAYS, TIMESLOTS, ROLES, roleOf, qualificationHTML
 } from './common.js';
 import { sendApplicationEmail, emailEnabled } from './email-config.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
@@ -85,10 +85,19 @@ function cardHTML(p){
       <h3>${esc(p.title)}</h3>
       <dl>
         <dt>${isRecruit ? '모집대상' : '대상'}</dt><dd>${esc(p.target)}</dd>
+        ${isRecruit && p.role ? `<dt>모집구분</dt><dd>${esc(p.role)}</dd>` : ''}
+        ${isRecruit && p.mode ? `<dt>운영형태</dt><dd>${esc(p.mode)}</dd>` : ''}
+        ${isRecruit && Array.isArray(p.levels) && p.levels.length
+          ? `<dt>학교급</dt><dd>${esc(p.levels.join(' · '))}</dd>` : ''}
         <dt>${isRecruit ? '활동기간' : '운영'}</dt><dd>${esc(p.period)}</dd>
         <dt>${isRecruit ? '활동장소' : '장소'}</dt><dd>${esc(p.place)}</dd>
+        ${isRecruit && p.hours ? `<dt>운영조건</dt><dd>${esc(p.hours)}</dd>` : ''}
         <dt>${isRecruit ? '담당업무' : '내용'}</dt><dd>${esc(p.content)}</dd>
+        ${isRecruit && p.qualification
+          ? `<dt>지원자격</dt><dd>${esc(p.qualification).replace(/\n/g, '<br>')}</dd>` : ''}
       </dl>
+      ${!isRecruit && p.type === 'workshop'
+        ? `<div class="qual-note"><b>지원 자격</b>${qualificationHTML()}</div>` : ''}
       <div class="seat-bar">
         ${isRecruit ? '지원 현황' : '신청 현황'} <strong>${applied} / ${p.capacity}명</strong> · ${seatText}
         <div class="seat-track"><div class="seat-fill" style="width:${pct}%"></div></div>
