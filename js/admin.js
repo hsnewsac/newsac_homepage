@@ -1500,7 +1500,15 @@ function printAttendance(){
         `<tr><td>${apps.length + i + 1}</td><td></td><td></td><td></td></tr>`).join('');
       return `
       <section class="att-page">
-        <h1>2026 한신대학교 디지털새싹 강사워크샵 서명부</h1>
+        <header class="att-head">
+          <img class="att-logo att-emblem" src="img/logo.png" alt="한신대학교" onerror="this.remove()">
+          <div class="att-title">
+            <span class="att-sub">HANSHIN UNIVERSITY · DIGITAL SAESSAK</span>
+            <h1>2026 한신대학교 디지털새싹<br>강사워크샵 서명부</h1>
+          </div>
+          <img class="att-logo att-word" src="img/partner-3.png" alt="디지털새싹" onerror="this.remove()">
+        </header>
+        <div class="att-rule"></div>
         <p class="att-consent">본 서명부는 출석 확인을 위해 성명·소속·서명을 수집·이용하며,
           수집된 정보는 워크샵 운영과 수료 관리 목적 외에는 사용되지 않고
           종료 후 관계 법령에 따라 파기됩니다. 서명 시 위 내용에 동의한 것으로 간주합니다.</p>
@@ -1514,6 +1522,7 @@ function printAttendance(){
           <tbody>${rows}</tbody>
         </table>
         <p class="att-count">신청 인원 ${apps.length}명</p>
+        <div class="att-foot"><b>한신대학교 디지털새싹 사업단</b> · 031-379-0255 · newsac26@naver.com</div>
       </section>`;
     }).join('');
 
