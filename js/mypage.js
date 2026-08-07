@@ -19,7 +19,7 @@ import {
   initLayout, esc, fbError, toast, tsText, tsNum,
   ORG_TYPES, SPECIALTIES, REGIONS, CAREER_LEVELS,
   ROLES, ROLE_ORDER, roleOf, GRADES, INTERESTS, STAFF_DUTIES,
-  STATUS, STATUS_ORDER, statusOf, statusChip, checkIsAdmin
+  STATUS, STATUS_ORDER, statusOf, statusChip, statusSet, checkIsAdmin
 } from './common.js';
 
 initLayout('mypage');
@@ -463,7 +463,7 @@ function paintStatusCards(){
     const track = k === 'rejected'
       ? '<div class="step-track rejected"><span>반려</span></div>'
       : `<div class="step-track">${steps.map((s, i) =>
-          `<span class="step ${i <= idx ? 'on' : ''}">${STATUS[s].label}</span>`).join('<i>›</i>')}</div>`;
+          `<span class="step ${i <= idx ? 'on' : ''}">${statusSet(a)[s].label}</span>`).join('<i>›</i>')}</div>`;
     const asg = [a.assignPlace, a.assignPeriod,
       a.assignSessions ? `${a.assignSessions}차수` : '',
       a.assignHours ? `${a.assignHours}시수` : ''].filter(Boolean).join(' · ');

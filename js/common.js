@@ -84,13 +84,30 @@ export const STATUS = {
   rejected: { label: '반려',     cls: 'rejected', desc: '이번 배정에서는 선정되지 않았습니다.' }
 };
 export const STATUS_ORDER = ['applied', 'review', 'assigned', 'rejected'];
+
+/* ---------- v10: 워크샵·연수 '신청 승인'용 상태 ----------
+   DB에 저장되는 키(applied/review/assigned/rejected)는 배정과 동일하게 유지하고,
+   화면에 보이는 문구만 신청 승인 흐름에 맞게 바꿉니다.
+   → 강사 모집(recruit) 공고 = 배정 흐름 / 그 외(워크샵·연수) = 승인 흐름         */
+export const APPROVE_STATUS = {
+  applied:  { label: '신청접수', cls: 'wait',     desc: '신청서가 접수되었습니다. 승인 대기 중입니다.' },
+  review:   { label: '검토중',   cls: 'review',   desc: '사업단에서 신청 내용을 확인하고 있습니다.' },
+  assigned: { label: '승인완료', cls: 'assigned', desc: '참가가 승인되었습니다. 안내 사항을 확인해주세요.' },
+  rejected: { label: '반려',     cls: 'rejected', desc: '이번 회차에는 신청이 반려되었습니다.' }
+};
+/** 강사 모집 공고 지원 여부 */
+export function isRecruit(a){ return !!a && a.programType === 'recruit'; }
+/** 이 신청건에 적용할 상태 라벨 세트 */
+export function statusSet(a){ return isRecruit(a) ? STATUS : APPROVE_STATUS; }
+
 /** 구버전 문서(status 필드 없음)는 '접수'로 간주 */
 export function statusOf(a){
   return (a && a.status && STATUS[a.status]) ? a.status : 'applied';
 }
+export function statusLabel(a){ return statusSet(a)[statusOf(a)].label; }
 export function statusChip(a){
-  const k = statusOf(a);
-  return `<span class="status-chip ${STATUS[k].cls}">${STATUS[k].label}</span>`;
+  const k = statusOf(a), S = statusSet(a);
+  return `<span class="status-chip ${S[k].cls}">${S[k].label}</span>`;
 }
 
 /* ---------- v6: 강사 모집 지원 시 추가 입력 ---------- */

@@ -17,7 +17,7 @@ import {
 import {
   initLayout, esc, ddayInfo, todayStr, catClass, fbError,
   KIND, ORG_TYPES, SPECIALTIES, REGIONS, CAREER_LEVELS,
-  STATUS, STATUS_ORDER, statusOf, statusChip,
+  STATUS, STATUS_ORDER, statusOf, statusChip, APPROVE_STATUS, statusSet, isRecruit,
   ROLES, ROLE_ORDER, roleOf,
   tsText, tsNum, toast, openModal, closeModal, bindModalEvents, checkIsAdmin
 } from './common.js';
@@ -37,13 +37,17 @@ let sortKey = 'createdAt', sortDir = 'desc';
 let page = 1;
 let membersLoaded = false;
 
-/* 상태 관련 셀렉트 초기화 */
+/* 상태 관련 셀렉트 초기화
+   신청자 탭에는 워크샵(승인 흐름)과 강사모집(배정 흐름)이 섞여 있으므로
+   라벨이 다른 항목은 '승인완료 / 배정확정'처럼 함께 표기합니다. */
+const dualLabel = k => APPROVE_STATUS[k].label === STATUS[k].label
+  ? STATUS[k].label
+  : `${APPROVE_STATUS[k].label} / ${STATUS[k].label}`;
+
 $('f-astatus').innerHTML = '<option value="">전체</option>' +
-  STATUS_ORDER.map(k => `<option value="${k}">${STATUS[k].label}</option>`).join('');
-$('bulkStatus').innerHTML = '<option value="">진행 상태 일괄 변경…</option>' +
-  STATUS_ORDER.map(k => `<option value="${k}">→ ${STATUS[k].label}(으)로 변경</option>`).join('');
-$('asm-status').innerHTML =
-  STATUS_ORDER.map(k => `<option value="${k}">${STATUS[k].label}</option>`).join('');
+  STATUS_ORDER.map(k => `<option value="${k}">${dualLabel(k)}</option>`).join('');
+$('bulkStatus').innerHTML = '<option value="">승인 상태 일괄 변경…</option>' +
+  STATUS_ORDER.map(k => `<option value="${k}">→ ${dualLabel(k)}(으)로 변경</option>`).join('');
 $('cd-region').innerHTML = '<option value="">전체</option>' +
   REGIONS.map(r => `<option>${r}</option>`).join('');
 $('cd-specialty').innerHTML = '<option value="">전체</option>' +
@@ -446,7 +450,7 @@ function renderApplicants(){
       ? `<span class="status-chip done">수료</span><br><span class="cell-sub">${esc(a.certNo || '')}</span>`
       : '<span class="status-chip wait">미수료</span>'}</td>
     <td><div class="t-actions">
-      <button class="mini-btn" onclick="openAssign('${a.id}')">배정/상태</button>
+      <button class="mini-btn" onclick="openAssign('${a.id}')">${a.programType === 'recruit' ? '배정/상태' : '승인/상태'}</button>
       ${a.completed
         ? `<a class="mini-btn" href="cert.html?id=${a.id}" target="_blank" rel="noopener">이수증</a>
            <button class="mini-btn" onclick="uncompleteApp('${a.id}')">수료취소</button>`
@@ -630,13 +634,14 @@ async function applyStatus(id, patch, sendMail){
   await updateDoc(doc(db, 'applications', id), { ...patch, statusAt: serverTimestamp() });
   if (sendMail && statusEmailEnabled() && a.email){
     const k = patch.status || statusOf(a);
+    const S = statusSet(a);
     await sendStatusEmail({
       to_email: a.email,
       name: a.name,
       program: a.programTitle || '',
       course: a.course || a.session || '',
-      status: STATUS[k].label,
-      status_desc: STATUS[k].desc,
+      status: S[k].label,
+      status_desc: S[k].desc,
       assign_place:    patch.assignPlace    ?? a.assignPlace    ?? '-',
       assign_period:   patch.assignPeriod   ?? a.assignPeriod   ?? '-',
       assign_sessions: patch.assignSessions ?? a.assignSessions ?? '-',
@@ -647,19 +652,60 @@ async function applyStatus(id, patch, sendMail){
   }
 }
 
+/* 현재 모달이 다루는 신청건 (모드 판별용) */
+let asmCurrent = null;
+/** true = 강사 배정 모드 / false = 신청 승인 모드 */
+const asmIsAssignMode = () => isRecruit(asmCurrent);
+
 function openAssign(id){
   const a = applications.find(x => x.id === id);
   if (!a) return;
+  asmCurrent = a;
+  const assignMode = isRecruit(a);
+  const S = statusSet(a);
+
   $('asm-appId').value = id;
-  $('asm-who').value = `${a.name} · ${a.org || '-'} · ${a.programTitle || ''}`;
-  $('asm-title').textContent = `${a.name} 님 배정 정보`;
-  $('asm-kind').textContent = a.programType === 'recruit' ? '강사 모집' : (KIND[a.programType] || '신청');
+  $('asm-who').value = `${a.name} · ${a.org || '-'}`;
+  $('asm-kind').textContent = KIND[a.programType] || '신청';
+  $('asm-title').textContent = assignMode
+    ? `${a.name} 님 배정 정보`
+    : `${a.name} 님 신청 승인 처리`;
+
+  /* 신청 요약 */
+  $('asm-info').innerHTML = [
+    ['프로그램', a.programTitle || '-'],
+    [assignMode ? '지원 분야' : '강좌', a.course || a.session || '-'],
+    ['소속 유형', a.orgType || '-'],
+    ['연락처', `${a.phone || '-'} · ${a.email || '-'}`],
+    ['접수일시', tsText(a.createdAt)],
+    ...(a.memo ? [['요청사항', a.memo]] : [])
+  ].map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(String(v))}</dd>`).join('');
+
+  /* 상태 셀렉트를 모드에 맞는 라벨로 다시 그림 */
+  $('asm-status').innerHTML =
+    STATUS_ORDER.map(k => `<option value="${k}">${S[k].label}</option>`).join('');
   $('asm-status').value = statusOf(a);
+  $('asm-statusLabel').innerHTML = assignMode
+    ? '진행 상태 <span class="req">*</span>'
+    : '승인 상태 <span class="req">*</span>';
+
+  /* 모드별 영역 토글 */
+  $('asm-assignBlock').style.display = assignMode ? '' : 'none';
+  $('asm-quickBlock').style.display  = assignMode ? 'none' : '';
+  $('asmSaveBtn').textContent = assignMode ? '배정 정보 저장' : '승인 상태 저장';
+
   $('asm-place').value    = a.assignPlace || '';
   $('asm-period').value   = a.assignPeriod || '';
   $('asm-sessions').value = a.assignSessions ?? '';
   $('asm-hours').value    = a.assignHours ?? '';
-  $('asm-memo').value     = a.statusMemo || '';
+  $('asm-memoLabel').innerHTML = assignMode
+    ? '안내 메모 <span class="hint">(강사에게 전달됩니다)</span>'
+    : '안내 · 반려 사유 <span class="hint">(신청자에게 그대로 전달됩니다)</span>';
+  $('asm-memo').placeholder = assignMode
+    ? '예) 9/1 오리엔테이션 참석 필수. 교구는 사업단에서 제공합니다.'
+    : '예) 8/21(목) 10:00 한신대 AI·SW관 302호로 오시면 됩니다. 노트북 지참.';
+  $('asm-memo').value = a.statusMemo || '';
+
   $('asm-mail').checked   = statusEmailEnabled();
   $('asm-mail').disabled  = !statusEmailEnabled();
   $('asm-mailNote').textContent = statusEmailEnabled()
@@ -672,33 +718,54 @@ window.openAssign = openAssign;
 
 function paintStatusDesc(){
   const k = $('asm-status').value;
-  $('asm-statusDesc').textContent = STATUS[k] ? STATUS[k].desc : '';
+  const S = statusSet(asmCurrent);
+  $('asm-statusDesc').textContent = S[k] ? S[k].desc : '';
+  document.querySelectorAll('.asm-quick .mini-btn').forEach(b =>
+    b.classList.toggle('on', b.dataset.set === k));
 }
 $('asm-status').addEventListener('change', paintStatusDesc);
+
+/* 승인 모드 빠른 처리 버튼 */
+document.querySelectorAll('.asm-quick .mini-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    $('asm-status').value = btn.dataset.set;
+    paintStatusDesc();
+    if (btn.dataset.set === 'rejected') $('asm-memo').focus();
+  });
+});
 
 $('assignForm').addEventListener('submit', async e => {
   e.preventDefault();
   const id = $('asm-appId').value;
   const btn = $('asmSaveBtn');
+  const assignMode = asmIsAssignMode();
+  const savedLabel = assignMode ? '배정 정보 저장' : '승인 상태 저장';
   btn.disabled = true; btn.textContent = '저장 중…';
   try {
-    const patch = {
-      status: $('asm-status').value,
-      assignPlace: $('asm-place').value.trim(),
-      assignPeriod: $('asm-period').value.trim(),
-      assignSessions: $('asm-sessions').value === '' ? null : Number($('asm-sessions').value),
-      assignHours: $('asm-hours').value === '' ? null : Number($('asm-hours').value),
-      statusMemo: $('asm-memo').value.trim()
-    };
+    const k = $('asm-status').value;
+    /* 승인 모드에서는 학교·차수·시수를 건드리지 않습니다 */
+    const patch = assignMode
+      ? {
+          status: k,
+          assignPlace: $('asm-place').value.trim(),
+          assignPeriod: $('asm-period').value.trim(),
+          assignSessions: $('asm-sessions').value === '' ? null : Number($('asm-sessions').value),
+          assignHours: $('asm-hours').value === '' ? null : Number($('asm-hours').value),
+          statusMemo: $('asm-memo').value.trim()
+        }
+      : { status: k, statusMemo: $('asm-memo').value.trim() };
+
     await applyStatus(id, patch, $('asm-mail').checked);
     closeModal('assignModal');
-    toast(`배정 정보를 저장했습니다 · ${STATUS[patch.status].label}`);
+    toast(assignMode
+      ? `배정 정보를 저장했습니다 · ${STATUS[k].label}`
+      : `신청을 처리했습니다 · ${APPROVE_STATUS[k].label}`);
     renderAssign();
   } catch (err) {
     $('asmError').textContent = fbError(err);
     $('asmError').style.display = 'block';
   } finally {
-    btn.disabled = false; btn.textContent = '배정 정보 저장';
+    btn.disabled = false; btn.textContent = savedLabel;
   }
 });
 
@@ -710,7 +777,7 @@ $('bulkStatus').addEventListener('change', async e => {
   const list = applications.filter(a => selected.has(a.id));
   if (!list.length){ alert('먼저 표에서 대상을 선택해주세요.'); return; }
   const mailNote = statusEmailEnabled() ? '\n결과 안내 메일도 함께 발송됩니다.' : '';
-  if (!confirm(`선택한 ${list.length}명의 진행 상태를 [${STATUS[k].label}](으)로 변경할까요?${mailNote}`)) return;
+  if (!confirm(`선택한 ${list.length}명의 상태를 [${dualLabel(k)}](으)로 변경할까요?${mailNote}`)) return;
   let ok = 0, fail = 0;
   for (const a of list){
     try { await applyStatus(a.id, { status: k }, true); ok++; }
@@ -921,13 +988,13 @@ function downloadCSV(scope = 'filtered'){
   const list = scope === 'all' ? applications : filteredApps();
   if (!list.length){ alert('내보낼 신청 내역이 없습니다.'); return; }
   const rows = [['접수일시','신청번호','프로그램','유형','강좌/지원분야','강사명','소속기관','소속기관 유형',
-                 '전화번호','전자메일','회원가입 여부','진행 상태','배정 학교/기관','배정 기간',
+                 '전화번호','전자메일','회원가입 여부','승인/진행 상태','배정 학교/기관','배정 기간',
                  '배정 차수','배정 시수','안내 메모','가능 요일','가능 시간대','희망 지역',
                  '수료여부','이수증 발급번호','요청사항']];
   list.forEach(a => {
     rows.push([tsText(a.createdAt), a.id, a.programTitle || '', KIND[a.programType] || '',
       a.course || a.session || '', a.name, a.org, a.orgType || '', a.phone, a.email,
-      a.uid ? '회원' : '비회원', STATUS[statusOf(a)].label,
+      a.uid ? '회원' : '비회원', statusSet(a)[statusOf(a)].label,
       a.assignPlace || '', a.assignPeriod || '', a.assignSessions ?? '', a.assignHours ?? '',
       a.statusMemo || '', (a.availDays || []).join('·'), a.availTime || '', a.preferArea || '',
       a.completed ? '수료' : '접수', a.certNo || '', a.memo]);

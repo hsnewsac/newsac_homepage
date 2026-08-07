@@ -843,3 +843,15 @@ nav a.active{background:var(--sprout-soft);color:var(--leaf);}
   .prog-goal{margin-left:0;width:100%;}
   .map-wrap{aspect-ratio:4/3;}
 }
+
+/* v9.1 — 과정 카드 부가 정보 */
+.prog-lv{font-size:.76rem;font-weight:800;color:#6A776F;background:var(--paper);
+  border:1px solid var(--line);border-radius:999px;padding:3px 10px;}
+.prog-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;}
+.prog-meta span{font-size:.76rem;font-weight:700;color:#4A5850;
+  background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:4px 9px;}
+.prog-card.special .prog-meta span{background:#FDF6F3;border-color:#F0DAD1;color:#8C4632;}
+.prog-tool{margin-top:11px;font-size:.8rem;color:#6A776F;line-height:1.6;}
+.prog-keys li b{color:var(--leaf);font-weight:800;margin-right:3px;}
+.prog-card.special .prog-keys li b{color:#B4553C;}
+.prog-group span{font-weight:700;}
