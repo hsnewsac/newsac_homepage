@@ -291,6 +291,7 @@
             <span class="ra-divider"></span>
             <button class="btn btn-outline btn-sm" onclick="downloadCSV('filtered')">CSV (검색결과)</button>
             <button class="btn btn-outline btn-sm" onclick="downloadCSV('all')">CSV (전체)</button>
+            <button class="btn btn-outline btn-sm" onclick="printAttendance()">🖨 서명부 인쇄</button>
           </div>
         </div>
 
@@ -948,6 +949,15 @@
   .asm-quick .mini-btn.ok{border-color:#8ECFA6;color:#1E7F4F;background:#F1FAF4;}
   .asm-quick .mini-btn.on{outline:2px solid currentColor;outline-offset:1px;}
 </style>
+
+<!-- v15: 서명부 인쇄 (신청자 탭 · 과목별 페이지) -->
+<div id="attSheet">
+  <div class="att-toolbar">
+    <button class="btn btn-primary btn-sm" onclick="window.print()">🖨 인쇄 / PDF로 저장</button>
+    <button class="btn btn-outline btn-sm" onclick="closeAttendance()">닫기</button>
+  </div>
+  <div id="attPages"></div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script type="module" src="js/admin.js"></script>

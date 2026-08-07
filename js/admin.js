@@ -1471,6 +1471,61 @@ function saveCSV(rows, filename){
   a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
 }
+/* ==================== v15: 서명부 인쇄 ====================
+   신청자 탭의 현재 필터 결과를 과목(강좌)별로 묶어
+   한 과목 = 한 페이지의 서명부를 만듭니다. 반려 건은 제외합니다. */
+function printAttendance(){
+  const list = filteredApps().filter(a => statusOf(a) !== 'rejected');
+  if (!list.length){
+    alert('현재 필터에 표시된 신청자가 없습니다.\n필터를 조정한 뒤 다시 시도해주세요.');
+    return;
+  }
+
+  const groups = new Map();
+  list.forEach(a => {
+    const key = a.course || a.session || '(강좌 미지정)';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(a);
+  });
+
+  $('attPages').innerHTML = [...groups.entries()]
+    .sort((x, y) => x[0].localeCompare(y[0], 'ko'))
+    .map(([course, apps]) => {
+      apps.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'));
+      const first = apps[0];
+      const rows = apps.map((a, i) =>
+        `<tr><td>${i + 1}</td><td>${esc(a.org || '')}</td><td>${esc(a.name || '')}</td><td></td></tr>`).join('')
+        /* 현장 추가 인원용 빈 줄 */
+        + Array.from({ length: 3 }, (_, i) =>
+        `<tr><td>${apps.length + i + 1}</td><td></td><td></td><td></td></tr>`).join('');
+      return `
+      <section class="att-page">
+        <h1>2026 한신대학교 디지털새싹 강사워크샵 서명부</h1>
+        <p class="att-consent">본 서명부는 출석 확인을 위해 성명·소속·서명을 수집·이용하며,
+          수집된 정보는 워크샵 운영과 수료 관리 목적 외에는 사용되지 않고
+          종료 후 관계 법령에 따라 파기됩니다. 서명 시 위 내용에 동의한 것으로 간주합니다.</p>
+        <table class="att-info">
+          <tr><th>일시</th><td>${esc(progPeriod(first) || '')}</td>
+              <th>장소</th><td>${esc(progPlace(first) || '')}</td></tr>
+          <tr><th>과목명</th><td colspan="3">${esc(course)}</td></tr>
+        </table>
+        <table class="att-table">
+          <thead><tr><th class="att-no">연번</th><th>소속</th><th class="att-name">성함</th><th class="att-sign">서명</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <p class="att-count">신청 인원 ${apps.length}명</p>
+      </section>`;
+    }).join('');
+
+  $('attSheet').classList.add('on');
+  document.body.classList.add('att-print');
+}
+function closeAttendance(){
+  $('attSheet').classList.remove('on');
+  document.body.classList.remove('att-print');
+}
+Object.assign(window, { printAttendance, closeAttendance });
+
 function downloadCSV(scope = 'filtered'){
   const list = scope === 'all' ? applications : filteredApps();
   if (!list.length){ alert('내보낼 신청 내역이 없습니다.'); return; }
