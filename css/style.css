@@ -746,6 +746,25 @@ nav a.active{background:var(--sprout-soft);color:var(--leaf);}
 .role-benefits b{display:block;font-size:.94rem;font-weight:800;}
 .role-benefits span{display:block;font-size:.84rem;color:#4A5850;margin-top:2px;line-height:1.55;}
 
+/* ----- 상시 온라인 워크샵 배너 (홈) ----- */
+.online-band{background:linear-gradient(180deg,#F1FAF4,transparent 75%);border-top:1px solid var(--line);}
+.online-band .section{padding-top:34px;padding-bottom:34px;}
+.ol-banner{display:flex;align-items:center;gap:28px;padding:30px 34px;
+  background:#fff;border:1.5px solid var(--sprout,#8ECFA6);border-radius:var(--radius);
+  box-shadow:0 6px 24px rgba(30,127,79,.08);}
+.ol-txt{flex:1;}
+.ol-txt .tag{display:inline-block;margin-bottom:10px;color:var(--leaf);font-weight:800;font-size:.85rem;letter-spacing:.08em;}
+.ol-txt h2{font-size:1.45rem;font-weight:800;letter-spacing:-.02em;color:#17221B;line-height:1.45;word-break:keep-all;}
+.ol-txt h2 em{font-style:normal;color:var(--leaf);}
+.ol-txt p{margin-top:10px;font-size:.95rem;line-height:1.8;color:#4A5850;word-break:keep-all;}
+.ol-actions{display:flex;flex-direction:column;gap:10px;flex:none;}
+.ol-actions .btn{text-decoration:none;text-align:center;white-space:nowrap;}
+@media (max-width:760px){
+  .ol-banner{flex-direction:column;align-items:stretch;padding:24px 22px;gap:18px;}
+  .ol-actions{flex-direction:row;flex-wrap:wrap;}
+  .ol-actions .btn{flex:1;}
+}
+
 /* ----- 강사 구인 공고 섹션 ----- */
 .section-sub{width:100%;font-size:.92rem;color:#4A5850;margin-top:6px;line-height:1.7;}
 .section-sub a{color:var(--leaf);font-weight:700;text-decoration:underline;}

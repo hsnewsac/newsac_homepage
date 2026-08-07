@@ -131,8 +131,12 @@ function byDeadline(list){
   });
 }
 
+/* 상시 온라인 워크샵은 workshop.html#online에서 과목별 수강 신청으로 받으므로
+   홈 프로그램 카드에서는 제외합니다 (홈에는 전용 배너로 안내). */
+const isOnlineWs = p => p.type === 'workshop' && /온라인/.test(p.title || '');
+
 function renderPrograms(){
-  const edu     = byDeadline(programs.filter(p => p.type !== 'recruit'));
+  const edu     = byDeadline(programs.filter(p => p.type !== 'recruit' && !isOnlineWs(p)));
   const recruit = byDeadline(programs.filter(p => p.type === 'recruit'));
 
   const grid = $('programGrid');
