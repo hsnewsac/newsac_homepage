@@ -1471,6 +1471,77 @@ function saveCSV(rows, filename){
   a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
 }
+/* ==================== v15: 서명부 인쇄 ====================
+   신청자 탭의 현재 필터 결과를 과목(강좌)별로 묶어
+   한 과목 = 한 페이지의 서명부를 만듭니다. 반려 건은 제외합니다. */
+function printAttendance(){
+  const list = filteredApps().filter(a => statusOf(a) !== 'rejected');
+  if (!list.length){
+    alert('현재 필터에 표시된 신청자가 없습니다.\n필터를 조정한 뒤 다시 시도해주세요.');
+    return;
+  }
+
+  const groups = new Map();
+  list.forEach(a => {
+    const key = a.course || a.session || '(강좌 미지정)';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(a);
+  });
+
+  /* A4 한 장에 서명 20줄(한 반 정원 기준) — 신청자가 적으면 빈 줄로 채우고,
+     20명을 넘으면 연번을 이어가며 다음 장으로 나눕니다. */
+  const PER_PAGE = 20;
+
+  $('attPages').innerHTML = [...groups.entries()]
+    .sort((x, y) => x[0].localeCompare(y[0], 'ko'))
+    .flatMap(([course, apps]) => {
+      apps.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'));
+      const first = apps[0];
+      const pageN = Math.max(1, Math.ceil(apps.length / PER_PAGE));
+      return Array.from({ length: pageN }, (_, p) => {
+        const chunk = apps.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
+        const rows = chunk.map((a, i) =>
+          `<tr><td>${p * PER_PAGE + i + 1}</td><td>${esc(a.org || '')}</td><td class="att-role-td">${esc(a.orgType || '')}</td><td>${esc(a.name || '')}</td><td></td></tr>`).join('')
+          + Array.from({ length: PER_PAGE - chunk.length }, (_, i) =>
+          `<tr><td>${p * PER_PAGE + chunk.length + i + 1}</td><td></td><td></td><td></td><td></td></tr>`).join('');
+        return `
+      <section class="att-page">
+        <div class="att-head">
+          <img class="att-logo att-emblem" src="img/logo.png" alt="한신대학교" onerror="this.remove()">
+          <div class="att-title">
+            <span class="att-sub">HANSHIN UNIVERSITY · DIGITAL SAESSAK</span>
+            <h1>2026 한신대학교 디지털새싹<br>강사워크샵 서명부</h1>
+          </div>
+          <img class="att-logo att-word" src="img/partner-3.png" alt="디지털새싹" onerror="this.remove()">
+        </div>
+        <div class="att-rule"></div>
+        <p class="att-consent">본 서명부는 출석 확인을 위해 성명·소속·서명을 수집·이용하며,
+          수집된 정보는 워크샵 운영과 수료 관리 목적 외에는 사용되지 않고
+          종료 후 관계 법령에 따라 파기됩니다. 서명 시 위 내용에 동의한 것으로 간주합니다.</p>
+        <table class="att-info">
+          <tr><th>일시</th><td>${esc(progPeriod(first) || '')}</td>
+              <th>장소</th><td>${esc(progPlace(first) || '')}</td></tr>
+          <tr><th>과목명</th><td colspan="3">${esc(course)}${pageN > 1 ? ` <span class="att-pn">(${p + 1}/${pageN})</span>` : ''}</td></tr>
+        </table>
+        <table class="att-table">
+          <thead><tr><th class="att-no">연번</th><th>소속</th><th class="att-role">직책</th><th class="att-name">성함</th><th class="att-sign">서명</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <p class="att-count">신청 인원 ${apps.length}명</p>
+        <div class="att-foot"><b>한신대학교 디지털새싹 사업단</b> · 031-379-0255 · newsac26@naver.com</div>
+      </section>`;
+      });
+    }).join('');
+
+  $('attSheet').classList.add('on');
+  document.body.classList.add('att-print');
+}
+function closeAttendance(){
+  $('attSheet').classList.remove('on');
+  document.body.classList.remove('att-print');
+}
+Object.assign(window, { printAttendance, closeAttendance });
+
 function downloadCSV(scope = 'filtered'){
   const list = scope === 'all' ? applications : filteredApps();
   if (!list.length){ alert('내보낼 신청 내역이 없습니다.'); return; }

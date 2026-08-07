@@ -462,9 +462,24 @@ async function paintClassroom(){
         ${c.rate === 100 || c.e.completed ? '다시 보기' : (c.doneN ? '이어서 학습' : '학습 시작')}</a>`}
       ${c.e.completed
         ? `<a class="btn btn-navy btn-sm" href="cert.html?id=${c.e.id}" target="_blank" rel="noopener">🎓 이수증 발급</a>`
-        : ''}
+        : `<button class="mini-btn danger cc-cancel" onclick="cancelEnroll('${c.e.id}', '${esc(c.e.courseName || '')}')">수강 취소</button>`}
     </div>`).join('');
 }
+
+/* v15: 온라인 워크샵 수강 취소 (수료 전만 가능) */
+async function cancelEnroll(id, name){
+  if (!confirm(`[${name}]\n온라인 워크샵 수강을 취소할까요?\n\n지금까지의 학습 기록은 복구되지 않으며, 다시 신청하면 처음부터 수강합니다.`)) return;
+  try {
+    await deleteDoc(doc(db, 'enrollments', id));
+    toast('수강을 취소했습니다.');
+    await loadMyApps();
+  } catch (err) { alert(fbError(err)); }
+}
+window.cancelEnroll = cancelEnroll;
+
+/* v15: 본인 취소 가능 여부 — 수료 건과 '강사 모집 배정확정' 건만 제한합니다.
+   워크샵·연수 신청은 승인완료 상태여도 수료 전이면 스스로 취소할 수 있습니다. */
+const selfLocked = a => a.completed || (a.programType === 'recruit' && statusOf(a) === 'assigned');
 
 function paintApps(){
   const tb = $('myAppsBody');
@@ -478,7 +493,7 @@ function paintApps(){
     return;
   }
   tb.innerHTML = myApps.map(a => {
-    const locked = a.completed || statusOf(a) === 'assigned';
+    const locked = selfLocked(a);
     return `<tr>
     <td class="nowrap">${esc(tsText(a.createdAt, false))}</td>
     <td><b>${esc(a.programTitle) || '-'}</b>${a.programType === 'recruit' ? '<span class="chip recruit">모집</span>' : ''}</td>
@@ -599,8 +614,10 @@ window.reloadMyApps = reloadMyApps;
 async function cancelMyApp(id){
   const a = myApps.find(x => x.id === id);
   if (!a) return;
-  if (a.completed || statusOf(a) === 'assigned'){
-    alert('수료 처리되었거나 배정이 확정된 건은 취소할 수 없습니다.\n사업단(newsac26@naver.com / 031-379-0255)으로 문의해주세요.');
+  if (selfLocked(a)){
+    alert(a.completed
+      ? '수료 처리된 건은 취소할 수 없습니다.\n사업단(newsac26@naver.com / 031-379-0255)으로 문의해주세요.'
+      : '배정이 확정된 지원 건은 취소할 수 없습니다.\n사업단(newsac26@naver.com / 031-379-0255)으로 문의해주세요.');
     return;
   }
   if (!confirm(`[${a.programTitle} · ${a.course || ''}]\n신청을 취소할까요?\n\n취소 후에는 되돌릴 수 없으며, 재참여를 원하시면 다시 신청해야 합니다.`)) return;
