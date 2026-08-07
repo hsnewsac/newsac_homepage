@@ -1501,9 +1501,9 @@ function printAttendance(){
       return Array.from({ length: pageN }, (_, p) => {
         const chunk = apps.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
         const rows = chunk.map((a, i) =>
-          `<tr><td>${p * PER_PAGE + i + 1}</td><td>${esc(a.org || '')}</td><td>${esc(a.name || '')}</td><td></td></tr>`).join('')
+          `<tr><td>${p * PER_PAGE + i + 1}</td><td>${esc(a.org || '')}</td><td class="att-role-td">${esc(a.orgType || '')}</td><td>${esc(a.name || '')}</td><td></td></tr>`).join('')
           + Array.from({ length: PER_PAGE - chunk.length }, (_, i) =>
-          `<tr><td>${p * PER_PAGE + chunk.length + i + 1}</td><td></td><td></td><td></td></tr>`).join('');
+          `<tr><td>${p * PER_PAGE + chunk.length + i + 1}</td><td></td><td></td><td></td><td></td></tr>`).join('');
         return `
       <section class="att-page">
         <div class="att-head">
@@ -1524,7 +1524,7 @@ function printAttendance(){
           <tr><th>과목명</th><td colspan="3">${esc(course)}${pageN > 1 ? ` <span class="att-pn">(${p + 1}/${pageN})</span>` : ''}</td></tr>
         </table>
         <table class="att-table">
-          <thead><tr><th class="att-no">연번</th><th>소속</th><th class="att-name">성함</th><th class="att-sign">서명</th></tr></thead>
+          <thead><tr><th class="att-no">연번</th><th>소속</th><th class="att-role">직책</th><th class="att-name">성함</th><th class="att-sign">서명</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
         <p class="att-count">신청 인원 ${apps.length}명</p>
