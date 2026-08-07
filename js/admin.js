@@ -2515,6 +2515,18 @@ function guessCourseKey(courseName){
   if (!t) return '';
   const exact = COURSES_2026.find(c => c.name === t);
   if (exact) return exact.key;
+  /* '온라인 워크샵' 신청 강좌명 형식: AI문학코딩(초등), AI과학코딩(중등)*오프라인필수 등 */
+  const m = t.match(/^(AI\S*코딩)\s*\(([^)]+)\)/);
+  if (m){
+    const subject = m[1], lv = m[2];
+    const lvOk = c =>
+      lv.includes('특수') ? c.level.includes('특수')
+      : lv.includes('중')  ? c.level.includes('중학교')
+      : lv.includes('고')  ? c.level.includes('고등학교')
+      : c.level.includes('초등');
+    const hit = COURSES_2026.find(c => c.name.startsWith(subject) && lvOk(c));
+    if (hit) return hit.key;
+  }
   /* 이름이 조금 달라도 핵심 어구로 추정 */
   const norm = v => v.replace(/[\s:·・]/g, '');
   const n = norm(t);

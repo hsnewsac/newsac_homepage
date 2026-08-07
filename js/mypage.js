@@ -402,6 +402,14 @@ async function paintClassroom(){
   const box = $('classroomBox'), grid = $('classroomCards');
   if (!box) return;
 
+  /* v14: 수강 내역이 없어도 박스를 숨기지 않고 신청 안내를 보여줍니다 */
+  const showEmpty = () => {
+    box.style.display = 'block';
+    grid.innerHTML = `<div class="cr-empty">아직 수강 중인 온라인 워크샵이 없습니다.<br>
+      상시 개설 과목을 신청하면 이곳에서 바로 수강할 수 있습니다.<br>
+      <a class="btn btn-navy btn-sm" href="workshop.html#online">온라인 워크샵 신청하러 가기 →</a></div>`;
+  };
+
   let enrolls = [];
   try {
     const snap = await getDocs(query(collection(db, 'enrollments'), where('uid', '==', currentUser.uid)));
@@ -409,7 +417,7 @@ async function paintClassroom(){
       .sort((a, b) => tsNum(b.createdAt) - tsNum(a.createdAt));
   } catch (e) { console.warn('수강 내역 조회 오류:', e); }
 
-  if (!enrolls.length){ box.style.display = 'none'; return; }
+  if (!enrolls.length){ showEmpty(); return; }
 
   const cards = [];
   for (const e of enrolls){
@@ -435,7 +443,7 @@ async function paintClassroom(){
     } catch (err) { console.warn('강의실 조회 오류:', err); }
   }
 
-  if (!cards.length){ box.style.display = 'none'; return; }
+  if (!cards.length){ showEmpty(); return; }
   box.style.display = 'block';
   grid.innerHTML = cards.map(c => `
     <div class="cr-card">
@@ -461,6 +469,8 @@ async function paintClassroom(){
 function paintApps(){
   const tb = $('myAppsBody');
   const role = roleOf(profile);
+  const badge = $('myBadgeApps');
+  if (badge) badge.textContent = myApps.length;
   if (!myApps.length){
     tb.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#6A776F;">
       ${role === 'instructor' ? '신청·지원 이력이 없습니다.' : '참여 이력이 없습니다.'}<br>
@@ -562,9 +572,20 @@ function paintActivity(){
   </tr>`).join('');
 }
 
+/* v14: 마이페이지 탭 전환 */
+function switchMyTab(name){
+  document.querySelectorAll('.my-tabs .atab').forEach(b =>
+    b.classList.toggle('active', b.dataset.mytab === name));
+  document.querySelectorAll('[id^="mytab-"]').forEach(p =>
+    p.classList.toggle('on', p.id === 'mytab-' + name));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+window.switchMyTab = switchMyTab;
+
 function goLinkBox(){
+  switchMyTab('apps');
   const el = $('linkBox');
-  if (el){ el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('flash'); 
+  if (el){ el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('flash');
     setTimeout(() => el.classList.remove('flash'), 1600); }
 }
 window.goLinkBox = goLinkBox;
