@@ -1488,26 +1488,32 @@ function printAttendance(){
     groups.get(key).push(a);
   });
 
+  /* A4 한 장에 서명 18줄 — 신청자가 적으면 빈 줄로 채우고(현장 추가 인원용),
+     18명을 넘으면 연번을 이어가며 다음 장으로 나눕니다. */
+  const PER_PAGE = 18;
+
   $('attPages').innerHTML = [...groups.entries()]
     .sort((x, y) => x[0].localeCompare(y[0], 'ko'))
-    .map(([course, apps]) => {
+    .flatMap(([course, apps]) => {
       apps.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'));
       const first = apps[0];
-      const rows = apps.map((a, i) =>
-        `<tr><td>${i + 1}</td><td>${esc(a.org || '')}</td><td>${esc(a.name || '')}</td><td></td></tr>`).join('')
-        /* 현장 추가 인원용 빈 줄 */
-        + Array.from({ length: 3 }, (_, i) =>
-        `<tr><td>${apps.length + i + 1}</td><td></td><td></td><td></td></tr>`).join('');
-      return `
+      const pageN = Math.max(1, Math.ceil(apps.length / PER_PAGE));
+      return Array.from({ length: pageN }, (_, p) => {
+        const chunk = apps.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
+        const rows = chunk.map((a, i) =>
+          `<tr><td>${p * PER_PAGE + i + 1}</td><td>${esc(a.org || '')}</td><td>${esc(a.name || '')}</td><td></td></tr>`).join('')
+          + Array.from({ length: PER_PAGE - chunk.length }, (_, i) =>
+          `<tr><td>${p * PER_PAGE + chunk.length + i + 1}</td><td></td><td></td><td></td></tr>`).join('');
+        return `
       <section class="att-page">
-        <header class="att-head">
+        <div class="att-head">
           <img class="att-logo att-emblem" src="img/logo.png" alt="한신대학교" onerror="this.remove()">
           <div class="att-title">
             <span class="att-sub">HANSHIN UNIVERSITY · DIGITAL SAESSAK</span>
             <h1>2026 한신대학교 디지털새싹<br>강사워크샵 서명부</h1>
           </div>
           <img class="att-logo att-word" src="img/partner-3.png" alt="디지털새싹" onerror="this.remove()">
-        </header>
+        </div>
         <div class="att-rule"></div>
         <p class="att-consent">본 서명부는 출석 확인을 위해 성명·소속·서명을 수집·이용하며,
           수집된 정보는 워크샵 운영과 수료 관리 목적 외에는 사용되지 않고
@@ -1515,7 +1521,7 @@ function printAttendance(){
         <table class="att-info">
           <tr><th>일시</th><td>${esc(progPeriod(first) || '')}</td>
               <th>장소</th><td>${esc(progPlace(first) || '')}</td></tr>
-          <tr><th>과목명</th><td colspan="3">${esc(course)}</td></tr>
+          <tr><th>과목명</th><td colspan="3">${esc(course)}${pageN > 1 ? ` <span class="att-pn">(${p + 1}/${pageN})</span>` : ''}</td></tr>
         </table>
         <table class="att-table">
           <thead><tr><th class="att-no">연번</th><th>소속</th><th class="att-name">성함</th><th class="att-sign">서명</th></tr></thead>
@@ -1524,6 +1530,7 @@ function printAttendance(){
         <p class="att-count">신청 인원 ${apps.length}명</p>
         <div class="att-foot"><b>한신대학교 디지털새싹 사업단</b> · 031-379-0255 · newsac26@naver.com</div>
       </section>`;
+      });
     }).join('');
 
   $('attSheet').classList.add('on');
