@@ -17,7 +17,7 @@ import {
 import {
   initLayout, esc, ddayInfo, todayStr, catClass, fbError,
   KIND, ORG_TYPES, SPECIALTIES, REGIONS, CAREER_LEVELS,
-  COURSES_2026, WORKSHOP_TARGET, qualificationHTML,
+  COURSES_2026, courseByKey, WORKSHOP_TARGET, qualificationHTML,
   SCHOOL_LEVELS, CAMP_MODES, RECRUIT_ROLES, RECRUIT_FOR, WORKSHOP_MODES, fmtPeriodKo,
   STATUS, STATUS_ORDER, statusOf, statusChip, APPROVE_STATUS, statusSet, isRecruit,
   ROLES, ROLE_ORDER, roleOf,
@@ -184,7 +184,7 @@ function switchTab(name){
   window.scrollTo({ top: 0, behavior: 'smooth' });
   if ((name === 'member' || name === 'assign') && !membersLoaded) loadMembers();
   if (name === 'assign') renderAssign();
-  if (name === 'class'){ refreshClassPrograms(); renderClassroom(); }
+  if (name === 'class') renderClassroom();
 }
 window.switchTab = switchTab;
 
@@ -1906,7 +1906,7 @@ onSnapshot(
     renderApplicants();      // v10: 신청자 표의 운영기간 열 갱신
     renderDashboard();
     refreshAssignPrograms();
-    refreshClassPrograms();
+    if ($('mg-panel') && $('mg-panel').style.display !== 'none') refreshMigratePrograms();
     $('badgeProgram').textContent = programs.length;
     if ($('tab-assign').classList.contains('on')) renderAssign();
   },
@@ -1923,48 +1923,54 @@ onSnapshot(
 );
 
 /* =========================================================
-   v12: 온라인 강의실 (블렌디드 워크샵)
-   - 교구 실습 차시는 오프라인 출석 체크
-   - 그 외 차시는 온라인 영상 시청 진도 자동 기록
-   - 차시별 과제 제출물 확인
+   v13: 상시 온라인 워크샵 (과목별 차시)
+   - 날짜가 있는 오프라인 워크샵(programs)과 분리된 데이터
+   - onlineCourses/{key}/lessons/{id}  · enrollments/{id}/progress/{id}
 ========================================================= */
 
-let clLessons = [];      // 현재 선택한 워크샵의 차시
-let clApps = [];         // 승인완료 수강생
-let clProgress = {};     // { appId: { lessonId: progressDoc } }
+let clCourseKey = COURSES_2026[0].key;   // 현재 선택한 과목
+let clCourseDoc = null;                  // onlineCourses 문서
+let clLessons = [];                      // 이 과목의 차시
+let clEnrolls = [];                      // 이 과목 수강생
+let clProgress = {};                     // { enrollId: { lessonId: doc } }
 
-/** 워크샵(type: workshop)만 강의실 대상 */
-function classroomPrograms(){ return programs.filter(p => p.type === 'workshop'); }
-
-function refreshClassPrograms(){
-  const sel = $('cl-program');
-  const cur = sel.value;
-  const list = classroomPrograms();
-  sel.innerHTML = '<option value="">워크샵을 선택하세요</option>' +
-    list.map(p => `<option value="${p.id}">${esc(p.title)}${p.hasClassroom ? ' · 강의실 운영중' : ''}</option>`).join('');
-  if (list.some(p => p.id === cur)) sel.value = cur;
-  $('badgeClass').textContent = list.filter(p => p.hasClassroom).length;
+function renderCourseTabs(){
+  $('cl-courseTabs').innerHTML = COURSES_2026.map(c => `
+    <button type="button" class="ctab ${c.key === clCourseKey ? 'on' : ''} ${c.group === '특화' ? 'sp' : ''}"
+      onclick="pickCourse('${c.key}')">
+      <span class="ci">${c.icon}</span>
+      <span class="cn">${esc(c.name.split(':')[0])}</span>
+      <span class="cl">${esc(c.level)}</span>
+    </button>`).join('');
 }
-
-$('cl-program').addEventListener('change', () => { renderClassroom(); });
+function pickCourse(key){ clCourseKey = key; renderCourseTabs(); renderClassroom(); }
+window.pickCourse = pickCourse;
 
 async function renderClassroom(){
-  const pid = $('cl-program').value;
-  const box = $('cl-summary');
-  if (!pid){
-    box.innerHTML = '<div class="assign-empty">위에서 워크샵을 선택하면 차시 구성과 학습 현황이 열립니다.</div>';
-    $('cl-lessonBox').style.display = 'none';
-    $('cl-progressBox').style.display = 'none';
-    return;
-  }
-  const p = programs.find(x => x.id === pid);
-  if (!p) return;
+  const c = courseByKey(clCourseKey);
+  if (!c) return;
+  renderCourseTabs();
 
-  box.innerHTML = `
-    <div><span>워크샵</span><b>${esc(p.title)}</b></div>
-    <div><span>운영</span><b>${esc(p.period || '-')}</b></div>
-    <div><span>장소</span><b>${esc(p.place || '-')}</b></div>
-    <div><span>신청</span><b>${p.applied || 0} / ${p.capacity || 0}명</b></div>`;
+  try {
+    const d = await getDoc(doc(db, 'onlineCourses', clCourseKey));
+    clCourseDoc = d.exists() ? d.data() : null;
+  } catch { clCourseDoc = null; }
+
+  const open = clCourseDoc ? clCourseDoc.open !== false : false;
+  $('cl-summary').innerHTML = `
+    <div><span>과목</span><b>${esc(c.name)}</b></div>
+    <div><span>구분</span><b>${esc(c.group)}과정 · ${esc(c.level)}</b></div>
+    <div><span>신청</span><b class="${open ? 'ok' : ''}">${open ? '🟢 수강 신청 받는 중' : '⚪ 준비 중(비공개)'}</b></div>`;
+
+  try {
+    const all = await getDocs(collection(db, 'onlineCourses'));
+    $('badgeClass').textContent = all.docs.filter(d => d.data().open !== false).length;
+  } catch { /* 무시 */ }
+
+  $('cl-courseBox').style.display = 'block';
+  $('oc-intro').value = (clCourseDoc && clCourseDoc.intro) || c.intro || '';
+  $('oc-note').value  = (clCourseDoc && clCourseDoc.note) || '';
+  $('oc-open').checked = open;
 
   $('cl-lessonBox').style.display = 'block';
   $('cl-progressBox').style.display = 'block';
@@ -1972,14 +1978,37 @@ async function renderClassroom(){
   await loadClassProgress();
 }
 
+/* ---------- 과목 설정 저장 ---------- */
+$('courseForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const c = courseByKey(clCourseKey);
+  const btn = $('courseSaveBtn');
+  btn.disabled = true;
+  try {
+    await setDoc(doc(db, 'onlineCourses', clCourseKey), {
+      key: clCourseKey, name: c.name, group: c.group, level: c.level, icon: c.icon,
+      intro: $('oc-intro').value.trim(),
+      note: $('oc-note').value.trim(),
+      open: $('oc-open').checked,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    toast('과목 설정을 저장했습니다.');
+    await renderClassroom();
+  } catch (err){
+    $('courseError').textContent = fbError(err);
+    $('courseError').style.display = 'block';
+  } finally { btn.disabled = false; }
+});
+
 /* ---------- 차시 CRUD ---------- */
+const lessonCol = () => collection(db, 'onlineCourses', clCourseKey, 'lessons');
+const lessonDoc = id => doc(db, 'onlineCourses', clCourseKey, 'lessons', id);
+
 async function loadLessons(){
-  const pid = $('cl-program').value;
-  if (!pid) return;
   const tb = $('lessonTableBody');
   tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#6A776F;">불러오는 중…</td></tr>';
   try {
-    const snap = await getDocs(collection(db, 'programs', pid, 'lessons'));
+    const snap = await getDocs(lessonCol());
     clLessons = snap.docs.map(d => ({ id: d.id, ...d.data() }))
       .sort((a, b) => (a.order || 0) - (b.order || 0));
     renderLessonTable();
@@ -1991,13 +2020,11 @@ async function loadLessons(){
 function renderLessonTable(){
   const tb = $('lessonTableBody');
   const on = clLessons.filter(l => l.mode !== 'offline').length;
-  const off = clLessons.length - on;
   $('cl-lessonCount').textContent = clLessons.length
-    ? `총 ${clLessons.length}차시 · 온라인 ${on} · 오프라인 ${off}` : '';
-
+    ? `총 ${clLessons.length}차시 · 온라인 ${on} · 오프라인 ${clLessons.length - on}` : '';
   if (!clLessons.length){
     tb.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#6A776F;">
-      등록된 차시가 없습니다. [＋ 차시 추가]로 첫 차시를 만들어보세요.</td></tr>`;
+      이 과목에 등록된 차시가 없습니다. [＋ 차시 추가]로 첫 차시를 만들어보세요.</td></tr>`;
     return;
   }
   tb.innerHTML = clLessons.map(l => {
@@ -2008,7 +2035,7 @@ function renderLessonTable(){
         ${online ? '💻 온라인' : '🧰 오프라인'}</span></td>
       <td><b>${esc(l.title)}</b>${l.desc ? `<br><span class="cell-sub">${esc(l.desc)}</span>` : ''}</td>
       <td class="cell-sub">${online
-        ? (l.videoId ? `<code class="detail-code">${esc(l.videoId)}</code>${l.durationSec ? ` · ${fmtDur(l.durationSec)}` : ''}` : '<span style="color:#C64B3C;">영상 미등록</span>')
+        ? (l.videoId ? `<code class="detail-code">${esc(l.videoId)}</code>${l.durationSec ? ` · ${fmtDur(l.durationSec)}` : ' · <span style="color:#C64B3C;">길이 미입력</span>'}` : '<span style="color:#C64B3C;">영상 미등록</span>')
         : esc(l.place || '-')}</td>
       <td class="nowrap">${l.required !== false ? '✅' : '—'}</td>
       <td class="nowrap">${l.hasTask ? '📝' : '—'}</td>
@@ -2024,17 +2051,12 @@ function fmtDur(sec){
   const s = Number(sec) || 0;
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
-/** '12:30' 또는 '750' → 750(초) */
 function parseDur(v){
   const t = String(v || '').trim();
   if (!t) return 0;
-  if (t.includes(':')){
-    const [m, s] = t.split(':');
-    return (Number(m) || 0) * 60 + (Number(s) || 0);
-  }
+  if (t.includes(':')){ const [m, s] = t.split(':'); return (Number(m) || 0) * 60 + (Number(s) || 0); }
   return Number(t) || 0;
 }
-/** YouTube 링크에서 영상 ID 추출 */
 function parseVideoId(v){
   const t = String(v || '').trim();
   if (!t) return '';
@@ -2050,9 +2072,7 @@ function toggleLessonForm(force){
   f.style.display = open ? 'block' : 'none';
   $('cl-addBtn').textContent = open ? '✕ 닫기' : '＋ 차시 추가';
   if (open){
-    if (!$('l-id').value){
-      $('l-order').value = (clLessons.reduce((m, l) => Math.max(m, l.order || 0), 0)) + 1;
-    }
+    if (!$('l-id').value) $('l-order').value = clLessons.reduce((m, l) => Math.max(m, l.order || 0), 0) + 1;
     f.scrollIntoView({ behavior: 'smooth', block: 'center' });
   } else resetLessonForm();
 }
@@ -2068,7 +2088,6 @@ function paintLessonMode(){
   const online = $('l-mode').value !== 'offline';
   $('l-onlineFields').style.display  = online ? '' : 'none';
   $('l-offlineFields').style.display = online ? 'none' : '';
-  $('l-url').required = false;
   $('l-taskRow').style.display = $('l-hasTask').checked ? '' : 'none';
 }
 $('l-mode').addEventListener('change', paintLessonMode);
@@ -2077,17 +2096,17 @@ $('l-hasTask').addEventListener('change', paintLessonMode);
 function editLesson(id){
   const l = clLessons.find(x => x.id === id);
   if (!l) return;
-  $('l-id').value      = l.id;
-  $('l-order').value   = l.order || 1;
-  $('l-mode').value    = l.mode || 'online';
-  $('l-title').value   = l.title || '';
-  $('l-desc').value    = l.desc || '';
-  $('l-url').value     = l.videoId || '';
+  $('l-id').value       = l.id;
+  $('l-order').value    = l.order || 1;
+  $('l-mode').value     = l.mode || 'online';
+  $('l-title').value    = l.title || '';
+  $('l-desc').value     = l.desc || '';
+  $('l-url').value      = l.videoId || '';
   $('l-duration').value = l.durationSec ? fmtDur(l.durationSec) : '';
-  $('l-place').value   = l.place || '';
+  $('l-place').value    = l.place || '';
   $('l-required').checked = l.required !== false;
   $('l-hasTask').checked  = !!l.hasTask;
-  $('l-task').value    = l.taskDesc || '';
+  $('l-task').value     = l.taskDesc || '';
   $('lessonSaveBtn').textContent = '수정 저장';
   paintLessonMode();
   toggleLessonForm(true);
@@ -2095,13 +2114,16 @@ function editLesson(id){
 
 $('lessonForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const pid = $('cl-program').value;
-  if (!pid) return;
   const online = $('l-mode').value !== 'offline';
   const videoId = online ? parseVideoId($('l-url').value) : '';
-
   if (online && $('l-url').value.trim() && !videoId){
     $('lessonError').textContent = 'YouTube 주소를 인식하지 못했습니다. 링크 전체 또는 11자리 영상 ID를 입력해주세요.';
+    $('lessonError').style.display = 'block';
+    return;
+  }
+  const durationSec = online ? parseDur($('l-duration').value) : 0;
+  if (online && videoId && !durationSec){
+    $('lessonError').textContent = '영상 길이를 입력해주세요. 이수 판정(90%) 기준이라 비워두면 진도가 오르지 않습니다.';
     $('lessonError').style.display = 'block';
     return;
   }
@@ -2110,8 +2132,7 @@ $('lessonForm').addEventListener('submit', async e => {
     mode: $('l-mode').value,
     title: $('l-title').value.trim(),
     desc: $('l-desc').value.trim(),
-    videoId,
-    durationSec: online ? parseDur($('l-duration').value) : 0,
+    videoId, durationSec,
     place: online ? '' : $('l-place').value.trim(),
     required: $('l-required').checked,
     hasTask: $('l-hasTask').checked,
@@ -2121,15 +2142,14 @@ $('lessonForm').addEventListener('submit', async e => {
   btn.disabled = true;
   try {
     const id = $('l-id').value;
-    if (id) await updateDoc(doc(db, 'programs', pid, 'lessons', id), data);
-    else    await addDoc(collection(db, 'programs', pid, 'lessons'), { ...data, createdAt: serverTimestamp() });
-    /* 첫 차시를 만들면 프로그램에 강의실 사용 표시 */
-    await updateDoc(doc(db, 'programs', pid), { hasClassroom: true }).catch(()=>{});
+    if (id) await updateDoc(lessonDoc(id), data);
+    else    await addDoc(lessonCol(), { ...data, createdAt: serverTimestamp() });
+    const c = courseByKey(clCourseKey);
+    await setDoc(doc(db, 'onlineCourses', clCourseKey),
+      { key: clCourseKey, name: c.name, group: c.group, level: c.level, icon: c.icon }, { merge: true });
     toast(id ? '차시를 수정했습니다.' : '차시를 추가했습니다.');
-    resetLessonForm();
-    toggleLessonForm(false);
-    await loadLessons();
-    await loadClassProgress();
+    resetLessonForm(); toggleLessonForm(false);
+    await loadLessons(); await loadClassProgress();
   } catch (err){
     $('lessonError').textContent = fbError(err);
     $('lessonError').style.display = 'block';
@@ -2137,123 +2157,266 @@ $('lessonForm').addEventListener('submit', async e => {
 });
 
 async function deleteLesson(id){
-  const pid = $('cl-program').value;
   const l = clLessons.find(x => x.id === id);
-  if (!l || !confirm(`[${l.order}차시 · ${l.title}]\n차시를 삭제할까요?\n수강생의 해당 차시 학습 기록은 남지만 화면에서는 보이지 않게 됩니다.`)) return;
+  if (!l || !confirm(`[${l.order}차시 · ${l.title}]\n차시를 삭제할까요?\n수강생의 학습 기록은 남지만 화면에서는 보이지 않게 됩니다.`)) return;
   try {
-    await deleteDoc(doc(db, 'programs', pid, 'lessons', id));
+    await deleteDoc(lessonDoc(id));
     toast('차시를 삭제했습니다.');
-    await loadLessons();
-    await loadClassProgress();
+    await loadLessons(); await loadClassProgress();
   } catch (err){ alert(fbError(err)); }
 }
 Object.assign(window, { toggleLessonForm, editLesson, deleteLesson, resetLessonForm });
 
-/* ---------- 학습 현황 ---------- */
+/* ---------- 수강생 학습 현황 ---------- */
 async function loadClassProgress(){
-  const pid = $('cl-program').value;
-  if (!pid) return;
-  clApps = applications.filter(a => a.programId === pid && statusOf(a) === 'assigned');
-  $('cl-progCount').textContent = clApps.length ? `승인완료 ${clApps.length}명` : '';
-
   const head = $('progHead'), body = $('progBody');
+  try {
+    const snap = await getDocs(query(collection(db, 'enrollments'), where('courseKey', '==', clCourseKey)));
+    clEnrolls = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => tsNum(b.createdAt) - tsNum(a.createdAt));
+  } catch (err){
+    head.innerHTML = '';
+    body.innerHTML = `<tr><td style="text-align:center;color:#C64B3C;padding:24px;">${esc(fbError(err))}</td></tr>`;
+    return;
+  }
+  $('cl-progCount').textContent = clEnrolls.length ? `수강생 ${clEnrolls.length}명` : '';
+
   if (!clLessons.length){
     head.innerHTML = '';
     body.innerHTML = '<tr><td style="text-align:center;color:#6A776F;padding:24px;">먼저 차시를 등록해주세요.</td></tr>';
     return;
   }
-  head.innerHTML = `<tr>
-    <th>수강생</th>
-    ${clLessons.map(l => `<th class="prog-col" title="${esc(l.title)}">
-      ${l.order}<br><span class="cell-sub">${l.mode === 'offline' ? '🧰' : '💻'}</span></th>`).join('')}
-    <th>진도</th></tr>`;
+  head.innerHTML = `<tr><th>수강생</th>
+    ${clLessons.map(l => `<th class="prog-col" title="${esc(l.title)}">${l.order}<br>
+      <span class="cell-sub">${l.mode === 'offline' ? '🧰' : '💻'}</span></th>`).join('')}
+    <th>진도</th><th>관리</th></tr>`;
 
-  if (!clApps.length){
-    body.innerHTML = `<tr><td colspan="${clLessons.length + 2}" style="text-align:center;color:#6A776F;padding:24px;">
-      승인완료된 수강생이 없습니다. [👥 신청자] 탭에서 신청을 승인해주세요.</td></tr>`;
+  if (!clEnrolls.length){
+    body.innerHTML = `<tr><td colspan="${clLessons.length + 3}" style="text-align:center;color:#6A776F;padding:24px;">
+      아직 이 과목을 신청한 수강생이 없습니다.</td></tr>`;
     return;
   }
-
-  body.innerHTML = `<tr><td colspan="${clLessons.length + 2}" style="text-align:center;color:#6A776F;padding:20px;">학습 기록을 불러오는 중…</td></tr>`;
+  body.innerHTML = `<tr><td colspan="${clLessons.length + 3}" style="text-align:center;color:#6A776F;padding:20px;">학습 기록을 불러오는 중…</td></tr>`;
   clProgress = {};
-  for (const a of clApps){
+  for (const e of clEnrolls){
     try {
-      const snap = await getDocs(collection(db, 'applications', a.id, 'progress'));
-      clProgress[a.id] = Object.fromEntries(snap.docs.map(d => [d.id, d.data()]));
-    } catch { clProgress[a.id] = {}; }
+      const snap = await getDocs(collection(db, 'enrollments', e.id, 'progress'));
+      clProgress[e.id] = Object.fromEntries(snap.docs.map(d => [d.id, d.data()]));
+    } catch { clProgress[e.id] = {}; }
   }
   renderProgressTable();
 }
 window.loadClassProgress = loadClassProgress;
 
-function lessonDone(appId, l){
-  const pr = (clProgress[appId] || {})[l.id];
+function lessonDone(eid, l){
+  const pr = (clProgress[eid] || {})[l.id];
   if (!pr) return false;
   if (l.mode === 'offline') return !!pr.done;
   if (pr.done) return true;
-  if (!l.durationSec) return !!pr.done;
+  if (!l.durationSec) return false;
   return (pr.watchedSec || 0) >= l.durationSec * 0.9;
 }
-function progRate(appId){
+function progRate(eid){
   const req = clLessons.filter(l => l.required !== false);
   if (!req.length) return 0;
-  return Math.round(req.filter(l => lessonDone(appId, l)).length / req.length * 100);
+  return Math.round(req.filter(l => lessonDone(eid, l)).length / req.length * 100);
 }
 
 function renderProgressTable(){
-  $('progBody').innerHTML = clApps.map(a => {
-    const rate = progRate(a.id);
+  $('progBody').innerHTML = clEnrolls.map(e => {
+    const rate = progRate(e.id);
     return `<tr>
-      <td class="nowrap"><b>${esc(a.name)}</b><br><span class="cell-sub">${esc(a.org || '')}</span></td>
+      <td class="nowrap"><b>${esc(e.name)}</b>${e.completed ? '<span class="chip member">수료</span>' : ''}
+        ${e.addedBy === 'admin' ? '<span class="chip">직접등록</span>' : ''}
+        <br><span class="cell-sub">${esc(e.org || '')} · ${esc(tsText(e.createdAt, false))} 신청
+        ${e.certNo ? `<br>🎓 ${esc(e.certNo)}` : ''}</span></td>
       ${clLessons.map(l => {
-        const pr = (clProgress[a.id] || {})[l.id] || {};
-        const done = lessonDone(a.id, l);
+        const pr = (clProgress[e.id] || {})[l.id] || {};
+        const done = lessonDone(e.id, l);
         const pct = l.mode !== 'offline' && l.durationSec
           ? Math.min(100, Math.round((pr.watchedSec || 0) / l.durationSec * 100)) : null;
         const task = l.hasTask
-          ? (pr.taskAt ? `<button class="task-mark ok" onclick="openTask('${a.id}','${l.id}')" title="제출한 과제 보기">📝</button>`
+          ? (pr.taskAt ? `<button class="task-mark ok" onclick="openTask('${e.id}','${l.id}')" title="제출한 과제 보기">📝</button>`
                        : '<span class="task-mark none" title="과제 미제출">📝</span>')
           : '';
         const cell = l.mode === 'offline'
-          ? `<button class="att-btn ${done ? 'on' : ''}" onclick="toggleAttend('${a.id}','${l.id}')"
+          ? `<button class="att-btn ${done ? 'on' : ''}" onclick="toggleAttend('${e.id}','${l.id}')"
                title="${done ? '출석 취소' : '출석 체크'}">${done ? '✅' : '○'}</button>`
           : `<span class="pr-cell ${done ? 'done' : ''}" title="${pct != null ? pct + '% 시청' : '기록 없음'}">
-               ${done ? '✅' : (pct != null && pct > 0 ? pct + '%' : '—')}</span>`;
+               ${done ? '✅' : (pct ? pct + '%' : '—')}</span>`;
         return `<td class="prog-col">${cell}${task}</td>`;
       }).join('')}
       <td class="nowrap"><div class="rate-wrap"><div class="rate-bar"><i style="width:${rate}%"></i></div>
         <b class="${rate === 100 ? 'full' : ''}">${rate}%</b></div></td>
+      <td><div class="t-actions">
+        <button class="mini-btn" onclick="toggleEnrollDone('${e.id}')">${e.completed ? '수료취소' : '수료처리'}</button>
+        <button class="mini-btn danger" onclick="deleteEnroll('${e.id}')">삭제</button>
+      </div></td>
     </tr>`;
   }).join('');
 }
 
-/** 오프라인 차시 출석 토글 */
-async function toggleAttend(appId, lessonId){
-  const cur = (clProgress[appId] || {})[lessonId] || {};
+async function toggleAttend(eid, lessonId){
+  const cur = (clProgress[eid] || {})[lessonId] || {};
   const next = !cur.done;
   try {
-    await setDoc(doc(db, 'applications', appId, 'progress', lessonId), {
-      done: next,
-      doneAt: next ? serverTimestamp() : null,
-      checkedBy: 'admin',
-      lastAt: serverTimestamp()
+    await setDoc(doc(db, 'enrollments', eid, 'progress', lessonId), {
+      done: next, doneAt: next ? serverTimestamp() : null,
+      checkedBy: 'admin', lastAt: serverTimestamp()
     }, { merge: true });
-    clProgress[appId] = clProgress[appId] || {};
-    clProgress[appId][lessonId] = { ...cur, done: next };
+    clProgress[eid] = clProgress[eid] || {};
+    clProgress[eid][lessonId] = { ...cur, done: next };
     renderProgressTable();
     toast(next ? '출석 처리했습니다.' : '출석을 취소했습니다.');
   } catch (err){ alert(fbError(err)); }
 }
 window.toggleAttend = toggleAttend;
 
-/** 제출 과제 확인 */
-function openTask(appId, lessonId){
-  const a = clApps.find(x => x.id === appId);
-  const l = clLessons.find(x => x.id === lessonId);
-  const pr = (clProgress[appId] || {})[lessonId] || {};
-  if (!a || !l) return;
+/** 온라인 수강 수료 처리 — 이수증 발급번호를 함께 채번합니다.
+    (신청자 탭의 수료 처리와 동일한 채번기를 사용해 번호가 겹치지 않습니다)
+    진도와 무관하게 처리할 수 있습니다. 노션 등 외부에서 이미 수강한 분,
+    오프라인으로 전 차시를 이수한 분도 관리자가 직접 인정할 수 있습니다. */
+async function issueEnrollCert(eid){
+  const year = new Date().getFullYear();
+  let certNo = '';
+  await runTransaction(db, async t => {
+    const cRef = doc(db, 'counters', 'certificates');
+    const cSnap = await t.get(cRef);
+    const seq = (cSnap.exists() ? (cSnap.data().seq || 0) : 0) + 1;
+    certNo = `한신새싹 제 ${year}-${String(seq).padStart(4, '0')} 호`;
+    t.set(cRef, { seq, year });
+    t.update(doc(db, 'enrollments', eid), {
+      completed: true, completedAt: serverTimestamp(), certNo
+    });
+  });
+  return certNo;
+}
 
-  $('tk-title').textContent = `${a.name} 님 · ${l.order}차시 과제`;
+async function toggleEnrollDone(eid){
+  const e = clEnrolls.find(x => x.id === eid);
+  if (!e) return;
+
+  if (e.completed){
+    if (!confirm(`${e.name} 님의 수료 처리를 취소할까요?\n` +
+      `발급번호(${e.certNo || '-'})는 회수되며, 기발급 이수증은 무효 처리해야 합니다.`)) return;
+    try {
+      await updateDoc(doc(db, 'enrollments', eid), {
+        completed: false, completedAt: deleteField(), certNo: deleteField()
+      });
+      e.completed = false; e.certNo = '';
+      renderProgressTable();
+      toast('수료를 취소했습니다.');
+    } catch (err){ alert(fbError(err)); }
+    return;
+  }
+
+  const rate = progRate(eid);
+  const warn = rate < 100
+    ? `\n\n⚠️ 현재 진도는 ${rate}%입니다.\n` +
+      `외부(노션 등)에서 이미 수강했거나 오프라인으로 이수한 경우라면 그대로 진행하세요.`
+    : '';
+  if (!confirm(`${e.name} 님 (${e.courseName})\n수료 처리하고 이수증 발급번호를 채번할까요?${warn}`)) return;
+
+  try {
+    const certNo = await issueEnrollCert(eid);
+    await notifyEnrollCert(e, certNo);
+    e.completed = true; e.certNo = certNo;
+    renderProgressTable();
+    toast(`수료 처리 완료 · ${certNo}`);
+  } catch (err){ alert(fbError(err)); }
+}
+window.toggleEnrollDone = toggleEnrollDone;
+
+/** 온라인 수강 수료 안내 메일 (템플릿 미설정 시 자동 생략) */
+async function notifyEnrollCert(e, certNo){
+  if (!certEmailEnabled() || !e.email) return;
+  const base = location.href.replace(/admin\.html.*$/, '');
+  await sendCertificateEmail({
+    to_email: e.email,
+    name: e.name,
+    program: '디지털새싹 온라인 강사 워크샵',
+    course: e.courseName || '',
+    cert_no: certNo,
+    cert_url: `${base}cert.html?id=${e.id}`,
+    date: new Date().toLocaleDateString('ko-KR', { dateStyle: 'long' })
+  }).catch(() => {});
+}
+
+/* ---------- 수강생 직접 추가 (외부 수강자 인정용) ---------- */
+function openAddEnroll(){
+  const c = courseByKey(clCourseKey);
+  if (!membersLoaded){ alert('회원 명단을 불러오는 중입니다. 잠시 후 다시 시도해주세요.'); loadMembers(); return; }
+  const already = new Set(clEnrolls.map(e => e.uid));
+  const list = members.filter(m => !already.has(m.uid));
+
+  $('ae-course').value = c.name;
+  $('ae-member').innerHTML = '<option value="">회원을 선택하세요</option>' +
+    list.map(m => `<option value="${m.uid}">${esc(m.name || '이름없음')} · ${esc(m.email || '')}${m.org ? ` · ${esc(m.org)}` : ''}</option>`).join('');
+  $('ae-done').checked = false;
+  $('aeError').style.display = 'none';
+  openModal('addEnrollModal');
+}
+window.openAddEnroll = openAddEnroll;
+
+$('addEnrollForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const uid = $('ae-member').value;
+  const m = members.find(x => x.uid === uid);
+  const c = courseByKey(clCourseKey);
+  if (!m){
+    $('aeError').textContent = '회원을 선택해주세요.';
+    $('aeError').style.display = 'block';
+    return;
+  }
+  const btn = $('aeSaveBtn');
+  btn.disabled = true; btn.textContent = '등록 중…';
+  try {
+    const ref = await addDoc(collection(db, 'enrollments'), {
+      uid: m.uid,
+      name: m.name || '',
+      email: m.email || '',
+      phone: m.phone || '',
+      org: m.org || '',
+      orgType: m.orgType || '',
+      courseKey: clCourseKey,
+      courseName: c.name,
+      completed: false,
+      createdAt: serverTimestamp(),
+      addedBy: 'admin',
+      addNote: $('ae-note').value.trim()
+    });
+    if ($('ae-done').checked){
+      const certNo = await issueEnrollCert(ref.id);
+      await notifyEnrollCert({ ...m, courseName: c.name, id: ref.id }, certNo);
+      toast(`등록 후 수료 처리했습니다 · ${certNo}`);
+    } else {
+      toast('수강생을 등록했습니다.');
+    }
+    closeModal('addEnrollModal');
+    await loadClassProgress();
+  } catch (err){
+    $('aeError').textContent = fbError(err);
+    $('aeError').style.display = 'block';
+  } finally { btn.disabled = false; btn.textContent = '등록'; }
+});
+
+async function deleteEnroll(eid){
+  const e = clEnrolls.find(x => x.id === eid);
+  if (!e || !confirm(`${e.name} 님의 수강 신청을 삭제할까요?\n학습 기록도 함께 사라집니다.`)) return;
+  try {
+    await deleteDoc(doc(db, 'enrollments', eid));
+    toast('수강 신청을 삭제했습니다.');
+    await loadClassProgress();
+  } catch (err){ alert(fbError(err)); }
+}
+window.deleteEnroll = deleteEnroll;
+
+function openTask(eid, lessonId){
+  const e = clEnrolls.find(x => x.id === eid);
+  const l = clLessons.find(x => x.id === lessonId);
+  const pr = (clProgress[eid] || {})[lessonId] || {};
+  if (!e || !l) return;
+  $('tk-title').textContent = `${e.name} 님 · ${l.order}차시 과제`;
   $('tk-body').innerHTML = `
     <h4 class="detail-h">과제 안내</h4>
     <p class="member-empty" style="border-style:solid;">${esc(l.taskDesc || '(안내 없음)')}</p>
@@ -2266,20 +2429,19 @@ function openTask(appId, lessonId){
       ${pr.taskReview ? `<dt>검토 메모</dt><dd>${esc(pr.taskReview)}</dd>` : ''}
     </dl>`;
   $('tk-actions').innerHTML = pr.taskAt
-    ? `<button class="btn btn-navy btn-sm" onclick="reviewTask('${appId}','${lessonId}',true)">✅ 과제 인정 (차시 완료 처리)</button>
-       <button class="btn btn-outline btn-sm" onclick="reviewTask('${appId}','${lessonId}',false)">↩️ 보완 요청</button>`
+    ? `<button class="btn btn-navy btn-sm" onclick="reviewTask('${eid}','${lessonId}',true)">✅ 과제 인정 (차시 완료 처리)</button>
+       <button class="btn btn-outline btn-sm" onclick="reviewTask('${eid}','${lessonId}',false)">↩️ 보완 요청</button>`
     : '';
   openModal('taskModal');
 }
 window.openTask = openTask;
 
-async function reviewTask(appId, lessonId, ok){
+async function reviewTask(eid, lessonId, ok){
   const memo = prompt(ok ? '검토 메모 (선택)' : '보완 요청 사유를 적어주세요.', '');
   if (!ok && memo === null) return;
   try {
-    await setDoc(doc(db, 'applications', appId, 'progress', lessonId), {
-      taskReview: memo || '',
-      taskOk: ok,
+    await setDoc(doc(db, 'enrollments', eid, 'progress', lessonId), {
+      taskReview: memo || '', taskOk: ok,
       ...(ok ? { done: true, doneAt: serverTimestamp() } : {}),
       lastAt: serverTimestamp()
     }, { merge: true });
@@ -2291,31 +2453,213 @@ async function reviewTask(appId, lessonId, ok){
 window.reviewTask = reviewTask;
 
 function downloadProgressCSV(){
-  if (!clApps.length){ alert('내보낼 수강생이 없습니다.'); return; }
-  const p = programs.find(x => x.id === $('cl-program').value);
-  const head = ['강사명', '소속', '이메일', '전화번호',
+  if (!clEnrolls.length){ alert('내보낼 수강생이 없습니다.'); return; }
+  const c = courseByKey(clCourseKey);
+  const head = ['신청일', '이름', '소속', '이메일', '전화번호',
     ...clLessons.map(l => `${l.order}차시 ${l.mode === 'offline' ? '(오프라인)' : '(온라인)'} ${l.title}`),
     ...clLessons.filter(l => l.hasTask).map(l => `${l.order}차시 과제`),
-    '진도율(%)'];
+    '진도율(%)', '수료'];
   const rows = [head];
-  clApps.forEach(a => {
-    const pg = clProgress[a.id] || {};
-    rows.push([a.name, a.org || '', a.email || '', a.phone || '',
+  clEnrolls.forEach(e => {
+    const pg = clProgress[e.id] || {};
+    rows.push([tsText(e.createdAt, false), e.name, e.org || '', e.email || '', e.phone || '',
       ...clLessons.map(l => {
         const pr = pg[l.id] || {};
         if (l.mode === 'offline') return pr.done ? '출석' : '미출석';
-        if (lessonDone(a.id, l)) return '완료';
+        if (lessonDone(e.id, l)) return '완료';
         if (l.durationSec && pr.watchedSec) return `${Math.round(pr.watchedSec / l.durationSec * 100)}%`;
         return '미시청';
       }),
       ...clLessons.filter(l => l.hasTask).map(l => {
         const pr = pg[l.id] || {};
-        if (!pr.taskAt) return '미제출';
-        return (pr.taskUrl || pr.taskText || '제출').toString().slice(0, 200);
+        return pr.taskAt ? (pr.taskUrl || pr.taskText || '제출').toString().slice(0, 200) : '미제출';
       }),
-      progRate(a.id)]);
+      progRate(e.id), e.completed ? '수료' : '']);
   });
-  saveCSV(rows, `디지털새싹_학습현황_${(p?.title || '워크샵').replace(/[\\/:*?"<>|]/g, '')}_${todayStr().replace(/\./g, '')}.csv`);
-  toast(`CSV ${clApps.length}건을 내려받았습니다.`);
+  saveCSV(rows, `디지털새싹_온라인워크샵_${c.name.split(':')[0]}_${todayStr().replace(/\./g, '')}.csv`);
+  toast(`CSV ${clEnrolls.length}건을 내려받았습니다.`);
 }
 window.downloadProgressCSV = downloadProgressCSV;
+
+/* =========================================================
+   v13: 기존 신청 데이터 → 상시 온라인 워크샵 이관
+   프로그램(오프라인 형태)으로 받아둔 온라인 워크샵 신청을
+   과목별 수강 등록(enrollments)으로 옮깁니다.
+   · 원본 applications 문서는 삭제하지 않고 이관 표시만 남깁니다.
+   · 회원 계정(uid)이 없는 비회원 신청은 이관할 수 없습니다.
+========================================================= */
+
+let mgRows = [];
+
+function toggleMigrate(){
+  const p = $('mg-panel');
+  const open = p.style.display === 'none';
+  p.style.display = open ? 'block' : 'none';
+  $('mg-toggleBtn').textContent = open ? '닫기' : '열기';
+  if (open) refreshMigratePrograms();
+}
+window.toggleMigrate = toggleMigrate;
+
+function refreshMigratePrograms(){
+  const sel = $('mg-program');
+  const cur = sel.value;
+  const list = programs.filter(p => p.type === 'workshop');
+  sel.innerHTML = '<option value="">프로그램을 선택하세요</option>' +
+    list.map(p => `<option value="${p.id}">${esc(p.title)}${p.period ? ` · ${esc(p.period)}` : ''}</option>`).join('');
+  if (list.some(p => p.id === cur)) sel.value = cur;
+}
+
+/** 강좌명 → 7종 과목 키 자동 매칭 */
+function guessCourseKey(courseName){
+  const t = String(courseName || '').trim();
+  if (!t) return '';
+  const exact = COURSES_2026.find(c => c.name === t);
+  if (exact) return exact.key;
+  /* 이름이 조금 달라도 핵심 어구로 추정 */
+  const norm = v => v.replace(/[\s:·・]/g, '');
+  const n = norm(t);
+  const loose = COURSES_2026.find(c => norm(c.name).includes(n) || n.includes(norm(c.name)));
+  if (loose) return loose.key;
+  const bySub = COURSES_2026.find(c => {
+    const sub = norm(c.name.split(':')[1] || '');
+    return sub && (n.includes(sub) || sub.includes(n));
+  });
+  return bySub ? bySub.key : '';
+}
+
+async function scanMigrate(){
+  const pid = $('mg-program').value;
+  const box = $('mg-result');
+  $('mg-actions').style.display = 'none';
+  if (!pid){ box.innerHTML = '<div class="assign-empty">원본 프로그램을 선택해주세요.</div>'; return; }
+
+  box.innerHTML = '<div class="assign-empty">신청 내역을 확인하는 중…</div>';
+
+  /* 이미 이관된 수강 등록 (중복 방지) */
+  let existing = new Set();
+  try {
+    const snap = await getDocs(collection(db, 'enrollments'));
+    existing = new Set(snap.docs.map(d => `${d.data().uid}|${d.data().courseKey}`));
+  } catch (err){
+    box.innerHTML = `<div class="assign-empty">${esc(fbError(err))}</div>`;
+    return;
+  }
+
+  const apps = applications.filter(a => a.programId === pid);
+  if (!apps.length){
+    box.innerHTML = '<div class="assign-empty">이 프로그램에는 신청 내역이 없습니다.</div>';
+    return;
+  }
+
+  mgRows = apps.map(a => {
+    const key = guessCourseKey(a.course || a.session);
+    let state = 'ok', note = '';
+    if (!a.uid){ state = 'nouid'; note = '비회원 신청 — 계정 연결 후 이관 가능'; }
+    else if (a.migratedEnrollId){ state = 'done'; note = '이미 이관됨'; }
+    else if (key && existing.has(`${a.uid}|${key}`)){ state = 'dup'; note = '이미 같은 과목을 수강 중'; }
+    else if (!key){ state = 'nokey'; note = '과목을 직접 선택해주세요'; }
+    return { a, key, state, note };
+  });
+
+  const okN = mgRows.filter(r => r.state === 'ok').length;
+  box.innerHTML = `
+    <div class="mg-summary">
+      전체 <b>${mgRows.length}건</b> ·
+      이관 가능 <b class="ok">${okN}건</b> ·
+      제외 <b>${mgRows.length - okN}건</b>
+    </div>
+    <div class="table-scroll">
+      <table class="admin-table compact">
+        <thead><tr><th class="c-check"><input type="checkbox" onchange="mgSelectAll(this.checked)"></th>
+          <th>신청자</th><th>원본 강좌</th><th>이관할 과목</th><th>상태</th></tr></thead>
+        <tbody>${mgRows.map((r, i) => `
+          <tr class="${r.state === 'ok' ? '' : 'mg-skip'}">
+            <td class="c-check"><input type="checkbox" data-mg="${i}"
+              ${r.state === 'ok' ? 'checked' : 'disabled'} onchange="mgCount()"></td>
+            <td><b>${esc(r.a.name)}</b><br><span class="cell-sub">${esc(r.a.email || '-')}</span></td>
+            <td class="cell-sub">${esc(r.a.course || r.a.session || '-')}</td>
+            <td>${r.state === 'nouid' || r.state === 'done'
+              ? '<span class="cell-sub">—</span>'
+              : `<select data-mgkey="${i}" onchange="mgSetKey(${i}, this.value)">
+                   <option value="">과목 선택…</option>
+                   ${COURSES_2026.map(c => `<option value="${c.key}"${c.key === r.key ? ' selected' : ''}>
+                     ${esc(c.name.split(':')[0])} · ${esc(c.level)}</option>`).join('')}
+                 </select>`}</td>
+            <td class="cell-sub">${r.state === 'ok'
+              ? '<span style="color:var(--leaf);font-weight:700;">이관 가능</span>'
+              : esc(r.note)}</td>
+          </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+  $('mg-actions').style.display = 'block';
+  mgCount();
+}
+window.scanMigrate = scanMigrate;
+
+function mgSetKey(i, key){
+  mgRows[i].key = key;
+  const cb = document.querySelector(`input[data-mg="${i}"]`);
+  if (cb && mgRows[i].state === 'nokey' && key){ cb.disabled = false; cb.checked = true; }
+  mgCount();
+}
+function mgSelectAll(on){
+  document.querySelectorAll('input[data-mg]').forEach(c => { if (!c.disabled) c.checked = on; });
+  mgCount();
+}
+function mgCount(){
+  const n = [...document.querySelectorAll('input[data-mg]:checked')].length;
+  $('mg-count').textContent = `${n}건 선택`;
+  $('mg-runBtn').disabled = n === 0;
+}
+Object.assign(window, { mgSetKey, mgSelectAll, mgCount });
+
+async function runMigrate(){
+  const picked = [...document.querySelectorAll('input[data-mg]:checked')].map(c => Number(c.dataset.mg));
+  if (!picked.length) return;
+
+  const missing = picked.filter(i => !mgRows[i].key);
+  if (missing.length){
+    alert(`과목이 지정되지 않은 항목이 ${missing.length}건 있습니다.\n표에서 '이관할 과목'을 선택해주세요.`);
+    return;
+  }
+  if (!confirm(`${picked.length}건을 상시 온라인 워크샵 수강 등록으로 이관할까요?\n\n` +
+    `· 원본 신청 내역은 삭제되지 않습니다.\n` +
+    `· 시청 기록은 차시 구조가 달라 옮겨지지 않습니다. 진도는 0%에서 시작합니다.`)) return;
+
+  const btn = $('mg-runBtn');
+  btn.disabled = true; btn.textContent = '이관 중…';
+  let ok = 0, fail = 0;
+
+  for (const i of picked){
+    const { a, key } = mgRows[i];
+    const c = courseByKey(key);
+    if (!c){ fail++; continue; }
+    try {
+      const ref = await addDoc(collection(db, 'enrollments'), {
+        uid: a.uid,
+        name: a.name || '',
+        email: a.email || '',
+        phone: a.phone || '',
+        org: a.org || '',
+        orgType: a.orgType || '',
+        courseKey: key,
+        courseName: c.name,
+        completed: !!a.completed,
+        completedAt: a.completedAt || null,
+        createdAt: a.createdAt || serverTimestamp(),
+        migratedFrom: a.id                       // 원본 신청번호
+      });
+      await updateDoc(doc(db, 'applications', a.id), {
+        migratedEnrollId: ref.id,
+        migratedAt: serverTimestamp()
+      }).catch(() => {});
+      ok++;
+    } catch (err){ console.error(err); fail++; }
+  }
+
+  btn.disabled = false; btn.textContent = '선택한 신청을 새 구조로 이관';
+  toast(`이관 완료 · 성공 ${ok}건${fail ? ` · 실패 ${fail}건` : ''}`);
+  await scanMigrate();
+  await loadClassProgress();
+}
+window.runMigrate = runMigrate;

@@ -24,21 +24,29 @@ async function load(){
     return;
   }
   try {
-    const snap = await getDoc(doc(db, 'applications', id));
-    if (!snap.exists()){
+    /* v13: 신청(applications)과 상시 온라인 수강(enrollments) 양쪽에서 찾습니다 */
+    let a = null, kind = 'app';
+    let snap = await getDoc(doc(db, 'applications', id));
+    if (snap.exists()) a = snap.data();
+    else {
+      snap = await getDoc(doc(db, 'enrollments', id));
+      if (snap.exists()){ a = snap.data(); kind = 'enroll'; }
+    }
+    if (!a){
       showError('신청 내역을 찾을 수 없습니다', '신청번호가 올바른지 확인해주세요. 취소된 신청일 수도 있습니다.');
       return;
     }
-    const a = snap.data();
     if (!a.completed){
       showError('아직 수료 처리 전입니다',
         '이수증은 과정 종료 후 사업단에서 수료 처리를 완료하면 발급할 수 있습니다. 문의: newsac26@naver.com');
       return;
     }
 
-    // 교육 기간: 프로그램 문서에서 조회 (삭제된 경우 대비)
+    // 교육 기간
     let period = '-';
-    if (a.programId){
+    if (kind === 'enroll'){
+      period = '상시 온라인 워크샵';
+    } else if (a.programId){
       try {
         const p = await getDoc(doc(db, 'programs', a.programId));
         if (p.exists()) period = p.data().period || '-';
@@ -48,8 +56,9 @@ async function load(){
     $('c-no').textContent = a.certNo || '-';
     $('c-name').textContent = a.name || '-';
     $('c-org').textContent = a.orgType ? `${a.org} (${a.orgType})` : (a.org || '-');
-    $('c-program').textContent = a.programTitle || '-';
-    $('c-course').textContent = a.course || a.session || '-';
+    $('c-program').textContent = kind === 'enroll'
+      ? '디지털새싹 온라인 강사 워크샵' : (a.programTitle || '-');
+    $('c-course').textContent = (kind === 'enroll' ? a.courseName : (a.course || a.session)) || '-';
     $('c-period').textContent = period;
 
     const d = a.completedAt?.toDate ? a.completedAt.toDate() : new Date();

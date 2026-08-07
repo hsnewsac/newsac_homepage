@@ -1071,3 +1071,56 @@ nav a.active{background:var(--sprout-soft);color:var(--leaf);}
   border:1px solid #F0D9BC;font-size:.8rem;line-height:1.6;color:#8C5A1E;font-weight:600;}
 .admin-box.flash{animation:boxflash 1.6s ease;}
 @keyframes boxflash{0%,100%{box-shadow:none;}25%,60%{box-shadow:0 0 0 3px rgba(30,127,79,.28);}}
+
+/* ================= v13: 상시 온라인 워크샵 ================= */
+/* 관리자 과목 탭 */
+.course-tabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));
+  gap:8px;margin:4px 0 18px;}
+.ctab{display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+  padding:12px 13px;background:#fff;border:1.5px solid var(--line);border-radius:11px;
+  cursor:pointer;text-align:left;transition:all .12s;}
+.ctab:hover{border-color:#9FD3B2;background:#FAFDFB;}
+.ctab.on{border-color:var(--leaf);background:#F1FAF4;}
+.ctab.sp.on{border-color:#D89B84;background:#FDF6F3;}
+.ctab .ci{font-size:1.05rem;}
+.ctab .cn{font-size:.83rem;font-weight:800;color:#28352E;line-height:1.4;}
+.ctab .cl{font-size:.72rem;font-weight:700;color:#8A968E;}
+.ctab.on .cn{color:var(--leaf);}
+.ctab.sp.on .cn{color:#B4553C;}
+.assign-summary b.ok{color:var(--leaf);}
+
+/* 공개 페이지 — 온라인 과목 카드 */
+.on-band{background:linear-gradient(180deg,#F4F8FB 0%,#FFFFFF 100%);}
+.on-lead{max-width:720px;margin:0 auto 30px;padding:20px 24px;text-align:center;
+  background:#fff;border:1.5px solid var(--navy);border-radius:var(--radius);}
+.on-lead b{display:block;font-size:1.04rem;font-weight:800;color:var(--navy);letter-spacing:-.01em;}
+.on-lead span{display:block;margin-top:8px;font-size:.9rem;line-height:1.75;color:#5A6862;}
+.on-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:16px;}
+.on-card{padding:22px 24px;background:#fff;border:1.5px solid var(--line);
+  border-radius:var(--radius);display:flex;flex-direction:column;gap:11px;}
+.on-card.sp{border-color:#F0DAD1;}
+.on-card .oc-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.on-card .oc-ic{font-size:1.2rem;}
+.on-card .oc-lv{font-size:.73rem;font-weight:800;padding:3px 9px;border-radius:6px;
+  background:#F4F7F5;color:#5A6862;}
+.on-card.sp .oc-lv{background:#FDF6F3;color:#B4553C;}
+.on-card h4{font-size:1.02rem;font-weight:800;color:#28352E;letter-spacing:-.01em;line-height:1.45;}
+.on-card p{font-size:.86rem;line-height:1.7;color:#5A6862;}
+.on-card .oc-meta{display:flex;gap:8px;flex-wrap:wrap;font-size:.78rem;
+  font-weight:700;color:#6A776F;}
+.on-card .oc-meta span{background:#F4F7F5;border:1px solid var(--line);
+  border-radius:6px;padding:3px 9px;}
+.on-card .btn{margin-top:3px;text-align:center;text-decoration:none;}
+.on-card .oc-state{padding:9px 12px;border-radius:9px;text-align:center;
+  font-size:.81rem;font-weight:700;}
+.on-card .oc-state.done{background:#F1FAF4;border:1px solid #B9E2C8;color:var(--leaf);}
+.on-card .oc-state.wait{background:var(--paper);border:1px solid var(--line);color:#8A968E;}
+
+/* v13: 기존 신청 데이터 이관 */
+.mg-summary{padding:12px 16px;margin-bottom:12px;border-radius:10px;
+  background:var(--paper);border:1px solid var(--line);
+  font-size:.86rem;font-weight:600;color:#5A6862;}
+.mg-summary b{font-weight:800;color:#28352E;}
+.mg-summary b.ok{color:var(--leaf);}
+.admin-table tr.mg-skip{opacity:.62;}
+.admin-table tr.mg-skip td{background:#FCFCFB;}

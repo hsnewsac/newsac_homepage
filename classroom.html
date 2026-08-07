@@ -110,12 +110,12 @@ import { esc, fbError, toast } from './js/common.js';
 
 const root = document.getElementById('crRoot');
 const params = new URLSearchParams(location.search);
-const appId = params.get('app') || '';
+const enrollId = params.get('enroll') || '';
 
-if (!appId){
+if (!enrollId){
   root.innerHTML = `<div class="cr-msg">잘못된 접근입니다.<br>
     <a href="mypage.html">마이페이지</a>의 <b>내 강의실</b>에서 수강할 과정을 선택해주세요.</div>`;
-  throw new Error('no app id');
+  throw new Error('no enroll id');
 }
 
 let db, auth, fs, onAuthStateChanged;
@@ -129,7 +129,7 @@ try {
 }
 const { doc, getDoc, getDocs, collection, setDoc, serverTimestamp } = fs;
 
-let app = null, program = null, lessons = [], progress = {};
+let enr = null, course = null, lessons = [], progress = {};
 let current = null;         // 현재 보고 있는 차시
 let player = null, tick = null;
 let watched = 0, maxPos = 0, lastPos = 0, dirty = false;
@@ -142,29 +142,24 @@ onAuthStateChanged(auth, async user => {
     return;
   }
   try {
-    const snap = await getDoc(doc(db, 'applications', appId));
-    if (!snap.exists()){ root.innerHTML = `<div class="cr-msg">신청 내역을 찾을 수 없습니다.</div>`; return; }
-    app = { id: snap.id, ...snap.data() };
+    const snap = await getDoc(doc(db, 'enrollments', enrollId));
+    if (!snap.exists()){ root.innerHTML = `<div class="cr-msg">수강 신청 내역을 찾을 수 없습니다.</div>`; return; }
+    enr = { id: snap.id, ...snap.data() };
 
-    if (app.uid !== user.uid){
+    if (enr.uid !== user.uid){
       root.innerHTML = `<div class="cr-msg">본인의 수강 내역만 확인할 수 있습니다.<br>
-        <a href="mypage.html">마이페이지</a>에서 신청 내역을 계정에 연결해주세요.</div>`;
-      return;
-    }
-    if (app.status !== 'assigned'){
-      root.innerHTML = `<div class="cr-msg">아직 <b>승인 완료</b>되지 않은 신청입니다.<br>
-        승인 후 강의실이 열립니다. 진행 상태는 <a href="mypage.html">마이페이지</a>에서 확인하실 수 있습니다.</div>`;
+        <a href="mypage.html">마이페이지</a>에서 확인해주세요.</div>`;
       return;
     }
 
-    const ps = await getDoc(doc(db, 'programs', app.programId));
-    program = ps.exists() ? { id: ps.id, ...ps.data() } : null;
+    const cs = await getDoc(doc(db, 'onlineCourses', enr.courseKey));
+    course = cs.exists() ? { key: cs.id, ...cs.data() } : null;
 
-    const ls = await getDocs(collection(db, 'programs', app.programId, 'lessons'));
+    const ls = await getDocs(collection(db, 'onlineCourses', enr.courseKey, 'lessons'));
     lessons = ls.docs.map(d => ({ id: d.id, ...d.data() }))
       .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-    const pr = await getDocs(collection(db, 'applications', appId, 'progress'));
+    const pr = await getDocs(collection(db, 'enrollments', enrollId, 'progress'));
     progress = Object.fromEntries(pr.docs.map(d => [d.id, d.data()]));
 
     if (!lessons.length){
@@ -172,9 +167,9 @@ onAuthStateChanged(auth, async user => {
         차시가 열리면 안내드리겠습니다.</div>`;
       return;
     }
-    document.getElementById('crTitle').textContent = program?.title || '내 강의실';
+    document.getElementById('crTitle').textContent = enr.courseName || course?.name || '내 강의실';
     document.getElementById('crSub').textContent =
-      `${app.course || ''} · 온라인 차시는 영상 시청으로, 교구 실습 차시는 현장 출석으로 이수됩니다.`;
+      '온라인 차시는 영상 시청으로, 교구 실습 차시는 오프라인 워크샵 참석으로 이수됩니다.';
 
     const first = lessons.find(l => !isDone(l)) || lessons[0];
     render(first.id);
@@ -314,7 +309,7 @@ async function submitTask(e){
   const btn = document.getElementById('taskBtn');
   btn.disabled = true; btn.textContent = '제출 중…';
   try {
-    await setDoc(doc(db, 'applications', appId, 'progress', current.id), {
+    await setDoc(doc(db, 'enrollments', enrollId, 'progress', current.id), {
       taskUrl: url, taskText: text,
       taskAt: serverTimestamp(), taskOk: null, taskReview: '',
       lastAt: serverTimestamp()
@@ -396,7 +391,7 @@ async function saveProgress(){
   const done = !!current.durationSec && watched >= current.durationSec * 0.9;
   const wasDone = isDone(current);
   try {
-    await setDoc(doc(db, 'applications', appId, 'progress', current.id), {
+    await setDoc(doc(db, 'enrollments', enrollId, 'progress', current.id), {
       watchedSec: Math.round(watched),
       maxPos: Math.round(maxPos),
       ...(done ? { done: true, doneAt: serverTimestamp() } : {}),

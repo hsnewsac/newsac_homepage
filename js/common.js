@@ -19,14 +19,30 @@ export const ORG_TYPES = ['초중고등 교원', '대학생/대학원생', '기�
 /* ---------- v11: 2026 교육과정 7종 ----------
    강사 워크샵의 '개설 강좌', 강사 모집 공고의 '담당 과정' 선택에 함께 사용합니다. */
 export const COURSES_2026 = [
-  { group: '기본', level: '초등 고학년',   name: 'AI문학코딩: 미래 작가의 따뜻한 마음그림여행' },
-  { group: '기본', level: '초등 저학년',   name: 'AI음악코딩: 유쾌한 창작자의 싱어송여행' },
-  { group: '기본', level: '초등 고학년',   name: 'AI과학코딩: VRAI로 떠나는 우주여행' },
-  { group: '기본', level: '중학교',        name: 'AI과학코딩: 호기심 많은 과학자의 바이브여행' },
-  { group: '기본', level: '고등학교',      name: 'AI과학코딩: 바이브실험으로 과학자의 평행우주여행' },
-  { group: '특화', level: '특수교육대상',  name: 'AI문학코딩: 특수아이의 따뜻한 마음그림여행' },
-  { group: '특화', level: '특수교육대상',  name: 'AI음악코딩: 특수아이의 유쾌한 음악여행' }
+  { key: 'lit-elem',  group: '기본', level: '초등 고학년',  icon: '📖',
+    name: 'AI문학코딩: 미래 작가의 따뜻한 마음그림여행',
+    intro: '생성형 AI로 감정을 이야기·동화책·주제곡으로 바꾸는 정서 중심 창작 수업' },
+  { key: 'mus-elem',  group: '기본', level: '초등 저학년',  icon: '🎵',
+    name: 'AI음악코딩: 유쾌한 창작자의 싱어송여행',
+    intro: '허밍블럭스 교구와 AI로 순차·반복·조건·함수를 익히고 뮤직비디오까지 만드는 수업' },
+  { key: 'sci-space', group: '기본', level: '초등 고학년',  icon: '🚀',
+    name: 'AI과학코딩: VRAI로 떠나는 우주여행',
+    intro: 'VR 체험과 티처블머신, 바이브코딩으로 우주 인터랙티브 프로젝트를 완성하는 수업' },
+  { key: 'sci-vibe',  group: '기본', level: '중학교',       icon: '🔬',
+    name: 'AI과학코딩: 호기심 많은 과학자의 바이브여행',
+    intro: '공공데이터(NEIS API)와 바이브코딩으로 실생활 문제 해결 웹앱을 만드는 수업' },
+  { key: 'sci-quant', group: '기본', level: '고등학교',     icon: '⚛️',
+    name: 'AI과학코딩: 바이브실험으로 과학자의 평행우주여행',
+    intro: '과학 실험 앱 제작과 양자 시뮬레이터로 다변수 최적화에 도전하는 수업' },
+  { key: 'sp-lit',    group: '특화', level: '특수교육대상', icon: '🌱',
+    name: 'AI문학코딩: 특수아이의 따뜻한 마음그림여행',
+    intro: '사회정서학습(SEL)을 융합해 디지털 동화책을 완성하는 특수교육대상 특화 과정' },
+  { key: 'sp-mus',    group: '특화', level: '특수교육대상', icon: '🔔',
+    name: 'AI음악코딩: 특수아이의 유쾌한 음악여행',
+    intro: '다감각 교구와 AI를 결합해 감정을 소리로 표현하는 특수교육대상 특화 과정' }
 ];
+/** 과목 키로 조회 */
+export function courseByKey(k){ return COURSES_2026.find(c => c.key === k) || null; }
 
 /* ---------- v11: 강사 워크샵 지원 자격 ---------- */
 export const WORKSHOP_TARGET = '강사를 희망하고 있는 교원, 프리랜서 등';

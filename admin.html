@@ -494,18 +494,34 @@
     <div class="tab-panel" id="tab-class">
 
       <div class="admin-box">
-        <h3>📚 온라인 강의실</h3>
-        <p class="box-desc">교구 실습은 <b>오프라인</b>으로, 나머지 차시는 <b>온라인</b>으로 이수하는
-          블렌디드 워크샵을 운영합니다. 차시를 등록하면 수강생 마이페이지의
-          <b>내 강의실</b>에 바로 나타나고, 시청 진도와 과제 제출이 자동으로 기록됩니다.</p>
-        <div class="filter-bar">
-          <div class="filter-item grow">
-            <label for="cl-program">강의실을 운영할 워크샵</label>
-            <select id="cl-program"><option value="">워크샵을 선택하세요</option></select>
-          </div>
-          <button class="btn btn-outline btn-sm" onclick="switchTab('program')">＋ 새 워크샵 등록</button>
-        </div>
+        <h3>📚 상시 온라인 워크샵</h3>
+        <p class="box-desc">날짜가 정해진 오프라인 워크샵과 달리 <b>과목별로 상시 개설</b>됩니다.
+          아래에서 과목을 고르고 차시를 등록하면, 수강생이 워크샵 안내 페이지에서
+          <b>과목 단위로 수강 신청</b>하고 마이페이지에서 바로 학습할 수 있습니다.</p>
+        <div class="course-tabs" id="cl-courseTabs"></div>
         <div id="cl-summary" class="assign-summary"></div>
+      </div>
+
+      <!-- 과목 공개 설정 -->
+      <div class="admin-box" id="cl-courseBox" style="display:none;">
+        <h3>⚙️ 과목 설정</h3>
+        <form id="courseForm">
+          <div class="form-error" id="courseError"></div>
+          <div class="form-row">
+            <label for="oc-intro">과목 소개 <span class="hint">(신청 화면에 표시됩니다)</span></label>
+            <textarea id="oc-intro" rows="2"></textarea>
+          </div>
+          <div class="form-row">
+            <label for="oc-note">수강 안내 <span class="hint">(선택 — 준비물·유의사항 등)</span></label>
+            <textarea id="oc-note" rows="2"
+              placeholder="예) 허밍블럭스 교구 실습 차시는 오프라인 워크샵 참석이 필요합니다."></textarea>
+          </div>
+          <label class="form-check">
+            <input type="checkbox" id="oc-open">
+            <span>🟢 <b>수강 신청 받기</b> (체크를 풀면 안내 페이지에 '준비 중'으로 표시됩니다)</span>
+          </label>
+          <button type="submit" class="btn btn-navy btn-sm" id="courseSaveBtn">과목 설정 저장</button>
+        </form>
       </div>
 
       <!-- 차시 관리 -->
@@ -515,8 +531,9 @@
             <button class="btn btn-outline btn-sm" onclick="toggleLessonForm()" id="cl-addBtn">＋ 차시 추가</button>
           </span>
         </h3>
-        <p class="box-desc">순서대로 표시됩니다. <b>온라인</b> 차시는 영상 시청 진도가 자동 기록되고,
-          <b>오프라인</b> 차시는 관리자가 출석을 체크합니다.</p>
+        <p class="box-desc">이 <b>과목</b>의 차시입니다. 과목마다 차시를 따로 구성할 수 있습니다.
+          <b>온라인</b> 차시는 영상 시청 진도가 자동 기록되고,
+          <b>오프라인</b> 차시(교구 실습)는 관리자가 출석을 체크합니다.</p>
 
         <form id="lessonForm" style="display:none;">
           <input type="hidden" id="l-id">
@@ -606,15 +623,49 @@
         </div>
       </div>
 
+      <!-- 기존 신청 데이터 이관 -->
+      <div class="admin-box" id="cl-migrateBox">
+        <h3>🔄 기존 신청 데이터 이관
+          <span class="box-actions">
+            <button class="btn btn-outline btn-sm" onclick="toggleMigrate()" id="mg-toggleBtn">열기</button>
+          </span>
+        </h3>
+        <p class="box-desc">이전에 <b>프로그램(오프라인 워크샵) 형태로 개설한 온라인 워크샵</b>의 신청 내역을
+          새 구조(과목별 수강 등록)로 옮깁니다. 원본 신청 내역은 삭제되지 않습니다.</p>
+
+        <div id="mg-panel" style="display:none;">
+          <div class="filter-bar">
+            <div class="filter-item grow">
+              <label for="mg-program">원본 프로그램</label>
+              <select id="mg-program"><option value="">프로그램을 선택하세요</option></select>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="scanMigrate()">신청 내역 불러오기</button>
+          </div>
+
+          <div id="mg-result"></div>
+
+          <div id="mg-actions" style="display:none;margin-top:14px;">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+              <button class="mini-btn" onclick="mgSelectAll(true)">전체 선택</button>
+              <button class="mini-btn" onclick="mgSelectAll(false)">전체 해제</button>
+              <span class="course-count" id="mg-count">0건 선택</span>
+            </div>
+            <button class="btn btn-navy btn-sm" style="margin-top:12px;width:100%;"
+              onclick="runMigrate()" id="mg-runBtn">선택한 신청을 새 구조로 이관</button>
+          </div>
+        </div>
+      </div>
+
       <!-- 학습 현황 -->
       <div class="admin-box" id="cl-progressBox" style="display:none;">
         <h3>📊 수강생 학습 현황 <span class="pf-state" id="cl-progCount"></span>
           <span class="box-actions">
+            <button class="btn btn-outline btn-sm" onclick="openAddEnroll()">＋ 수강생 직접 추가</button>
             <button class="btn btn-outline btn-sm" onclick="loadClassProgress()">🔄 새로고침</button>
             <button class="btn btn-outline btn-sm" onclick="downloadProgressCSV()">CSV 다운로드</button>
           </span>
         </h3>
-        <p class="box-desc"><b>승인완료</b>된 신청자만 표시됩니다.
+        <p class="box-desc">이 과목을 수강 신청한 회원입니다. 상시 개설이므로 <b>신청 즉시 수강</b>이 시작됩니다.
           차시 칸을 클릭하면 오프라인 출석을 체크하거나 해제할 수 있고,
           📝 표시를 클릭하면 제출한 과제를 확인할 수 있습니다.</p>
         <div class="table-scroll">
@@ -624,7 +675,10 @@
           </table>
         </div>
         <p class="form-note">
-          ※ 진도는 참고 지표이며, <b>수료 확정은 [👥 신청자] 탭에서 관리자가 직접</b> 처리합니다.<br>
+          ※ <b>수료 처리는 진도와 무관하게</b> 언제든 가능합니다. 노션 등 외부에서 이미 수강했거나
+          오프라인으로 이수한 분은 <b>[수료처리]</b>를 눌러 바로 인정하실 수 있습니다.
+          이수증 발급번호가 자동 채번됩니다.<br>
+          ※ 홈페이지로 신청한 적이 없는 분은 <b>[＋ 수강생 직접 추가]</b>로 등록한 뒤 수료 처리해주세요.<br>
           ※ 영상 시청 기록은 수강생 브라우저에서 저장되므로, 최종 이수 판단 시 과제 제출물을 함께 확인해주세요.
         </p>
       </div>
@@ -746,6 +800,45 @@
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button type="submit" class="btn btn-navy btn-sm" id="asmSaveBtn" style="flex:1;">승인 상태 저장</button>
         <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('assignModal')">취소</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== 수강생 직접 추가 모달 (v13) ===== -->
+<div class="modal-back" id="addEnrollModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="kind-chip">수강생 등록</span>
+      <h3>수강생 직접 추가</h3>
+      <button class="modal-close" onclick="closeModal('addEnrollModal')" aria-label="닫기">✕</button>
+    </div>
+    <form id="addEnrollForm">
+      <div class="form-error" id="aeError"></div>
+      <p class="form-note" style="margin-bottom:14px;">
+        홈페이지로 신청한 적이 없지만 <b>외부(노션 등)에서 이미 수강</b>했거나
+        오프라인으로 이수한 분을 등록할 때 사용합니다.
+        <b>회원가입이 되어 있는 분만</b> 등록할 수 있습니다.
+      </p>
+      <div class="form-row">
+        <label>등록할 과목</label>
+        <input type="text" id="ae-course" readonly>
+      </div>
+      <div class="form-row">
+        <label for="ae-member">회원 선택 <span class="req">*</span></label>
+        <select id="ae-member" required></select>
+      </div>
+      <div class="form-row">
+        <label for="ae-note">등록 사유 <span class="hint">(선택 — 기록으로 남습니다)</span></label>
+        <input id="ae-note" type="text" placeholder="예) 2026.05 노션 영상으로 전 차시 수강 완료 확인">
+      </div>
+      <label class="form-check">
+        <input type="checkbox" id="ae-done">
+        <span>🎓 등록과 동시에 <b>수료 처리</b>하고 이수증 발급번호를 채번합니다</span>
+      </label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button type="submit" class="btn btn-navy btn-sm" id="aeSaveBtn" style="flex:1;">등록</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('addEnrollModal')">취소</button>
       </div>
     </form>
   </div>

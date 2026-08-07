@@ -396,36 +396,29 @@ async function loadMyApps(){
 }
 
 /* =========================================================
-   v12: 내 강의실
-   승인완료 + 강의실이 열린 워크샵만 카드로 보여줍니다.
+   v13: 내 강의실 — 상시 온라인 워크샵(과목별) 수강 내역
 ========================================================= */
 async function paintClassroom(){
   const box = $('classroomBox'), grid = $('classroomCards');
   if (!box) return;
 
-  const approved = myApps.filter(a => statusOf(a) === 'assigned' && a.programId);
-  /* 강의실은 '내 계정에 연결된' 신청 건만 열립니다.
-     비회원으로 신청했다가 가입한 경우 이메일만 같고 uid가 비어 있어
-     카드는 보이는데 입장은 막히던 문제가 있어, 연결 안내 카드로 구분합니다. */
-  const live     = approved.filter(a => a.uid === currentUser.uid);
-  const unlinked = approved.filter(a => a.uid !== currentUser.uid);
-  if (!live.length && !unlinked.length){ box.style.display = 'none'; return; }
+  let enrolls = [];
+  try {
+    const snap = await getDocs(query(collection(db, 'enrollments'), where('uid', '==', currentUser.uid)));
+    enrolls = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => tsNum(b.createdAt) - tsNum(a.createdAt));
+  } catch (e) { console.warn('수강 내역 조회 오류:', e); }
 
-  /* 각 신청 건의 프로그램·차시·진도를 모읍니다 */
+  if (!enrolls.length){ box.style.display = 'none'; return; }
+
   const cards = [];
-  for (const a of live){
+  for (const e of enrolls){
     try {
-      const ps = await getDoc(doc(db, 'programs', a.programId));
-      if (!ps.exists()) continue;
-      const p = { id: ps.id, ...ps.data() };
-      if (!p.hasClassroom) continue;
-
-      const ls = await getDocs(collection(db, 'programs', a.programId, 'lessons'));
+      const ls = await getDocs(collection(db, 'onlineCourses', e.courseKey, 'lessons'));
       const lessons = ls.docs.map(d => ({ id: d.id, ...d.data() }))
         .sort((x, y) => (x.order || 0) - (y.order || 0));
-      if (!lessons.length) continue;
 
-      const pr = await getDocs(collection(db, 'applications', a.id, 'progress'));
+      const pr = await getDocs(collection(db, 'enrollments', e.id, 'progress'));
       const prog = Object.fromEntries(pr.docs.map(d => [d.id, d.data()]));
 
       const done = l => {
@@ -438,145 +431,31 @@ async function paintClassroom(){
       const req = lessons.filter(l => l.required !== false);
       const doneN = req.filter(done).length;
       const rate = req.length ? Math.round(doneN / req.length * 100) : 0;
-      const nextL = lessons.find(l => !done(l) && l.mode !== 'offline');
-      cards.push({ a, p, total: req.length, doneN, rate, nextL });
-    } catch (e) { console.warn('강의실 조회 오류:', e); }
+      cards.push({ e, total: req.length, doneN, rate, empty: !lessons.length });
+    } catch (err) { console.warn('강의실 조회 오류:', err); }
   }
 
-  /* 연결이 필요한 건도 강의실이 열려 있는지 확인 */
-  const needLink = [];
-  for (const a of unlinked){
-    try {
-      const ps = await getDoc(doc(db, 'programs', a.programId));
-      if (ps.exists() && ps.data().hasClassroom) needLink.push({ a, p: ps.data() });
-    } catch (e) { /* 무시 */ }
-  }
-
-  if (!cards.length && !needLink.length){ box.style.display = 'none'; return; }
+  if (!cards.length){ box.style.display = 'none'; return; }
   box.style.display = 'block';
-  grid.innerHTML = needLink.map(n => `
-    <div class="cr-card need-link">
-      <h4>${esc(n.p.title)}</h4>
-      <span class="cc-course">${esc(n.a.course || n.a.session || '')}</span>
-      <div class="cc-warn">🔗 이 신청은 아직 내 계정에 연결되지 않았습니다.<br>
-        연결해야 강의실에 입장할 수 있습니다.</div>
-      <button class="btn btn-navy btn-sm" onclick="goLinkBox()">신청 내역 연결하기</button>
-    </div>`).join('') + cards.map(c => `
+  grid.innerHTML = cards.map(c => `
     <div class="cr-card">
-      <h4>${esc(c.p.title)}</h4>
-      <span class="cc-course">${esc(c.a.course || c.a.session || '')}</span>
-      <div class="cc-bar"><i style="width:${c.rate}%"></i></div>
-      <div class="cc-tx"><span>필수 ${c.doneN} / ${c.total}차시</span><b>${c.rate}%</b></div>
-      ${c.rate === 100
-        ? '<div class="cc-done">✅ 학습 완료 · 수료 확정은 사업단에서 진행합니다</div>'
+      <h4>${esc(c.e.courseName || '')}</h4>
+      <span class="cc-course">신청 ${esc(tsText(c.e.createdAt, false))}${c.e.completed ? ' · 수료' : ''}</span>
+      ${c.empty
+        ? '<div class="cc-warn">아직 차시가 등록되지 않았습니다.<br>준비되면 안내드리겠습니다.</div>'
+        : `<div class="cc-bar"><i style="width:${c.rate}%"></i></div>
+           <div class="cc-tx"><span>필수 ${c.doneN} / ${c.total}차시</span><b>${c.rate}%</b></div>`}
+      ${c.e.completed
+        ? `<div class="cc-done">🎓 수료 완료${c.e.certNo ? ` · ${esc(c.e.certNo)}` : ''}</div>`
+        : (c.rate === 100 && !c.empty
+          ? '<div class="cc-done">✅ 학습 완료 · 수료 확정은 사업단에서 진행합니다</div>' : '')}
+      ${c.empty ? '' : `<a class="btn ${c.rate === 100 || c.e.completed ? 'btn-outline' : 'btn-navy'} btn-sm"
+         href="classroom.html?enroll=${c.e.id}">
+        ${c.rate === 100 || c.e.completed ? '다시 보기' : (c.doneN ? '이어서 학습' : '학습 시작')}</a>`}
+      ${c.e.completed
+        ? `<a class="btn btn-navy btn-sm" href="cert.html?id=${c.e.id}" target="_blank" rel="noopener">🎓 이수증 발급</a>`
         : ''}
-      <a class="btn ${c.rate === 100 ? 'btn-outline' : 'btn-navy'} btn-sm"
-         href="classroom.html?app=${c.a.id}">
-        ${c.rate === 100 ? '다시 보기' : (c.doneN ? '이어서 학습' : '학습 시작')}</a>
     </div>`).join('');
-}
-function paintApps(){
-  const tb = $('myAppsBody');
-  const role = roleOf(profile);
-  if (!myApps.length){
-    tb.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#6A776F;">
-      ${role === 'instructor' ? '신청·지원 이력이 없습니다.' : '참여 이력이 없습니다.'}<br>
-      <a href="index.html" style="color:var(--leaf);text-decoration:underline;">홈에서 접수 중인 프로그램</a>을 확인해보세요!</td></tr>`;
-    return;
-  }
-  tb.innerHTML = myApps.map(a => {
-    const locked = a.completed || statusOf(a) === 'assigned';
-    return `<tr>
-    <td class="nowrap">${esc(tsText(a.createdAt, false))}</td>
-    <td><b>${esc(a.programTitle) || '-'}</b>${a.programType === 'recruit' ? '<span class="chip recruit">모집</span>' : ''}</td>
-    <td>${esc(a.course || a.session) || '-'}</td>
-    <td class="code-cell">${esc(a.id)}</td>
-    <td>${statusChip(a)}${a.statusMemo ? `<br><span class="cell-sub">📝 ${esc(a.statusMemo)}</span>` : ''}</td>
-    <td>${a.completed
-      ? '<span class="status-chip done">수료완료</span>'
-      : '<span class="status-chip wait">미수료</span>'}</td>
-    <td><div class="t-actions">
-      ${a.completed
-        ? `<a class="mini-btn" href="cert.html?id=${a.id}" target="_blank" rel="noopener">이수증</a>`
-        : (locked
-            ? '<span class="cell-sub">사업단 문의</span>'
-            : `<button class="mini-btn danger" onclick="cancelMyApp('${a.id}')">신청취소</button>`)}
-    </div></td>
-  </tr>`;
-  }).join('');
-}
-
-/* 역할별 요약 카드 */
-function paintCards(){
-  const role = roleOf(profile);
-  const done = myApps.filter(a => a.completed).length;
-  const acts = myApps.filter(a => statusOf(a) === 'assigned');
-  const hours = acts.reduce((s, a) => s + (Number(a.assignHours) || 0), 0);
-  let cards;
-  if (role === 'instructor'){
-    cards = [['총 신청·지원', myApps.length], ['수료 완료', done],
-             ['배정 확정', acts.length], ['누적 강의 시수', hours]];
-  } else if (role === 'parent'){
-    cards = [['자녀 참여 신청', myApps.length], ['수료 완료', done],
-             ['참여 프로그램', new Set(myApps.map(a => a.programTitle).filter(Boolean)).size],
-             ['진행 중', myApps.filter(a => !a.completed).length]];
-  } else if (role === 'student'){
-    cards = [['참여 신청', myApps.length], ['수료 완료', done],
-             ['이수 강좌', new Set(myApps.filter(a => a.completed).map(a => a.course).filter(Boolean)).size],
-             ['진행 중', myApps.filter(a => !a.completed).length]];
-  } else {
-    cards = [['단체·개인 신청', myApps.length], ['수료 완료', done],
-             ['참여 프로그램', new Set(myApps.map(a => a.programTitle).filter(Boolean)).size],
-             ['진행 중', myApps.filter(a => !a.completed).length]];
-  }
-  $('myCards').innerHTML = cards.map(([l, n], i) =>
-    `<div class="dash-card a${i+1}"><div class="num">${n}</div><div class="lbl">${esc(l)}</div></div>`).join('');
-}
-
-function paintStatusCards(){
-  if (roleOf(profile) !== 'instructor'){ $('statusBox').style.display = 'none'; return; }
-  const live = myApps.filter(a => a.programType === 'recruit' || a.status);
-  if (!live.length){ $('statusBox').style.display = 'none'; return; }
-  $('statusBox').style.display = 'block';
-  $('statusCards').innerHTML = live.slice(0, 6).map(a => {
-    const k = statusOf(a);
-    const steps = STATUS_ORDER.filter(s => s !== 'rejected');
-    const idx = steps.indexOf(k);
-    const track = k === 'rejected'
-      ? '<div class="step-track rejected"><span>반려</span></div>'
-      : `<div class="step-track">${steps.map((s, i) =>
-          `<span class="step ${i <= idx ? 'on' : ''}">${statusSet(a)[s].label}</span>`).join('<i>›</i>')}</div>`;
-    const asg = [a.assignPlace, a.assignPeriod,
-      a.assignSessions ? `${a.assignSessions}차수` : '',
-      a.assignHours ? `${a.assignHours}시수` : ''].filter(Boolean).join(' · ');
-    return `<div class="status-card ${k}">
-      <div class="sc-head"><b>${esc(a.programTitle || '-')}</b>${statusChip(a)}</div>
-      <div class="sc-sub">${esc(a.course || '-')}</div>
-      ${track}
-      ${asg ? `<div class="sc-assign">📍 ${esc(asg)}</div>` : ''}
-      ${a.statusMemo ? `<div class="sc-memo">📝 ${esc(a.statusMemo)}</div>` : ''}
-    </div>`;
-  }).join('');
-}
-
-function paintActivity(){
-  if (roleOf(profile) !== 'instructor'){ $('activityBox').style.display = 'none'; return; }
-  const acts = myApps.filter(a => statusOf(a) === 'assigned');
-  if (!acts.length){ $('activityBox').style.display = 'none'; return; }
-  $('activityBox').style.display = 'block';
-  const hours = acts.reduce((s, a) => s + (Number(a.assignHours) || 0), 0);
-  const sess  = acts.reduce((s, a) => s + (Number(a.assignSessions) || 0), 0);
-  $('actTotal').innerHTML =
-    `<span class="status-chip assigned">총 ${acts.length}건 · ${sess}차수 · ${hours}시수</span>`;
-  $('activityBody').innerHTML = acts.map(a => `<tr>
-    <td><b>${esc(a.programTitle || '-')}</b></td>
-    <td>${esc(a.course || '-')}</td>
-    <td>${esc(a.assignPlace || '-')}</td>
-    <td class="nowrap">${esc(a.assignPeriod || '-')}</td>
-    <td class="nowrap">${a.assignSessions ?? '-'}</td>
-    <td class="nowrap">${a.assignHours ?? '-'}</td>
-    <td class="cell-sub">${esc(a.statusMemo || '-')}</td>
-  </tr>`).join('');
 }
 
 function goLinkBox(){
