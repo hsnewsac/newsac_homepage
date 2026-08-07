@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>강사 워크샵 — 한신대학교 디지털새싹 사업단</title>
+<meta name="description" content="한신대학교 디지털새싹 강사 워크샵 안내. 지원 자격, 다루는 내용, 참여 절차와 수료 후 활동까지 한눈에 확인하세요.">
+<meta property="og:title" content="강사 워크샵 — 한신대학교 디지털새싹 사업단">
+<meta property="og:description" content="AI 아트코딩 강사가 되는 첫 단계. 지원 자격부터 수료 후 활동까지.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  /* ===== workshop.html 전용 ===== */
+  .ws-lead{max-width:780px;margin:0 auto 34px;text-align:center;
+    font-size:1.02rem;line-height:1.85;color:#4A5850;letter-spacing:-.01em;}
+  .ws-lead b{color:var(--navy);font-weight:800;}
+
+  /* 3단 요약 */
+  .ws-tri{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;}
+  .ws-tri article{padding:24px 24px 26px;background:#fff;
+    border:1.5px solid var(--line);border-radius:var(--radius);}
+  .ws-tri .ws-no{display:inline-flex;align-items:center;justify-content:center;
+    width:30px;height:30px;border-radius:9px;background:var(--navy-soft,#E7EDF5);
+    color:var(--navy);font-size:.8rem;font-weight:800;margin-bottom:12px;}
+  .ws-tri h3{font-size:1.06rem;font-weight:800;letter-spacing:-.01em;color:#28352E;}
+  .ws-tri p{margin-top:8px;font-size:.89rem;line-height:1.75;color:#5A6862;}
+
+  /* 지원 자격 */
+  .ws-qual{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;}
+  .ws-q{padding:20px 22px;border-radius:13px;border:1.5px solid var(--line);background:#fff;}
+  .ws-q.main{border-color:var(--navy);background:#F5F8FC;}
+  .ws-q.assist{border-color:var(--sprout,#8ECFA6);background:#F3FAF5;}
+  .ws-q.no{border-color:#EDC9C2;background:#FDF6F3;}
+  .ws-q h4{font-size:.79rem;font-weight:800;letter-spacing:.03em;margin-bottom:11px;}
+  .ws-q.main h4{color:var(--navy);}
+  .ws-q.assist h4{color:var(--leaf);}
+  .ws-q.no h4{color:#B4553C;}
+  .ws-q ul{list-style:none;display:flex;flex-direction:column;gap:7px;}
+  .ws-q li{position:relative;padding-left:17px;font-size:.88rem;line-height:1.6;color:#3A4842;}
+  .ws-q li::before{content:'';position:absolute;left:2px;top:.55em;
+    width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.45;}
+  .ws-q.no li::before{border-radius:1px;}
+  .ws-qnote{margin-top:16px;font-size:.83rem;line-height:1.7;color:#6A776F;}
+
+  /* 다루는 내용 */
+  .ws-topics{display:grid;grid-template-columns:repeat(auto-fit,minmax(228px,1fr));gap:14px;}
+  .ws-topic{padding:20px 22px;background:#fff;border:1px solid var(--line);border-radius:13px;}
+  .ws-topic .tt{font-size:.73rem;font-weight:800;letter-spacing:.04em;color:var(--leaf);}
+  .ws-topic h4{margin-top:7px;font-size:.98rem;font-weight:800;color:#28352E;letter-spacing:-.01em;}
+  .ws-topic p{margin-top:8px;font-size:.85rem;line-height:1.72;color:#5A6862;}
+  .ws-topic .tools{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px;}
+  .ws-topic .tools span{font-size:.72rem;font-weight:700;color:#5A6862;
+    background:#F4F7F5;border:1px solid var(--line);border-radius:6px;padding:3px 8px;}
+
+  /* 진행 방식 */
+  .ws-modes{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
+  .ws-modes span{padding:9px 18px;border:1.5px solid var(--line);border-radius:999px;
+    background:#fff;font-size:.88rem;font-weight:700;color:#4A5850;}
+
+  /* 절차 타임라인 */
+  .ws-steps{counter-reset:st;display:flex;flex-direction:column;gap:0;
+    max-width:760px;margin:0 auto;}
+  .ws-step{position:relative;padding:0 0 26px 52px;counter-increment:st;}
+  .ws-step::before{content:counter(st);position:absolute;left:0;top:0;
+    width:32px;height:32px;border-radius:50%;background:var(--navy);color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-size:.83rem;font-weight:800;z-index:1;}
+  .ws-step::after{content:'';position:absolute;left:15.5px;top:32px;bottom:0;
+    width:1.5px;background:var(--line);}
+  .ws-step:last-child{padding-bottom:0;}
+  .ws-step:last-child::after{display:none;}
+  .ws-step h4{font-size:1rem;font-weight:800;color:#28352E;letter-spacing:-.01em;padding-top:5px;}
+  .ws-step p{margin-top:6px;font-size:.88rem;line-height:1.72;color:#5A6862;}
+  .ws-step p a{color:var(--leaf);font-weight:700;text-decoration:underline;}
+  .ws-step.done::before{background:var(--leaf);}
+
+  /* 접수 중 워크샵 */
+  .ws-open{display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:16px;}
+  .ws-oc{padding:22px 24px;background:#fff;border:1.5px solid var(--line);
+    border-radius:var(--radius);display:flex;flex-direction:column;gap:11px;}
+  .ws-oc.closed{opacity:.7;}
+  .ws-oc-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .ws-oc h4{font-size:1.06rem;font-weight:800;color:#28352E;letter-spacing:-.01em;}
+  .ws-oc dl{display:grid;grid-template-columns:52px 1fr;row-gap:6px;font-size:.87rem;}
+  .ws-oc dt{font-weight:700;color:var(--navy);}
+  .ws-oc dd{color:#43514A;}
+  .ws-oc .btn{margin-top:3px;text-decoration:none;text-align:center;}
+  .ws-loading,.ws-empty{grid-column:1/-1;padding:30px;text-align:center;
+    background:var(--paper);border:1px dashed var(--line);border-radius:var(--radius);
+    font-size:.9rem;line-height:1.75;color:#7A867F;}
+
+  /* FAQ */
+  .ws-faq{max-width:800px;margin:0 auto;display:flex;flex-direction:column;gap:10px;}
+  .ws-faq details{background:#fff;border:1px solid var(--line);border-radius:12px;
+    padding:16px 20px;}
+  .ws-faq details[open]{border-color:var(--sprout,#8ECFA6);}
+  .ws-faq summary{cursor:pointer;font-size:.94rem;font-weight:700;color:#28352E;
+    list-style:none;display:flex;align-items:center;gap:9px;}
+  .ws-faq summary::-webkit-details-marker{display:none;}
+  .ws-faq summary::before{content:'Q';flex:none;
+    width:22px;height:22px;border-radius:6px;background:var(--navy-soft,#E7EDF5);
+    color:var(--navy);font-size:.74rem;font-weight:800;
+    display:flex;align-items:center;justify-content:center;}
+  .ws-faq p{margin-top:11px;padding-left:31px;font-size:.88rem;line-height:1.8;color:#5A6862;}
+  .ws-faq p a{color:var(--leaf);font-weight:700;text-decoration:underline;}
+
+  /* 하단 CTA */
+  .ws-cta{max-width:760px;margin:0 auto;padding:34px 32px;text-align:center;
+    background:var(--navy);border-radius:var(--radius);color:#fff;}
+  .ws-cta h3{font-size:1.28rem;font-weight:800;letter-spacing:-.02em;}
+  .ws-cta p{margin-top:10px;font-size:.92rem;line-height:1.8;color:#C9D6E4;}
+  .ws-cta .ws-btns{margin-top:22px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
+  .ws-cta .btn{text-decoration:none;}
+  .ws-cta .btn-ghost{background:transparent;border:1.5px solid rgba(255,255,255,.45);color:#fff;}
+  .ws-cta .btn-ghost:hover{background:rgba(255,255,255,.12);}
+</style>
+</head>
+<body>
+
+<header id="site-header"></header>
+
+<div class="page-title">
+  <div class="page-title-inner">
+    <span class="tag">WORKSHOP</span>
+    <h1>강사 워크샵</h1>
+    <p>디지털새싹 AI 아트코딩 강사가 되는 첫 단계입니다.</p>
+  </div>
+</div>
+
+<!-- ===== 개요 ===== -->
+<section>
+  <div class="section">
+    <p class="ws-lead">
+      강사 워크샵은 <b>디지털새싹 캠프에서 학생들을 만날 강사</b>를 준비시키는 과정입니다.
+      AI 도구를 다루는 기술만이 아니라, 진입기에서 성장기까지 이어지는 수업 설계와
+      학생의 정서를 살피는 태도까지 함께 익힙니다.
+    </p>
+
+    <div class="ws-tri">
+      <article>
+        <span class="ws-no">01</span>
+        <h3>누가 참여하나요</h3>
+        <p>강사를 희망하는 교원, 프리랜서, 민간·기업 전문가, 대학원생과
+          보조강사를 희망하는 학부생이 참여합니다.</p>
+      </article>
+      <article>
+        <span class="ws-no">02</span>
+        <h3>무엇을 배우나요</h3>
+        <p>실제로 학교에서 운영하는 <b>교육과정 7종</b>을 직접 실습하며,
+          AI 도구 활용과 수업 운영, AI 윤리를 함께 다룹니다.</p>
+      </article>
+      <article>
+        <span class="ws-no">03</span>
+        <h3>수료하면</h3>
+        <p>이수증이 발급되고 마이페이지에 이력이 쌓입니다.
+          이후 강사 모집 공고에 지원해 학교 캠프에 배정될 수 있습니다.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 지원 자격 ===== -->
+<section class="prog-band">
+  <div class="section">
+    <div class="section-head">
+      <span class="tag">ELIGIBILITY</span>
+      <h2>지원 자격</h2>
+      <p class="section-sub">주강사와 보조강사의 자격 요건이 다릅니다.</p>
+    </div>
+
+    <div class="ws-qual">
+      <div class="ws-q main">
+        <h4>주강사</h4>
+        <ul>
+          <li>현직 교사</li>
+          <li>초·중등교원 자격 소지자</li>
+          <li>민간·기업 전문가</li>
+          <li>석사 학위 이상 대학원생</li>
+        </ul>
+      </div>
+      <div class="ws-q assist">
+        <h4>보조강사</h4>
+        <ul>
+          <li>학부생 이상</li>
+        </ul>
+      </div>
+      <div class="ws-q no">
+        <h4>지원 제외</h4>
+        <ul>
+          <li>현직 학원 운영자</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="ws-qnote">
+      ※ 위 자격은 워크샵 참여 기준입니다. 이후 <b>강사 모집 공고</b>의 지원 자격은
+      공고마다 다를 수 있으니, 각 공고에 안내된 조건을 확인해주세요.
+    </p>
+  </div>
+</section>
+
+<!-- ===== 다루는 내용 ===== -->
+<section>
+  <div class="section">
+    <div class="section-head">
+      <span class="tag">CURRICULUM</span>
+      <h2>워크샵에서 다루는 것</h2>
+      <p class="section-sub">
+        수업에서 실제로 쓰는 도구와 흐름을 그대로 경험합니다.
+        학생 대상 과정의 상세 내용은
+        <a href="programs.html" style="text-decoration:underline;color:var(--leaf);font-weight:700;">교육과정 7종</a>에서 확인하실 수 있습니다.
+      </p>
+    </div>
+
+    <div class="ws-topics">
+      <div class="ws-topic">
+        <span class="tt">01 · 수업 설계</span>
+        <h4>진입기 → 도약기 → 성장기</h4>
+        <p>모든 과정에 공통으로 적용되는 나선형 단계 구조를 이해하고,
+          차시별 목표와 결과물을 연결하는 방법을 익힙니다.</p>
+      </div>
+      <div class="ws-topic">
+        <span class="tt">02 · 문학코딩</span>
+        <h4>감정을 이야기로 바꾸기</h4>
+        <p>생성형 AI로 이야기를 쓰고 동화책과 주제곡, 소개 영상까지 만드는
+          정서 중심 창작 수업을 실습합니다.</p>
+        <div class="tools"><span>캔바</span><span>제미나이</span><span>Suno</span><span>패들렛</span></div>
+      </div>
+      <div class="ws-topic">
+        <span class="tt">03 · 음악코딩</span>
+        <h4>블록으로 만드는 음악</h4>
+        <p>물리 교구 허밍블럭스로 순차·반복·조건·함수를 몸으로 익히고,
+          AI로 음악과 뮤직비디오를 완성합니다.</p>
+        <div class="tools"><span>허밍블럭스</span><span>송메이커</span><span>Suno</span><span>Vrew</span></div>
+      </div>
+      <div class="ws-topic">
+        <span class="tt">04 · 과학코딩</span>
+        <h4>바이브코딩과 실감형 탐구</h4>
+        <p>자연어로 코드를 만드는 바이브코딩, VR 탐구, 공공데이터 활용 웹앱 제작까지
+          학교급별 과정을 다룹니다.</p>
+        <div class="tools"><span>티처블머신</span><span>VR</span><span>NEIS API</span><span>GitHub</span></div>
+      </div>
+      <div class="ws-topic">
+        <span class="tt">05 · 특화과정</span>
+        <h4>특수교육대상 학생 수업</h4>
+        <p>사회정서학습(SEL)을 융합한 12차시 과정과, 다감각 교구를 활용한
+          수준별 접근 방법을 다룹니다.</p>
+        <div class="tools"><span>오토드로우</span><span>색 악보</span><span>칸딘스키</span></div>
+      </div>
+      <div class="ws-topic">
+        <span class="tt">06 · AI 윤리</span>
+        <h4>학생과 함께 지키는 기준</h4>
+        <p>생성형 AI를 쓰는 수업에서 저작권과 개인정보, 결과물에 대한 책임을
+          학생 눈높이로 다루는 방법을 익힙니다.</p>
+      </div>
+    </div>
+
+    <div style="margin-top:30px;">
+      <p class="section-sub" style="text-align:center;margin-bottom:14px;">진행 방식은 회차마다 다릅니다.</p>
+      <div class="ws-modes">
+        <span>대면 집합 워크샵</span>
+        <span>온라인 실시간 워크샵</span>
+        <span>대면 + 온라인 병행</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 참여 절차 ===== -->
+<section class="prog-band">
+  <div class="section">
+    <div class="section-head">
+      <span class="tag">PROCESS</span>
+      <h2>참여 절차</h2>
+      <p class="section-sub">신청부터 학교 배정까지 이어지는 흐름입니다.</p>
+    </div>
+
+    <div class="ws-steps">
+      <div class="ws-step">
+        <h4>회원가입</h4>
+        <p>강사 회원으로 가입하고 전문분야·경력·활동 가능 지역을 입력합니다.
+          이 정보는 이후 강사 배정 시 후보 검색에 사용됩니다.</p>
+      </div>
+      <div class="ws-step">
+        <h4>워크샵 신청</h4>
+        <p><a href="index.html">홈 화면</a>의 접수 중인 워크샵에서 희망 강좌를 선택해 신청합니다.
+          공고에 따라 로그인한 회원만 신청할 수 있습니다.</p>
+      </div>
+      <div class="ws-step">
+        <h4>승인 확인</h4>
+        <p>사업단 검토 후 승인됩니다. 진행 상태는
+          <a href="mypage.html">마이페이지</a> 또는
+          <a href="check.html">신청 확인</a>에서 볼 수 있습니다.</p>
+      </div>
+      <div class="ws-step">
+        <h4>워크샵 참여</h4>
+        <p>안내된 일정과 장소에서 워크샵에 참여합니다.
+          변경 사항은 <a href="notice.html">공지사항</a>으로 안내드립니다.</p>
+      </div>
+      <div class="ws-step done">
+        <h4>수료 · 이수증 발급</h4>
+        <p>수료 처리가 완료되면 이수증 발급번호가 부여되고,
+          <a href="cert.html">이수증 발급</a> 페이지에서 내려받을 수 있습니다.</p>
+      </div>
+      <div class="ws-step done">
+        <h4>강사 모집 지원 · 배정</h4>
+        <p>이후 올라오는 강사 모집 공고에 지원하면,
+          배정된 학교와 차수·시수가 마이페이지 강의활동 이력에 누적됩니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 접수 중인 워크샵 ===== -->
+<section>
+  <div class="section">
+    <div class="section-head">
+      <span class="tag">NOW OPEN</span>
+      <h2>접수 중인 강사 워크샵</h2>
+      <p class="section-sub">마감이 임박한 순서로 표시됩니다.</p>
+    </div>
+    <div class="ws-open" id="wsOpen">
+      <div class="ws-loading">워크샵 정보를 불러오는 중입니다…</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FAQ ===== -->
+<section class="prog-band">
+  <div class="section">
+    <div class="section-head">
+      <span class="tag">FAQ</span>
+      <h2>자주 묻는 질문</h2>
+    </div>
+
+    <div class="ws-faq">
+      <details>
+        <summary>회원가입을 하지 않아도 신청할 수 있나요?</summary>
+        <p>공고마다 다릅니다. 로그인 제한이 걸린 워크샵은 회원만 신청할 수 있고,
+          그렇지 않은 경우 비회원으로도 신청할 수 있습니다.
+          다만 회원으로 신청하면 진행 상태와 이수 이력이 마이페이지에 자동으로 쌓이므로
+          가입 후 신청하시길 권합니다.</p>
+      </details>
+      <details>
+        <summary>비회원으로 신청했는데 나중에 가입하면 이력이 사라지나요?</summary>
+        <p>아닙니다. <a href="mypage.html">마이페이지</a>에서 신청번호로
+          기존 신청 내역을 계정에 연결할 수 있습니다.
+          연결하면 이수 이력과 이수증이 함께 관리됩니다.</p>
+      </details>
+      <details>
+        <summary>신청 후 진행 상태는 어떻게 확인하나요?</summary>
+        <p>신청접수 → 검토중 → 승인완료 순으로 진행되며,
+          <a href="check.html">신청 확인</a> 페이지에서 신청번호로,
+          회원이라면 <a href="mypage.html">마이페이지</a>에서 바로 확인할 수 있습니다.</p>
+      </details>
+      <details>
+        <summary>이수증은 언제, 어떻게 받나요?</summary>
+        <p>워크샵이 끝나고 사업단에서 수료 처리를 완료하면 이수증 발급번호가 부여됩니다.
+          그 이후 <a href="cert.html">이수증 발급</a> 페이지에서 내려받으실 수 있습니다.
+          수료 처리 전에는 발급되지 않습니다.</p>
+      </details>
+      <details>
+        <summary>워크샵을 이수하면 반드시 강사로 배정되나요?</summary>
+        <p>워크샵 이수와 강사 배정은 별개의 절차입니다.
+          이수 후 올라오는 <b>강사 모집 공고</b>에 지원하셔야 하며,
+          공고별 지원 자격과 선발 결과에 따라 배정됩니다.</p>
+      </details>
+      <details>
+        <summary>신청을 취소하고 싶습니다.</summary>
+        <p>승인 전에는 마이페이지나 신청 확인 페이지에서 직접 취소할 수 있습니다.
+          다만 수료 처리되었거나 배정이 확정된 건은 취소할 수 없으니
+          사업단(newsac26@naver.com / 031-379-0255)으로 문의해주세요.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CTA ===== -->
+<section>
+  <div class="section">
+    <div class="ws-cta">
+      <h3>디지털 세상의 새싹, 함께 키우실래요?</h3>
+      <p>접수 중인 워크샵을 확인하고 신청해보세요.<br>
+        궁금한 점은 사무국(031-379-0255)으로 문의하시면 안내해드립니다.</p>
+      <div class="ws-btns">
+        <a class="btn btn-primary" href="index.html">접수 중인 워크샵 보기</a>
+        <a class="btn btn-ghost" href="programs.html">교육과정 7종 보기</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer id="site-footer"></footer>
+
+<!-- 레이아웃은 Firebase와 무관하게 먼저 렌더링합니다.
+     (네트워크 문제로 Firebase가 실패해도 헤더·푸터와 안내 내용은 그대로 보이도록) -->
+<script type="module">
+  import { initLayout } from './js/common.js';
+  initLayout('workshop');
+</script>
+
+<!-- 접수 중인 워크샵 목록 (실시간) -->
+<script type="module">
+  import { esc, ddayInfo, fbError } from './js/common.js';
+
+  const box = document.getElementById('wsOpen');
+
+  const isClosed = p => {
+    const remain = (p.capacity || 0) - (p.applied || 0);
+    return !p.open || ddayInfo(p).closed || remain <= 0;
+  };
+
+  function card(p){
+    const dd = ddayInfo(p);
+    const closed = isClosed(p);
+    const remain = (p.capacity || 0) - (p.applied || 0);
+    return `<article class="ws-oc${closed ? ' closed' : ''}">
+      <div class="ws-oc-top">
+        <span class="status ${closed ? '' : 'live'}">${closed ? '접수마감' : '접수중'}</span>
+        <span class="dday">${esc(dd.text)}</span>
+      </div>
+      <h4>${esc(p.title || '-')}</h4>
+      <dl>
+        <dt>대상</dt><dd>${esc(p.target || '-')}</dd>
+        <dt>운영</dt><dd>${esc(p.period || '-')}</dd>
+        <dt>장소</dt><dd>${esc(p.place || '-')}</dd>
+        <dt>정원</dt><dd>${p.capacity ? `${p.capacity}명 · 남은 자리 ${Math.max(0, remain)}명` : '-'}</dd>
+      </dl>
+      <a class="btn ${closed ? 'btn-outline' : 'btn-navy'} btn-sm" href="index.html">
+        ${closed ? '다른 워크샵 보기' : '홈에서 신청하기'}</a>
+    </article>`;
+  }
+
+  let db, collection, query, where, onSnapshot;
+  try {
+    ({ db } = await import('./js/firebase-init.js'));
+    ({ collection, query, where, onSnapshot } =
+      await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js"));
+  } catch (e) {
+    box.innerHTML = `<div class="ws-empty">워크샵 정보를 불러오지 못했습니다.<br>
+      네트워크 상태를 확인한 뒤 새로고침해주세요.</div>`;
+    throw e;
+  }
+
+  onSnapshot(
+    query(collection(db, 'programs'), where('type', '==', 'workshop')),
+    snap => {
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => {
+          const ca = isClosed(a) ? 1 : 0, cb = isClosed(b) ? 1 : 0;
+          if (ca !== cb) return ca - cb;
+          const da = a.deadline || '9999-12-31', dbb = b.deadline || '9999-12-31';
+          if (da === dbb) return 0;
+          return ca === 0 ? (da < dbb ? -1 : 1) : (da > dbb ? -1 : 1);
+        });
+      box.innerHTML = list.length
+        ? list.map(card).join('')
+        : `<div class="ws-empty">현재 접수 중인 강사 워크샵이 없습니다.<br>
+             새로운 일정은 <a href="notice.html" style="text-decoration:underline;color:var(--leaf);font-weight:700;">공지사항</a>으로 안내드립니다.</div>`;
+    },
+    err => {
+      box.innerHTML = `<div class="ws-empty">워크샵 정보를 불러오지 못했습니다.<br>${esc(fbError(err))}</div>`;
+    }
+  );
+</script>
+</body>
+</html>

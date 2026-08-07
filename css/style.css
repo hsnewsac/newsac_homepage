@@ -996,3 +996,10 @@ nav a.active{background:var(--sprout-soft);color:var(--leaf);}
 .dt-pair{ display:grid; grid-template-columns:1fr 118px; gap:8px; }
 .dt-pair input{ width:100%; }
 @media (max-width:520px){ .dt-pair{ grid-template-columns:1fr; } }
+
+/* v11.1: 모집 공고 지원 시 공고 조건 확인 박스 */
+.apply-terms{display:grid;grid-template-columns:74px 1fr;gap:6px 12px;
+  padding:13px 15px;background:var(--paper);border:1px solid var(--line);
+  border-radius:10px;font-size:.85rem;line-height:1.6;}
+.apply-terms dt{font-weight:700;color:var(--navy);}
+.apply-terms dd{color:#3A4842;}

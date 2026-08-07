@@ -12,7 +12,7 @@ import {
 import {
   initLayout, esc, ddayInfo, noticeIsNew, catClass, fbError,
   KIND, ORG_TYPES, openModal, closeModal, bindModalEvents, toast,
-  WEEKDAYS, TIMESLOTS, ROLES, roleOf, qualificationHTML, RECRUIT_FOR
+  ROLES, roleOf, qualificationHTML, RECRUIT_FOR
 } from './common.js';
 import { sendApplicationEmail, emailEnabled } from './email-config.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
@@ -24,10 +24,6 @@ document.getElementById('a-orgtype').innerHTML =
   '<option value="">유형을 선택하세요</option>' +
   ORG_TYPES.map(t => `<option>${t}</option>`).join('');
 
-document.getElementById('a-days').innerHTML = WEEKDAYS.map((d, i) =>
-  `<label class="chk"><input type="checkbox" name="ad" value="${d}" id="ad${i}"><span>${d}</span></label>`).join('');
-document.getElementById('a-time').innerHTML =
-  '<option value="">선택</option>' + TIMESLOTS.map(t => `<option>${t}</option>`).join('');
 
 const $ = id => document.getElementById(id);
 let programs = [];
@@ -213,6 +209,30 @@ function openApply(programId){
   // 강사 모집 공고면 지원서 항목으로 전환
   const isRecruit = p.type === 'recruit';
   $('recruitFields').style.display = isRecruit ? 'block' : 'none';
+
+  if (isRecruit){
+    /* 공고에 이미 고정된 조건을 보여주고 확인만 받습니다.
+       (가능 요일·시간대·희망 지역은 특정 공고 지원서에 맞지 않아 제거) */
+    const terms = [
+      ['모집 구분', p.role],
+      [p.recruitFor === 'workshop' ? '진행 방식' : '운영 형태', p.mode],
+      ['활동 기간', p.period],
+      [p.recruitFor === 'workshop' ? '운영 장소' : '활동 지역', p.place],
+      ['운영 조건', p.hours],
+      ['담당 업무', p.content]
+    ].filter(([, v]) => v);
+    $('a-terms').innerHTML = terms
+      .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('');
+
+    /* 주강사·보조강사를 함께 모집하는 공고만 역할을 고르게 합니다 */
+    const both = (p.role || '').includes('+');
+    $('a-roleRow').style.display = both ? '' : 'none';
+    $('a-role').innerHTML = both
+      ? ['주강사', '보조강사'].map(v => `<option>${v}</option>`).join('')
+      : `<option>${esc(p.role || '')}</option>`;
+    $('a-role').required = both;
+    $('a-agree').checked = false;
+  }
   $('a-courseLabel').innerHTML = (isRecruit ? '지원 분야' : '희망 강좌') + ' <span class="req">*</span>';
   $('a-course').firstElementChild.textContent = isRecruit ? '지원 분야를 선택하세요' : '강좌를 선택하세요';
   $('a-memo').placeholder = isRecruit
@@ -243,6 +263,12 @@ $('applyForm').addEventListener('submit', async e => {
   e.preventDefault();
   const programId = $('a-programId').value;
   const p = programs.find(x => x.id === programId);
+  if (p && p.type === 'recruit' && !$('a-agree').checked){
+    $('applyError').textContent = '공고의 운영 일정과 조건 확인에 동의해주세요.';
+    $('applyError').style.display = 'block';
+    $('a-agree').focus();
+    return;
+  }
   const btn = $('applySubmitBtn');
   btn.disabled = true; btn.textContent = '접수 중…';
   try {
@@ -264,9 +290,8 @@ $('applyForm').addEventListener('submit', async e => {
       createdAt: serverTimestamp()
     };
     if (p && p.type === 'recruit'){
-      appData.availDays = [...document.querySelectorAll('#a-days input:checked')].map(c => c.value);
-      appData.availTime = $('a-time').value;
-      appData.preferArea = $('a-area').value.trim();
+      appData.applyRole = $('a-role').value || p.role || '';
+      appData.agreedTerms = true;
     }
     const ref = await addDoc(collection(db, 'applications'), appData);
     await updateDoc(doc(db, 'programs', programId), { applied: increment(1) });

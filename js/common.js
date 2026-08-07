@@ -208,6 +208,7 @@ export function initLayout(active){
         <a href="index.html"  class="${active === 'home'   ? 'active' : ''}">홈</a>
         <a href="notice.html" class="${active === 'notice' ? 'active' : ''}">공지사항</a>
         <a href="check.html"  class="${active === 'check'  ? 'active' : ''}">신청 확인</a>
+        <a href="workshop.html" class="${active === 'workshop' ? 'active' : ''}">강사 워크샵</a>
         <a href="programs.html" class="${active === 'programs' ? 'active' : ''}">교육과정</a>
         <a href="about.html"  class="${active === 'about'  ? 'active' : ''}">사업단 소개</a>
         <span id="authChip" class="auth-chip"><span class="chip-skel"></span></span>
@@ -242,7 +243,7 @@ export function initLayout(active){
       </div>
       <div>
         <h4>바로가기</h4>
-        <p><a href="index.html">홈</a> · <a href="notice.html">공지사항</a> · <a href="check.html">신청 확인</a> · <a href="mypage.html">마이페이지</a><br><a href="programs.html">교육과정</a> · <a href="about.html">사업단 소개</a></p>
+        <p><a href="index.html">홈</a> · <a href="notice.html">공지사항</a> · <a href="check.html">신청 확인</a> · <a href="mypage.html">마이페이지</a><br><a href="workshop.html">강사 워크샵</a> · <a href="programs.html">교육과정</a> · <a href="about.html">사업단 소개</a></p>
       </div>
     </div>
     <div class="footer-bottom">© 2026 Hanshin University Digital Saessak.</div>`;

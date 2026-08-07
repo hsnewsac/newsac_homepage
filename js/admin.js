@@ -1331,12 +1331,11 @@ function renderAssign(){
   $('as-count').innerHTML = `<span class="status-chip wait">지원 ${apps.length}건</span>`;
   const tb = $('as-applicantBody');
   if (!apps.length){
-    tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#6A776F;">아직 지원자가 없습니다. 아래 강사 후보 검색에서 직접 등록할 수 있습니다.</td></tr>';
+    tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#6A776F;">아직 지원자가 없습니다. 아래 강사 후보 검색에서 직접 등록할 수 있습니다.</td></tr>';
   } else {
     tb.innerHTML = apps
       .slice().sort((a,b) => STATUS_ORDER.indexOf(statusOf(a)) - STATUS_ORDER.indexOf(statusOf(b)) || tsNum(b.createdAt) - tsNum(a.createdAt))
       .map(a => {
-        const days = (a.availDays || []).join('·');
         const asg = [a.assignPlace, a.assignPeriod,
           a.assignSessions ? `${a.assignSessions}차수` : '',
           a.assignHours ? `${a.assignHours}시수` : ''].filter(Boolean).join(' · ');
@@ -1345,8 +1344,7 @@ function renderAssign(){
         <td><b>${esc(a.name)}</b>${a.uid ? '<span class="chip member">회원</span>' : ''}</td>
         <td>${esc(a.org) || '-'}</td>
         <td>${esc(a.course || '-')}</td>
-        <td class="cell-sub">${days ? esc(days) : '-'}<br>${esc(a.availTime || '')}</td>
-        <td class="cell-sub">${esc(a.preferArea || '-')}</td>
+        <td class="cell-sub">${esc(a.applyRole || '-')}</td>
         <td>${statusChip(a)}</td>
         <td class="cell-sub">${asg ? esc(asg) : '<span style="color:#A5B1A9;">미배정</span>'}
           ${a.statusMemo ? `<br><span style="color:#8A968E;">📝 ${esc(a.statusMemo)}</span>` : ''}</td>
@@ -1476,7 +1474,7 @@ function downloadCSV(scope = 'filtered'){
   if (!list.length){ alert('내보낼 신청 내역이 없습니다.'); return; }
   const rows = [['접수일시','신청번호','프로그램','운영기간','운영장소','유형','강좌/지원분야','강사명','소속기관','소속기관 유형',
                  '전화번호','전자메일','회원가입 여부','승인/진행 상태','배정 학교/기관','배정 기간',
-                 '배정 차수','배정 시수','안내 메모','가능 요일','가능 시간대','희망 지역',
+                 '배정 차수','배정 시수','안내 메모','희망 역할',
                  '수료여부','이수증 발급번호','요청사항']];
   list.forEach(a => {
     rows.push([tsText(a.createdAt), a.id, progTitle(a) || '',
@@ -1484,7 +1482,7 @@ function downloadCSV(scope = 'filtered'){
       a.course || a.session || '', a.name, a.org, a.orgType || '', a.phone, a.email,
       a.uid ? '회원' : '비회원', statusSet(a)[statusOf(a)].label,
       a.assignPlace || '', a.assignPeriod || '', a.assignSessions ?? '', a.assignHours ?? '',
-      a.statusMemo || '', (a.availDays || []).join('·'), a.availTime || '', a.preferArea || '',
+      a.statusMemo || '', a.applyRole || '',
       a.completed ? '수료' : '접수', a.certNo || '', a.memo]);
   });
   const tag = scope === 'all' ? '전체' : '검색결과';

@@ -114,22 +114,20 @@
         <select id="a-course" required></select>
       </div>
 
-      <!-- 강사 모집 공고 전용 입력 -->
+      <!-- 강사 모집 공고 전용 -->
       <div id="recruitFields" style="display:none;">
         <div class="form-row">
-          <label>강의 가능 요일 <span class="hint">(복수 선택)</span></label>
-          <div class="chk-grid tight" id="a-days"></div>
+          <label>공고 운영 조건 <span class="hint">(공고에 고정된 내용입니다)</span></label>
+          <dl class="apply-terms" id="a-terms"></dl>
         </div>
-        <div class="form-2col">
-          <div class="form-row">
-            <label for="a-time">가능 시간대</label>
-            <select id="a-time"><option value="">선택</option></select>
-          </div>
-          <div class="form-row">
-            <label for="a-area">희망 배정 지역</label>
-            <input id="a-area" type="text" placeholder="예) 오산·화성 권역 우선">
-          </div>
+        <div class="form-row" id="a-roleRow" style="display:none;">
+          <label for="a-role">희망 역할 <span class="req">*</span></label>
+          <select id="a-role"></select>
         </div>
+        <label class="form-check">
+          <input type="checkbox" id="a-agree">
+          <span>위 <b>운영 일정과 조건</b>을 확인했으며, 해당 기간에 참여할 수 있습니다.</span>
+        </label>
       </div>
       <div class="form-2col">
         <div class="form-row">
