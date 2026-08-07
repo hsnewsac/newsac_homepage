@@ -6,7 +6,7 @@ import { db } from './firebase-init.js';
 import {
   doc, getDoc, deleteDoc, updateDoc, increment
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
-import { initLayout, esc, fbError } from './common.js';
+import { initLayout, esc, fbError, statusOf } from './common.js';
 
 initLayout('check');
 
@@ -79,6 +79,12 @@ async function cancelApplication(){
   if (!currentApp) return;
   if (currentApp.completed){
     showError('이미 수료 처리된 신청은 취소할 수 없습니다. 사업단(newsac26@naver.com / 031-379-0255)으로 문의해주세요.');
+    return;
+  }
+  /* v15: 강사 모집 공고의 배정 확정 건만 취소를 제한합니다.
+     워크샵·연수 신청은 승인완료여도 수료 전이면 취소할 수 있습니다. */
+  if (currentApp.programType === 'recruit' && statusOf(currentApp) === 'assigned'){
+    showError('배정이 확정된 지원 건은 취소할 수 없습니다. 사업단(newsac26@naver.com / 031-379-0255)으로 문의해주세요.');
     return;
   }
   if (!confirm(`[${currentApp.programTitle} · ${currentApp.course || ''}]\n${currentApp.name}님의 신청을 취소할까요?\n\n취소 후에는 되돌릴 수 없으며, 재참여를 원하시면 다시 신청해야 합니다.`)) return;
