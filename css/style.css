@@ -1064,3 +1064,10 @@ nav a.active{background:var(--sprout-soft);color:var(--leaf);}
 .admin-banner .ab-tx b{display:block;font-size:.92rem;font-weight:800;color:var(--navy);}
 .admin-banner .ab-tx span{display:block;margin-top:3px;font-size:.82rem;line-height:1.6;color:#5A6862;}
 .admin-banner .btn{flex:none;text-decoration:none;}
+
+/* v12: 강의실 진입 전 계정 연결 안내 */
+.cr-card.need-link{border-color:#F0D9BC;background:#FFFCF8;}
+.cr-card .cc-warn{padding:10px 12px;border-radius:9px;background:#FDF3E8;
+  border:1px solid #F0D9BC;font-size:.8rem;line-height:1.6;color:#8C5A1E;font-weight:600;}
+.admin-box.flash{animation:boxflash 1.6s ease;}
+@keyframes boxflash{0%,100%{box-shadow:none;}25%,60%{box-shadow:0 0 0 3px rgba(30,127,79,.28);}}

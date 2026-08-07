@@ -403,8 +403,13 @@ async function paintClassroom(){
   const box = $('classroomBox'), grid = $('classroomCards');
   if (!box) return;
 
-  const live = myApps.filter(a => statusOf(a) === 'assigned' && a.programId);
-  if (!live.length){ box.style.display = 'none'; return; }
+  const approved = myApps.filter(a => statusOf(a) === 'assigned' && a.programId);
+  /* 강의실은 '내 계정에 연결된' 신청 건만 열립니다.
+     비회원으로 신청했다가 가입한 경우 이메일만 같고 uid가 비어 있어
+     카드는 보이는데 입장은 막히던 문제가 있어, 연결 안내 카드로 구분합니다. */
+  const live     = approved.filter(a => a.uid === currentUser.uid);
+  const unlinked = approved.filter(a => a.uid !== currentUser.uid);
+  if (!live.length && !unlinked.length){ box.style.display = 'none'; return; }
 
   /* 각 신청 건의 프로그램·차시·진도를 모읍니다 */
   const cards = [];
@@ -438,9 +443,25 @@ async function paintClassroom(){
     } catch (e) { console.warn('강의실 조회 오류:', e); }
   }
 
-  if (!cards.length){ box.style.display = 'none'; return; }
+  /* 연결이 필요한 건도 강의실이 열려 있는지 확인 */
+  const needLink = [];
+  for (const a of unlinked){
+    try {
+      const ps = await getDoc(doc(db, 'programs', a.programId));
+      if (ps.exists() && ps.data().hasClassroom) needLink.push({ a, p: ps.data() });
+    } catch (e) { /* 무시 */ }
+  }
+
+  if (!cards.length && !needLink.length){ box.style.display = 'none'; return; }
   box.style.display = 'block';
-  grid.innerHTML = cards.map(c => `
+  grid.innerHTML = needLink.map(n => `
+    <div class="cr-card need-link">
+      <h4>${esc(n.p.title)}</h4>
+      <span class="cc-course">${esc(n.a.course || n.a.session || '')}</span>
+      <div class="cc-warn">🔗 이 신청은 아직 내 계정에 연결되지 않았습니다.<br>
+        연결해야 강의실에 입장할 수 있습니다.</div>
+      <button class="btn btn-navy btn-sm" onclick="goLinkBox()">신청 내역 연결하기</button>
+    </div>`).join('') + cards.map(c => `
     <div class="cr-card">
       <h4>${esc(c.p.title)}</h4>
       <span class="cc-course">${esc(c.a.course || c.a.session || '')}</span>
@@ -557,6 +578,13 @@ function paintActivity(){
     <td class="cell-sub">${esc(a.statusMemo || '-')}</td>
   </tr>`).join('');
 }
+
+function goLinkBox(){
+  const el = $('linkBox');
+  if (el){ el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('flash'); 
+    setTimeout(() => el.classList.remove('flash'), 1600); }
+}
+window.goLinkBox = goLinkBox;
 
 function reloadMyApps(){
   $('myAppsBody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:#6A776F;">불러오는 중…</td></tr>';
