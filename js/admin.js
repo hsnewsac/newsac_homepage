@@ -1488,9 +1488,9 @@ function printAttendance(){
     groups.get(key).push(a);
   });
 
-  /* A4 한 장에 서명 18줄 — 신청자가 적으면 빈 줄로 채우고(현장 추가 인원용),
-     18명을 넘으면 연번을 이어가며 다음 장으로 나눕니다. */
-  const PER_PAGE = 18;
+  /* A4 한 장에 서명 20줄(한 반 정원 기준) — 신청자가 적으면 빈 줄로 채우고,
+     20명을 넘으면 연번을 이어가며 다음 장으로 나눕니다. */
+  const PER_PAGE = 20;
 
   $('attPages').innerHTML = [...groups.entries()]
     .sort((x, y) => x[0].localeCompare(y[0], 'ko'))
