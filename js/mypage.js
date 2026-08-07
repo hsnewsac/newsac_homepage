@@ -458,6 +458,110 @@ async function paintClassroom(){
     </div>`).join('');
 }
 
+function paintApps(){
+  const tb = $('myAppsBody');
+  const role = roleOf(profile);
+  if (!myApps.length){
+    tb.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#6A776F;">
+      ${role === 'instructor' ? '신청·지원 이력이 없습니다.' : '참여 이력이 없습니다.'}<br>
+      <a href="index.html" style="color:var(--leaf);text-decoration:underline;">홈에서 접수 중인 프로그램</a>을 확인해보세요!</td></tr>`;
+    return;
+  }
+  tb.innerHTML = myApps.map(a => {
+    const locked = a.completed || statusOf(a) === 'assigned';
+    return `<tr>
+    <td class="nowrap">${esc(tsText(a.createdAt, false))}</td>
+    <td><b>${esc(a.programTitle) || '-'}</b>${a.programType === 'recruit' ? '<span class="chip recruit">모집</span>' : ''}</td>
+    <td>${esc(a.course || a.session) || '-'}</td>
+    <td class="code-cell">${esc(a.id)}</td>
+    <td>${statusChip(a)}${a.statusMemo ? `<br><span class="cell-sub">📝 ${esc(a.statusMemo)}</span>` : ''}</td>
+    <td>${a.completed
+      ? '<span class="status-chip done">수료완료</span>'
+      : '<span class="status-chip wait">미수료</span>'}</td>
+    <td><div class="t-actions">
+      ${a.completed
+        ? `<a class="mini-btn" href="cert.html?id=${a.id}" target="_blank" rel="noopener">이수증</a>`
+        : (locked
+            ? '<span class="cell-sub">사업단 문의</span>'
+            : `<button class="mini-btn danger" onclick="cancelMyApp('${a.id}')">신청취소</button>`)}
+    </div></td>
+  </tr>`;
+  }).join('');
+}
+
+/* 역할별 요약 카드 */
+function paintCards(){
+  const role = roleOf(profile);
+  const done = myApps.filter(a => a.completed).length;
+  const acts = myApps.filter(a => statusOf(a) === 'assigned');
+  const hours = acts.reduce((s, a) => s + (Number(a.assignHours) || 0), 0);
+  let cards;
+  if (role === 'instructor'){
+    cards = [['총 신청·지원', myApps.length], ['수료 완료', done],
+             ['배정 확정', acts.length], ['누적 강의 시수', hours]];
+  } else if (role === 'parent'){
+    cards = [['자녀 참여 신청', myApps.length], ['수료 완료', done],
+             ['참여 프로그램', new Set(myApps.map(a => a.programTitle).filter(Boolean)).size],
+             ['진행 중', myApps.filter(a => !a.completed).length]];
+  } else if (role === 'student'){
+    cards = [['참여 신청', myApps.length], ['수료 완료', done],
+             ['이수 강좌', new Set(myApps.filter(a => a.completed).map(a => a.course).filter(Boolean)).size],
+             ['진행 중', myApps.filter(a => !a.completed).length]];
+  } else {
+    cards = [['단체·개인 신청', myApps.length], ['수료 완료', done],
+             ['참여 프로그램', new Set(myApps.map(a => a.programTitle).filter(Boolean)).size],
+             ['진행 중', myApps.filter(a => !a.completed).length]];
+  }
+  $('myCards').innerHTML = cards.map(([l, n], i) =>
+    `<div class="dash-card a${i+1}"><div class="num">${n}</div><div class="lbl">${esc(l)}</div></div>`).join('');
+}
+
+function paintStatusCards(){
+  if (roleOf(profile) !== 'instructor'){ $('statusBox').style.display = 'none'; return; }
+  const live = myApps.filter(a => a.programType === 'recruit' || a.status);
+  if (!live.length){ $('statusBox').style.display = 'none'; return; }
+  $('statusBox').style.display = 'block';
+  $('statusCards').innerHTML = live.slice(0, 6).map(a => {
+    const k = statusOf(a);
+    const steps = STATUS_ORDER.filter(s => s !== 'rejected');
+    const idx = steps.indexOf(k);
+    const track = k === 'rejected'
+      ? '<div class="step-track rejected"><span>반려</span></div>'
+      : `<div class="step-track">${steps.map((s, i) =>
+          `<span class="step ${i <= idx ? 'on' : ''}">${statusSet(a)[s].label}</span>`).join('<i>›</i>')}</div>`;
+    const asg = [a.assignPlace, a.assignPeriod,
+      a.assignSessions ? `${a.assignSessions}차수` : '',
+      a.assignHours ? `${a.assignHours}시수` : ''].filter(Boolean).join(' · ');
+    return `<div class="status-card ${k}">
+      <div class="sc-head"><b>${esc(a.programTitle || '-')}</b>${statusChip(a)}</div>
+      <div class="sc-sub">${esc(a.course || '-')}</div>
+      ${track}
+      ${asg ? `<div class="sc-assign">📍 ${esc(asg)}</div>` : ''}
+      ${a.statusMemo ? `<div class="sc-memo">📝 ${esc(a.statusMemo)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function paintActivity(){
+  if (roleOf(profile) !== 'instructor'){ $('activityBox').style.display = 'none'; return; }
+  const acts = myApps.filter(a => statusOf(a) === 'assigned');
+  if (!acts.length){ $('activityBox').style.display = 'none'; return; }
+  $('activityBox').style.display = 'block';
+  const hours = acts.reduce((s, a) => s + (Number(a.assignHours) || 0), 0);
+  const sess  = acts.reduce((s, a) => s + (Number(a.assignSessions) || 0), 0);
+  $('actTotal').innerHTML =
+    `<span class="status-chip assigned">총 ${acts.length}건 · ${sess}차수 · ${hours}시수</span>`;
+  $('activityBody').innerHTML = acts.map(a => `<tr>
+    <td><b>${esc(a.programTitle || '-')}</b></td>
+    <td>${esc(a.course || '-')}</td>
+    <td>${esc(a.assignPlace || '-')}</td>
+    <td class="nowrap">${esc(a.assignPeriod || '-')}</td>
+    <td class="nowrap">${a.assignSessions ?? '-'}</td>
+    <td class="nowrap">${a.assignHours ?? '-'}</td>
+    <td class="cell-sub">${esc(a.statusMemo || '-')}</td>
+  </tr>`).join('');
+}
+
 function goLinkBox(){
   const el = $('linkBox');
   if (el){ el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('flash'); 
