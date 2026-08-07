@@ -84,7 +84,11 @@ function cardHTML(p){
       </div>
       <h3>${esc(p.title)}</h3>
       <dl>
-        <dt>${isRecruit ? '모집대상' : '대상'}</dt><dd>${esc(p.target)}</dd>
+        <dt>${isRecruit ? '모집대상' : '대상'}</dt>
+        <dd class="target-dd">${esc(p.target)}${p.type === 'workshop' ? `
+          <span class="help qual-help" tabindex="0" role="button" aria-label="지원 자격 상세 보기">?
+            <span class="help-pop"><b class="pop-title">지원 자격</b>${qualificationHTML()}</span>
+          </span>` : ''}</dd>
         ${isRecruit && p.role ? `<dt>모집구분</dt><dd>${esc(p.role)}</dd>` : ''}
         ${isRecruit && p.mode ? `<dt>운영형태</dt><dd>${esc(p.mode)}</dd>` : ''}
         ${isRecruit && Array.isArray(p.levels) && p.levels.length
@@ -96,8 +100,7 @@ function cardHTML(p){
         ${isRecruit && p.qualification
           ? `<dt>지원자격</dt><dd>${esc(p.qualification).replace(/\n/g, '<br>')}</dd>` : ''}
       </dl>
-      ${!isRecruit && p.type === 'workshop'
-        ? `<div class="qual-note"><b>지원 자격</b>${qualificationHTML()}</div>` : ''}
+
       <div class="seat-bar">
         ${isRecruit ? '지원 현황' : '신청 현황'} <strong>${applied} / ${p.capacity}명</strong> · ${seatText}
         <div class="seat-track"><div class="seat-fill" style="width:${pct}%"></div></div>

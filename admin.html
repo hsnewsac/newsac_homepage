@@ -287,13 +287,11 @@
         </div>
 
         <div class="table-scroll">
-          <table class="admin-table sortable">
+          <table class="admin-table sortable compact">
             <thead>
               <tr>
                 <th class="c-check"><input type="checkbox" id="chkAll" onchange="toggleAll(this.checked)"></th>
-                <th class="sort" data-key="createdAt">접수일시</th>
-                <th class="sort" data-key="programTitle">프로그램</th>
-                <th class="sort" data-key="period">운영기간</th>
+                <th class="sort c-appinfo" data-key="createdAt">접수 · 프로그램</th>
                 <th class="sort" data-key="course">강좌</th>
                 <th class="sort" data-key="name">강사명</th>
                 <th class="sort" data-key="org">소속기관</th>
@@ -585,6 +583,73 @@
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button type="submit" class="btn btn-navy btn-sm" id="asmSaveBtn" style="flex:1;">승인 상태 저장</button>
         <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('assignModal')">취소</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== 신청 상세 보기 모달 (v11) ===== -->
+<div class="modal-back" id="appDetailModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="kind-chip" id="ad-kind">신청 상세</span>
+      <h3 id="ad-title">신청 상세</h3>
+      <button class="modal-close" onclick="closeModal('appDetailModal')" aria-label="닫기">✕</button>
+    </div>
+    <div id="ad-body"></div>
+    <div class="detail-actions" id="ad-actions"></div>
+  </div>
+</div>
+
+<!-- ===== 신청 내용 수정 모달 (v11) ===== -->
+<div class="modal-back" id="editAppModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="kind-chip" id="ea-kind">신청 수정</span>
+      <h3 id="ea-title">신청 내용 수정</h3>
+      <button class="modal-close" onclick="closeModal('editAppModal')" aria-label="닫기">✕</button>
+    </div>
+    <form id="editAppForm">
+      <input type="hidden" id="ea-appId">
+      <div class="form-error" id="eaError"></div>
+      <div class="form-row">
+        <label>프로그램 <span class="hint">(변경 불가 — 잘못 신청된 건은 삭제 후 재등록해주세요)</span></label>
+        <input type="text" id="ea-program" readonly>
+      </div>
+      <div class="form-2col">
+        <div class="form-row">
+          <label for="ea-name">강사명 <span class="req">*</span></label>
+          <input id="ea-name" type="text" required>
+        </div>
+        <div class="form-row">
+          <label for="ea-course">강좌 / 지원 분야 <span class="req">*</span></label>
+          <select id="ea-course" required></select>
+        </div>
+        <div class="form-row">
+          <label for="ea-org">소속기관 <span class="req">*</span></label>
+          <input id="ea-org" type="text" required>
+        </div>
+        <div class="form-row">
+          <label for="ea-orgtype">소속기관 유형</label>
+          <select id="ea-orgtype"></select>
+        </div>
+        <div class="form-row">
+          <label for="ea-phone">전화번호 <span class="req">*</span></label>
+          <input id="ea-phone" type="tel" placeholder="010-0000-0000" required>
+        </div>
+        <div class="form-row">
+          <label for="ea-email">전자메일</label>
+          <input id="ea-email" type="email" placeholder="name@example.com">
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="ea-memo">요청사항 <span class="hint">(신청자가 남긴 내용)</span></label>
+        <textarea id="ea-memo" rows="3"></textarea>
+      </div>
+      <p class="form-note" id="ea-meta"></p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button type="submit" class="btn btn-navy btn-sm" id="eaSaveBtn" style="flex:1;">수정 내용 저장</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('editAppModal')">취소</button>
       </div>
     </form>
   </div>

@@ -73,8 +73,8 @@ $('r-role').innerHTML = RECRUIT_ROLES.map(v => `<option>${esc(v)}</option>`).joi
 $('r-mode').innerHTML = CAMP_MODES.map(v => `<option>${esc(v)}</option>`).join('');
 
 /* 워크샵 대상 기본값 + 지원 자격 툴팁 */
-$('p-qualPop').innerHTML = qualificationHTML() +
-  '<em>워크샵 신청 안내에 그대로 노출할 수 있는 문구입니다.</em>';
+$('p-qualPop').innerHTML = '<b class="pop-title">지원 자격</b>' + qualificationHTML() +
+  '<em>홈 화면 워크샵 카드의 <b>대상</b> 옆 도움말에도 같은 내용이 표시됩니다.</em>';
 $('p-target').value = WORKSHOP_TARGET;
 
 function pickedCourses(prefix){
@@ -531,7 +531,7 @@ function renderApplicants(){
   });
 
   if (!list.length){
-    tb.innerHTML = `<tr><td colspan="12" style="text-align:center;color:#6A776F;">
+    tb.innerHTML = `<tr><td colspan="10" style="text-align:center;color:#6A776F;">
       ${total ? '조건에 맞는 신청이 없습니다. 필터를 조정해보세요.' : '아직 접수된 신청이 없습니다.'}</td></tr>`;
     $('applyPager').innerHTML = '';
     return;
@@ -541,14 +541,16 @@ function renderApplicants(){
   if (page > pages) page = pages;
   const rows = list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  tb.innerHTML = rows.map(a => `<tr class="${selected.has(a.id) ? 'row-sel' : ''}">
+  tb.innerHTML = rows.map(a => `<tr class="row-click ${selected.has(a.id) ? 'row-sel' : ''}" data-app="${a.id}" title="클릭하면 신청 상세를 볼 수 있습니다">
     <td class="c-check"><input type="checkbox" data-id="${a.id}"
       ${selected.has(a.id) ? 'checked' : ''} onchange="toggleOne('${a.id}', this.checked)"></td>
-    <td class="nowrap">${esc(tsText(a.createdAt))}</td>
-    <td>${esc(a.programTitle) || '-'}${a.programType === 'recruit' ? '<span class="chip recruit">모집</span>' : ''}</td>
-    <td class="c-period">${progPeriod(a)
-      ? `<b>${esc(progPeriod(a))}</b>${progPlace(a) ? `<br><span class="cell-sub">📍 ${esc(progPlace(a))}</span>` : ''}`
-      : '<span class="cell-sub">일정 미등록</span>'}</td>
+    <td class="c-appinfo">
+      <div class="ai-prog">${esc(a.programTitle) || '-'}${a.programType === 'recruit' ? '<span class="chip recruit">모집</span>' : ''}</div>
+      <div class="ai-sub">
+        <span class="ai-when">🗓 ${progPeriod(a) ? esc(progPeriod(a)) : '일정 미등록'}</span>
+        <span class="ai-got">접수 ${esc(tsText(a.createdAt))}</span>
+      </div>
+    </td>
     <td>${esc(a.course || a.session) || '-'}</td>
     <td><b>${esc(a.name)}</b>${a.uid ? '<span class="chip member" title="회원 계정으로 신청">회원</span>' : ''}</td>
     <td>${esc(a.org)}</td>
@@ -560,6 +562,7 @@ function renderApplicants(){
       : '<span class="status-chip wait">미수료</span>'}</td>
     <td class="c-act"><div class="t-actions">
       <button class="mini-btn" onclick="openAssign('${a.id}')">${a.programType === 'recruit' ? '배정/상태' : '승인/상태'}</button>
+      <button class="mini-btn" onclick="openEditApp('${a.id}')">✏️ 수정</button>
       ${a.completed
         ? `<a class="mini-btn" href="cert.html?id=${a.id}" target="_blank" rel="noopener">이수증</a>
            <button class="mini-btn" onclick="uncompleteApp('${a.id}')">수료취소</button>`
@@ -879,6 +882,142 @@ $('bulkStatus').addEventListener('change', async e => {
   selected.clear();
   toast(`상태 변경 ${ok}건 완료${fail ? ` · ${fail}건 실패` : ''}`, fail ? 'warn' : 'ok');
   renderAssign();
+});
+
+/* ==================== v11: 신청 상세 보기 ==================== */
+function openAppDetail(id){
+  const a = applications.find(x => x.id === id);
+  if (!a) return;
+  const assignMode = isRecruit(a);
+
+  const row = (k, v, cls) => v == null || v === '' ? ''
+    : `<dt>${esc(k)}</dt><dd${cls ? ` class="${cls}"` : ''}>${v}</dd>`;
+  const txt = v => esc(String(v ?? ''));
+
+  const sections = [];
+
+  sections.push(`<h4 class="detail-h">신청 정보</h4><dl class="detail-dl">
+    ${row('프로그램', `${txt(a.programTitle) || '-'} <span class="chip">${txt(KIND[a.programType] || '신청')}</span>`)}
+    ${row('운영 기간', txt(progPeriod(a)) || '<span class="cell-sub">일정 미등록</span>')}
+    ${row('운영 장소', txt(progPlace(a)))}
+    ${row(assignMode ? '지원 분야' : '강좌', txt(a.course || a.session))}
+    ${row('접수 일시', txt(tsText(a.createdAt)))}
+    ${row('신청번호', `<code class="detail-code">${txt(a.id)}</code>`)}
+    ${a.updatedAt ? row('최근 수정', txt(tsText(a.updatedAt))) : ''}
+  </dl>`);
+
+  sections.push(`<h4 class="detail-h">신청자</h4><dl class="detail-dl">
+    ${row('강사명', `<b>${txt(a.name)}</b>${a.uid ? ' <span class="chip member">회원</span>' : ' <span class="chip">비회원</span>'}`)}
+    ${row('소속기관', txt(a.org))}
+    ${row('소속 유형', txt(a.orgType))}
+    ${row('전화번호', a.phone ? `<a href="tel:${txt(a.phone)}">${txt(a.phone)}</a>` : '')}
+    ${row('전자메일', a.email ? `<a href="mailto:${txt(a.email)}">${txt(a.email)}</a>` : '')}
+    ${row('요청사항', a.memo ? txt(a.memo).replace(/\n/g, '<br>') : '')}
+  </dl>`);
+
+  const certRow = a.completed
+    ? row('이수증 번호', a.certNo ? `<code class="detail-code">${txt(a.certNo)}</code>` : '<span class="cell-sub">미발급</span>')
+    : '';
+  sections.push(`<h4 class="detail-h">처리 현황</h4><dl class="detail-dl">
+    ${row(assignMode ? '진행 상태' : '승인 상태', statusChip(a))}
+    ${row('수료 여부', a.completed
+      ? '<span class="status-chip done">수료</span>'
+      : '<span class="status-chip wait">미수료</span>')}
+    ${certRow}
+    ${row('안내 메모', a.statusMemo ? txt(a.statusMemo).replace(/\n/g, '<br>') : '')}
+  </dl>`);
+
+  if (a.assignPlace || a.assignPeriod || a.assignSessions != null || a.assignHours != null){
+    sections.push(`<h4 class="detail-h">배정 정보</h4><dl class="detail-dl">
+      ${row('배정 학교/기관', txt(a.assignPlace))}
+      ${row('운영 기간', txt(a.assignPeriod))}
+      ${row('배정 차수', a.assignSessions != null ? `${txt(a.assignSessions)}차시` : '')}
+      ${row('배정 시수', a.assignHours != null ? `${txt(a.assignHours)}시간` : '')}
+    </dl>`);
+  }
+
+  $('ad-kind').textContent = KIND[a.programType] || '신청';
+  $('ad-title').textContent = `${a.name} 님 신청 상세`;
+  $('ad-body').innerHTML = sections.join('');
+  $('ad-actions').innerHTML = `
+    <button class="btn btn-navy btn-sm" onclick="closeModal('appDetailModal');openAssign('${a.id}')">
+      ${assignMode ? '배정/상태 처리' : '승인/상태 처리'}</button>
+    <button class="btn btn-outline btn-sm" onclick="closeModal('appDetailModal');openEditApp('${a.id}')">✏️ 내용 수정</button>
+    <button class="btn btn-outline btn-sm" onclick="closeModal('appDetailModal');${a.completed ? `uncompleteApp('${a.id}')` : `completeApp('${a.id}')`}">
+      ${a.completed ? '수료 취소' : '수료 처리'}</button>
+    ${a.completed ? `<a class="btn btn-outline btn-sm" href="cert.html?id=${a.id}" target="_blank" rel="noopener">이수증 열기</a>` : ''}`;
+  openModal('appDetailModal');
+}
+window.openAppDetail = openAppDetail;
+
+/* 행 클릭 → 상세 보기 (체크박스·버튼·링크 클릭은 제외) */
+$('applicantTableBody').addEventListener('click', e => {
+  if (e.target.closest('button, input, a, select, label')) return;
+  const tr = e.target.closest('tr[data-app]');
+  if (tr) openAppDetail(tr.dataset.app);
+});
+
+/* ==================== v11: 신청 내용 수정 ==================== */
+$('ea-orgtype').innerHTML = '<option value="">선택 안 함</option>' +
+  ORG_TYPES.map(o => `<option>${esc(o)}</option>`).join('');
+
+function openEditApp(id){
+  const a = applications.find(x => x.id === id);
+  if (!a) return;
+  const prog = progOf(a);
+  const cur = a.course || a.session || '';
+
+  $('ea-appId').value = id;
+  $('ea-kind').textContent = KIND[a.programType] || '신청';
+  $('ea-title').textContent = `${a.name} 님 신청 내용 수정`;
+  $('ea-program').value = `${a.programTitle || '-'}${progPeriod(a) ? ` · ${progPeriod(a)}` : ''}`;
+
+  /* 강좌: 프로그램에 등록된 목록 + 현재 값 */
+  const opts = [...new Set([...(prog && Array.isArray(prog.courses) ? prog.courses : []),
+                            ...(cur ? [cur] : [])])];
+  $('ea-course').innerHTML = (opts.length ? opts : ['(등록된 강좌 없음)'])
+    .map(c => `<option${c === cur ? ' selected' : ''}>${esc(c)}</option>`).join('');
+
+  $('ea-name').value  = a.name || '';
+  $('ea-org').value   = a.org || '';
+  $('ea-orgtype').value = ORG_TYPES.includes(a.orgType) ? a.orgType : '';
+  $('ea-phone').value = a.phone || '';
+  $('ea-email').value = a.email || '';
+  $('ea-memo').value  = a.memo || '';
+
+  const bits = [`신청번호 ${id}`, a.uid ? '회원 신청' : '비회원 신청'];
+  if (a.updatedAt) bits.push(`최근 수정 ${tsText(a.updatedAt)}`);
+  $('ea-meta').textContent = `※ ${bits.join(' · ')}`;
+
+  $('eaError').style.display = 'none';
+  openModal('editAppModal');
+}
+window.openEditApp = openEditApp;
+
+$('editAppForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const id = $('ea-appId').value;
+  const btn = $('eaSaveBtn');
+  btn.disabled = true; btn.textContent = '저장 중…';
+  try {
+    await updateDoc(doc(db, 'applications', id), {
+      name:    $('ea-name').value.trim(),
+      org:     $('ea-org').value.trim(),
+      orgType: $('ea-orgtype').value,
+      phone:   $('ea-phone').value.trim(),
+      email:   $('ea-email').value.trim(),
+      course:  $('ea-course').value,
+      memo:    $('ea-memo').value.trim(),
+      updatedAt: serverTimestamp()
+    });
+    closeModal('editAppModal');
+    toast('신청 내용을 수정했습니다.');
+  } catch (err) {
+    $('eaError').textContent = fbError(err);
+    $('eaError').style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = '수정 내용 저장';
+  }
 });
 
 /* ==================== 강사 배정 탭 ==================== */
