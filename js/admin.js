@@ -18,7 +18,7 @@ import {
   initLayout, esc, ddayInfo, todayStr, catClass, fbError,
   KIND, ORG_TYPES, SPECIALTIES, REGIONS, CAREER_LEVELS,
   COURSES_2026, WORKSHOP_TARGET, qualificationHTML,
-  SCHOOL_LEVELS, CAMP_MODES, RECRUIT_ROLES, fmtPeriodKo,
+  SCHOOL_LEVELS, CAMP_MODES, RECRUIT_ROLES, RECRUIT_FOR, WORKSHOP_MODES, fmtPeriodKo,
   STATUS, STATUS_ORDER, statusOf, statusChip, APPROVE_STATUS, statusSet, isRecruit,
   ROLES, ROLE_ORDER, roleOf,
   tsText, tsNum, toast, openModal, closeModal, bindModalEvents, checkIsAdmin
@@ -70,7 +70,64 @@ $('r-levelList').innerHTML = SCHOOL_LEVELS.map((l, i) => `
   <label><input type="checkbox" data-level="r" value="${esc(l)}" id="r-l${i}"><span>${esc(l)}</span></label>`).join('');
 
 $('r-role').innerHTML = RECRUIT_ROLES.map(v => `<option>${esc(v)}</option>`).join('');
-$('r-mode').innerHTML = CAMP_MODES.map(v => `<option>${esc(v)}</option>`).join('');
+$('r-for').innerHTML = Object.entries(RECRUIT_FOR)
+  .map(([k, v]) => `<option value="${k}">${esc(v.label)}</option>`).join('');
+
+/* v11.1: 모집 목적(캠프 강사 / 워크샵 운영 강사)에 따라 폼 항목을 바꿉니다 */
+const R_PRESET = {
+  camp: {
+    modeLabel: '운영 형태', modes: CAMP_MODES,
+    placeLabel: '활동 지역 / 운영 학교',
+    placeHint: '예) 경기 남부권(오산·화성·수원) 초·중학교',
+    startLabel: '활동 시작', endLabel: '활동 종료',
+    hoursLabel: '운영 조건 / 시수', hoursHint: '예) 1개교당 8차시 · 회차별 일정 협의',
+    courseLabel: '담당 과정', courseHint: '지원자는 이 목록에서 희망 과정을 선택합니다.',
+    titleHint: '예) 2026 하반기 디지털새싹 캠프 강사 모집',
+    contentHint: '예) 학교 방문 캠프 강의 · 교구 운영 · 결과보고서 작성',
+    targetHint: '예) SW·AI 교육 경력 1년 이상 강사',
+    showLevels: true
+  },
+  workshop: {
+    modeLabel: '진행 방식', modes: WORKSHOP_MODES,
+    placeLabel: '운영 장소',
+    placeHint: '예) 한신대학교 AI·SW관 302호 (온라인 병행 시 Zoom)',
+    startLabel: '워크샵 시작', endLabel: '워크샵 종료',
+    hoursLabel: '운영 조건 / 차시', hoursHint: '예) 1일 6차시 · 사전 교안 회의 1회 포함',
+    courseLabel: '담당 과정', courseHint: '이 강사가 워크샵에서 다룰 과정을 선택하세요.',
+    titleHint: '예) 2026 하반기 강사 워크샵 운영 강사 모집',
+    contentHint: '예) 워크샵 강의 진행 · 교안 작성 · 실습 지원',
+    targetHint: '예) 해당 과정 운영 경험이 있는 현직 강사',
+    showLevels: false
+  }
+};
+function applyRecruitPreset(){
+  const key = $('r-for').value || 'camp';
+  const c = R_PRESET[key];
+  const req = '<span class="req">*</span>';
+
+  $('r-forHint').textContent = RECRUIT_FOR[key].hint;
+  $('r-modeLabel').innerHTML  = `${c.modeLabel} ${req}`;
+  $('r-placeLabel').innerHTML = `${c.placeLabel} ${req}`;
+  $('r-startLabel').innerHTML = `${c.startLabel} ${req}`;
+  $('r-endLabel').innerHTML   = `${c.endLabel} ${req}`;
+  $('r-hoursLabel').innerHTML = `${c.hoursLabel} ${req}`;
+  $('r-courseLabel').innerHTML = `${c.courseLabel} ${req} <span class="hint">— ${esc(c.courseHint)}</span>`;
+
+  const keepMode = $('r-mode').value;
+  $('r-mode').innerHTML = c.modes.map(v => `<option>${esc(v)}</option>`).join('');
+  if (c.modes.includes(keepMode)) $('r-mode').value = keepMode;
+
+  $('r-place').placeholder   = c.placeHint;
+  $('r-hours').placeholder   = c.hoursHint;
+  $('r-title').placeholder   = c.titleHint;
+  $('r-content').placeholder = c.contentHint;
+  $('r-target').placeholder  = c.targetHint;
+
+  $('r-levelBlock').style.display = c.showLevels ? '' : 'none';
+  if (!c.showLevels) setPickedLevels([]);
+}
+$('r-for').addEventListener('change', applyRecruitPreset);
+applyRecruitPreset();   // 최초 1회 적용
 
 /* 워크샵 대상 기본값 + 지원 자격 툴팁 */
 $('p-qualPop').innerHTML = '<b class="pop-title">지원 자격</b>' + qualificationHTML() +
@@ -173,6 +230,7 @@ onAuthStateChanged(auth, async user => {
   $('adminEmail').textContent = user.email;
   $('adminAva').textContent = (user.email || 'A').charAt(0).toUpperCase();
   subscribeApplications();
+  loadMembers();          // v11: 대시보드·뱃지 숫자를 위해 로그인 직후 회원도 불러옵니다
 });
 
 /* ==================== 프로그램 ==================== */
@@ -181,14 +239,20 @@ $('programForm').addEventListener('submit', async e => {
   const idVal = $('p-id').value;
   const extra = $('p-courseExtra').value.split(',').map(v => v.trim()).filter(Boolean);
   const start = $('p-start').value, end = $('p-end').value;
+  const st = $('p-startTime').value, et = $('p-endTime').value;
   if (start && end && start > end){ alert('운영 종료일이 시작일보다 빠릅니다.'); return; }
+  if (start && end && start === end && st && et && st > et){
+    alert('종료 시각이 시작 시각보다 빠릅니다.'); return;
+  }
   const data = {
     type: $('p-type').value,
     title: $('p-title').value.trim(),
     target: $('p-target').value.trim(),
     startDate: start,
     endDate: end,
-    period: fmtPeriodKo(start, end),
+    startTime: st,
+    endTime: et,
+    period: fmtPeriodKo(start, end, st, et),
     place: $('p-place').value.trim(),
     content: $('p-content').value.trim(),
     deadline: $('p-deadline').value,
@@ -199,8 +263,10 @@ $('programForm').addEventListener('submit', async e => {
   if (!data.courses.length){ alert('개설 강좌를 1개 이상 선택해주세요.'); return; }
   try {
     if (idVal){
+      const before = programs.find(x => x.id === idVal) || {};
       await updateDoc(doc(db, 'programs', idVal), data);
       toast('프로그램을 수정했습니다.');
+      await syncApplications(idVal, before, data);
     } else {
       await addDoc(collection(db, 'programs'), {
         ...data,
@@ -213,6 +279,55 @@ $('programForm').addEventListener('submit', async e => {
     resetProgramForm();
   } catch (err) { alert(fbError(err)); }
 });
+/* ---------- v11: 프로그램 수정 → 신청 문서 동기화 ----------
+   신청 문서는 접수 시점의 programTitle/course를 그대로 갖고 있습니다.
+   화면 표시는 progTitle()이 항상 최신 이름을 따르지만, 신청 문서 자체도 맞춰두어야
+   마이페이지·이수증·CSV 등 다른 경로에서도 어긋나지 않습니다. */
+async function syncApplications(programId, before, after){
+  const mine = applications.filter(a => a.programId === programId);
+  if (!mine.length) return;
+
+  const patch = {};
+  if (before.title !== after.title) patch.programTitle = after.title;
+  if (before.type  !== after.type)  patch.programType  = after.type;
+
+  /* 강좌 이름이 바뀐 경우: 정확히 1개가 빠지고 1개가 새로 생겼다면 '이름 변경'으로 보고 확인 */
+  const oldC = Array.isArray(before.courses) ? before.courses : [];
+  const newC = Array.isArray(after.courses)  ? after.courses  : [];
+  const removed = oldC.filter(c => !newC.includes(c));
+  const added   = newC.filter(c => !oldC.includes(c));
+  let rename = null;
+
+  if (removed.length){
+    const affected = c => mine.filter(a => (a.course || a.session) === c).length;
+    if (removed.length === 1 && added.length === 1 && affected(removed[0])){
+      if (confirm(`강좌명이 바뀐 것으로 보입니다.\n\n  이전: ${removed[0]}\n  현재: ${added[0]}\n\n` +
+                  `이 강좌를 신청한 ${affected(removed[0])}건의 강좌명도 함께 변경할까요?\n` +
+                  `[취소]를 누르면 기존 신청 내역은 그대로 유지됩니다.`)){
+        rename = { from: removed[0], to: added[0] };
+      }
+    } else {
+      const lines = removed.map(c => `  · ${c} — 신청 ${affected(c)}건`).filter(l => !l.endsWith('0건'));
+      if (lines.length){
+        alert(`개설 강좌에서 빠진 항목 중 신청 내역이 있는 강좌가 있습니다.\n\n${lines.join('\n')}\n\n` +
+              `신청 내역은 그대로 유지되며, 명단에 ⚠️ 표시가 붙습니다.\n` +
+              `필요하면 각 신청건의 [✏️ 수정]에서 강좌를 다시 지정해주세요.`);
+      }
+    }
+  }
+
+  if (!Object.keys(patch).length && !rename) return;
+
+  let n = 0;
+  for (const a of mine){
+    const p = { ...patch };
+    if (rename && (a.course || a.session) === rename.from) p.course = rename.to;
+    if (!Object.keys(p).length) continue;
+    try { await updateDoc(doc(db, 'applications', a.id), p); n++; } catch (err) { console.error(err); }
+  }
+  if (n) toast(`신청 내역 ${n}건을 함께 업데이트했습니다.`);
+}
+
 function editProgram(id){
   const p = programs.find(x => x.id === id);
   if (!p) return;
@@ -235,6 +350,8 @@ function editProgram(id){
   $('p-target').value = p.target || WORKSHOP_TARGET;
   $('p-start').value = p.startDate || '';
   $('p-end').value   = p.endDate || '';
+  $('p-startTime').value = p.startTime || '';
+  $('p-endTime').value   = p.endTime || '';
   $('p-place').value = p.place;
   $('p-content').value = p.content;
   $('p-deadline').value = p.deadline;
@@ -420,7 +537,7 @@ function refreshFilterOptions(){
       values.map(v => `<option${v === cur ? ' selected' : ''}>${esc(v)}</option>`).join('');
     if (values.includes(cur)) sel.value = cur;
   };
-  keep($('f-program'), [...new Set(applications.map(a => a.programTitle).filter(Boolean))]);
+  keep($('f-program'), [...new Set(applications.map(a => progTitle(a)).filter(Boolean))]);
   keep($('f-course'),  [...new Set(applications.map(a => a.course || a.session).filter(Boolean))]);
   keep($('f-orgtype'), [...new Set([...ORG_TYPES, ...applications.map(a => a.orgType).filter(Boolean)])]);
 }
@@ -460,6 +577,20 @@ function progPlace(a){
   const p = progOf(a);
   return (p && p.place) || a.programPlace || '';
 }
+/** v11: 화면에 쓸 프로그램명.
+    신청 문서의 programTitle은 '접수 시점 스냅샷'이라 프로그램을 수정해도 그대로입니다.
+    표시할 때는 항상 programs에서 현재 이름을 가져와 자동으로 최신 상태를 따릅니다. */
+function progTitle(a){
+  const p = progOf(a);
+  return (p && p.title) || a.programTitle || '';
+}
+/** v11: 현재 프로그램의 개설 강좌 목록에 없는(삭제·변경된) 강좌인지 */
+function courseIsOrphan(a){
+  const p = progOf(a);
+  const c = a.course || a.session || '';
+  if (!p || !Array.isArray(p.courses) || !p.courses.length || !c) return false;
+  return !p.courses.includes(c);
+}
 
 function filteredApps(){
   const q = $('f-q').value.trim().toLowerCase();
@@ -468,7 +599,7 @@ function filteredApps(){
   const fa = $('f-astatus').value;
 
   let list = applications.filter(a => {
-    if (fp && a.programTitle !== fp) return false;
+    if (fp && progTitle(a) !== fp) return false;
     if (fc && (a.course || a.session) !== fc) return false;
     if (fo && a.orgType !== fo) return false;
     if (fs === 'done' && !a.completed) return false;
@@ -477,7 +608,7 @@ function filteredApps(){
     if (fm === 'linked' && !a.uid) return false;
     if (fm === 'guest' && a.uid) return false;
     if (q){
-      const hay = [a.name, a.org, a.email, a.phone, a.id, a.programTitle,
+      const hay = [a.name, a.org, a.email, a.phone, a.id, progTitle(a), a.programTitle,
                    a.course || a.session, a.orgType, a.certNo, a.memo,
                    a.assignPlace, a.statusMemo, progPeriod(a), progPlace(a)]
         .map(v => String(v ?? '').toLowerCase()).join(' ');
@@ -545,13 +676,14 @@ function renderApplicants(){
     <td class="c-check"><input type="checkbox" data-id="${a.id}"
       ${selected.has(a.id) ? 'checked' : ''} onchange="toggleOne('${a.id}', this.checked)"></td>
     <td class="c-appinfo">
-      <div class="ai-prog">${esc(a.programTitle) || '-'}${a.programType === 'recruit' ? '<span class="chip recruit">모집</span>' : ''}</div>
+      <div class="ai-prog">${esc(progTitle(a)) || '-'}${a.programType === 'recruit' ? '<span class="chip recruit">모집</span>' : ''}</div>
       <div class="ai-sub">
         <span class="ai-when">🗓 ${progPeriod(a) ? esc(progPeriod(a)) : '일정 미등록'}</span>
         <span class="ai-got">접수 ${esc(tsText(a.createdAt))}</span>
       </div>
     </td>
-    <td>${esc(a.course || a.session) || '-'}</td>
+    <td>${esc(a.course || a.session) || '-'}${courseIsOrphan(a)
+      ? ' <span class="orphan-mark" title="현재 프로그램의 개설 강좌 목록에 없는 강좌입니다">⚠️</span>' : ''}</td>
     <td><b>${esc(a.name)}</b>${a.uid ? '<span class="chip member" title="회원 계정으로 신청">회원</span>' : ''}</td>
     <td>${esc(a.org)}</td>
     <td>${esc(a.orgType) || '-'}</td>
@@ -638,7 +770,7 @@ async function notifyCert(a, certNo){
   await sendCertificateEmail({
     to_email: a.email,
     name: a.name,
-    program: a.programTitle || '',
+    program: progTitle(a) || '',
     course: a.course || a.session || '',
     cert_no: certNo,
     cert_url: `${base}cert.html?id=${a.id}`,
@@ -648,7 +780,7 @@ async function notifyCert(a, certNo){
 
 async function completeApp(id){
   const a = applications.find(x => x.id === id);
-  if (!a || !confirm(`${a.name}님 (${a.programTitle} · ${a.course || ''})\n수료 처리하고 이수증 발급번호를 채번할까요?`)) return;
+  if (!a || !confirm(`${a.name}님 (${progTitle(a)} · ${a.course || ''})\n수료 처리하고 이수증 발급번호를 채번할까요?`)) return;
   try {
     const certNo = await issueCert(id);
     await notifyCert(a, certNo);
@@ -769,7 +901,7 @@ function openAssign(id){
 
   /* 신청 요약 */
   $('asm-info').innerHTML = [
-    ['프로그램', a.programTitle || '-'],
+    ['프로그램', progTitle(a) || '-'],
     ['운영 기간', progPeriod(a) || '일정 미등록'],
     ['운영 장소', progPlace(a) || '-'],
     [assignMode ? '지원 분야' : '강좌', a.course || a.session || '-'],
@@ -897,10 +1029,11 @@ function openAppDetail(id){
   const sections = [];
 
   sections.push(`<h4 class="detail-h">신청 정보</h4><dl class="detail-dl">
-    ${row('프로그램', `${txt(a.programTitle) || '-'} <span class="chip">${txt(KIND[a.programType] || '신청')}</span>`)}
+    ${row('프로그램', `${txt(progTitle(a)) || '-'} <span class="chip">${txt(KIND[a.programType] || '신청')}</span>`)}
     ${row('운영 기간', txt(progPeriod(a)) || '<span class="cell-sub">일정 미등록</span>')}
     ${row('운영 장소', txt(progPlace(a)))}
-    ${row(assignMode ? '지원 분야' : '강좌', txt(a.course || a.session))}
+    ${row(assignMode ? '지원 분야' : '강좌', txt(a.course || a.session) + (courseIsOrphan(a)
+      ? ' <span class="orphan-mark">⚠️ 현재 개설 강좌 목록에 없음</span>' : ''))}
     ${row('접수 일시', txt(tsText(a.createdAt)))}
     ${row('신청번호', `<code class="detail-code">${txt(a.id)}</code>`)}
     ${a.updatedAt ? row('최근 수정', txt(tsText(a.updatedAt))) : ''}
@@ -970,7 +1103,7 @@ function openEditApp(id){
   $('ea-appId').value = id;
   $('ea-kind').textContent = KIND[a.programType] || '신청';
   $('ea-title').textContent = `${a.name} 님 신청 내용 수정`;
-  $('ea-program').value = `${a.programTitle || '-'}${progPeriod(a) ? ` · ${progPeriod(a)}` : ''}`;
+  $('ea-program').value = `${progTitle(a) || '-'}${progPeriod(a) ? ` · ${progPeriod(a)}` : ''}`;
 
   /* 강좌: 프로그램에 등록된 목록 + 현재 값 */
   const opts = [...new Set([...(prog && Array.isArray(prog.courses) ? prog.courses : []),
@@ -1054,6 +1187,8 @@ function resetRecruitForm(){
   $('recruitForm').reset();
   $('r-id').value = '';
   $('r-loginonly').checked = true;
+  $('r-for').value = 'camp';
+  applyRecruitPreset();
   setPickedCourses('r', []);
   setPickedLevels([]);
   $('rFormTitle').textContent = '📣 새 강사 모집 공고 등록';
@@ -1069,10 +1204,17 @@ function editRecruit(id){
   $('r-id').value        = p.id;
   $('r-title').value     = p.title || '';
   $('r-target').value    = p.target || '';
+  $('r-for').value       = p.recruitFor || 'camp';
+  applyRecruitPreset();
   $('r-role').value      = p.role || RECRUIT_ROLES[0];
-  $('r-mode').value      = p.mode || CAMP_MODES[0];
+  if (p.mode && !$('r-mode').querySelector(`option[value="${p.mode}"]`)){
+    const o = document.createElement('option'); o.textContent = p.mode; $('r-mode').prepend(o);
+  }
+  $('r-mode').value      = p.mode || $('r-mode').options[0]?.value || '';
   $('r-start').value     = p.startDate || '';
   $('r-end').value       = p.endDate || '';
+  $('r-startTime').value = p.startTime || '';
+  $('r-endTime').value   = p.endTime || '';
   $('r-place').value     = p.place || '';
   $('r-content').value   = p.content || '';
   $('r-hours').value     = p.hours || '';
@@ -1092,16 +1234,23 @@ $('recruitForm').addEventListener('submit', async e => {
   e.preventDefault();
   const idVal = $('r-id').value;
   const start = $('r-start').value, end = $('r-end').value;
+  const st = $('r-startTime').value, et = $('r-endTime').value;
   if (start && end && start > end){ alert('활동 종료일이 시작일보다 빠릅니다.'); return; }
+  if (start && end && start === end && st && et && st > et){
+    alert('종료 시각이 시작 시각보다 빠릅니다.'); return;
+  }
   const data = {
     type: 'recruit',
+    recruitFor: $('r-for').value,
     title:   $('r-title').value.trim(),
     target:  $('r-target').value.trim(),
     role:    $('r-role').value,
     mode:    $('r-mode').value,
     startDate: start,
     endDate:   end,
-    period:  fmtPeriodKo(start, end),
+    startTime: st,
+    endTime:   et,
+    period:  fmtPeriodKo(start, end, st, et),
     place:   $('r-place').value.trim(),
     content: $('r-content').value.trim(),
     hours:   $('r-hours').value.trim(),
@@ -1112,16 +1261,20 @@ $('recruitForm').addEventListener('submit', async e => {
     loginOnly: $('r-loginonly').checked,
     courses: pickedCourses('r')
   };
-  if (!data.levels.length){ alert('대상 학교급을 1개 이상 선택해주세요.'); return; }
+  if (data.recruitFor === 'camp' && !data.levels.length){
+    alert('대상 학교급을 1개 이상 선택해주세요.'); return;
+  }
   if (!data.courses.length){ alert('담당 과정을 1개 이상 선택해주세요.'); return; }
   const btn = $('rFormSubmit');
   btn.disabled = true;
   try {
     if (idVal){
+      const before = programs.find(x => x.id === idVal) || {};
       await updateDoc(doc(db, 'programs', idVal), data);
       toast('모집 공고를 수정했습니다.');
       resetRecruitForm();
       toggleRecruitForm(false);
+      await syncApplications(idVal, before, data);
     } else {
       const ref = await addDoc(collection(db, 'programs'), {
         ...data, applied: 0, open: true, createdAt: serverTimestamp()
@@ -1326,7 +1479,7 @@ function downloadCSV(scope = 'filtered'){
                  '배정 차수','배정 시수','안내 메모','가능 요일','가능 시간대','희망 지역',
                  '수료여부','이수증 발급번호','요청사항']];
   list.forEach(a => {
-    rows.push([tsText(a.createdAt), a.id, a.programTitle || '',
+    rows.push([tsText(a.createdAt), a.id, progTitle(a) || '',
       progPeriod(a), progPlace(a), KIND[a.programType] || '',
       a.course || a.session || '', a.name, a.org, a.orgType || '', a.phone, a.email,
       a.uid ? '회원' : '비회원', statusSet(a)[statusOf(a)].label,
@@ -1343,7 +1496,7 @@ window.downloadCSV = downloadCSV;
 /* ==================== 강사 회원 ==================== */
 async function loadMembers(){
   const tb = $('memberTableBody');
-  tb.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#6A776F;">불러오는 중…</td></tr>';
+  tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#6A776F;">불러오는 중…</td></tr>';
   try {
     const snap = await getDocs(collection(db, 'users'));
     members = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
@@ -1352,14 +1505,19 @@ async function loadMembers(){
     renderDashboard();
     if ($('tab-assign').classList.contains('on')) renderCandidates();
   } catch (err){
-    tb.innerHTML = `<tr><td colspan="10" style="text-align:center;color:#C64B3C;">${esc(fbError(err))}</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#C64B3C;">${esc(fbError(err))}</td></tr>`;
   }
 }
 window.loadMembers = loadMembers;
 
+/** 해당 회원의 신청 내역 (계정 연결 + 이메일 일치) */
+function memberApps(m){
+  return applications
+    .filter(a => (a.uid && a.uid === m.uid) || (a.email && m.email && a.email === m.email))
+    .sort((a, b) => tsNum(b.createdAt) - tsNum(a.createdAt));
+}
 function memberStats(m){
-  const mine = applications.filter(a =>
-    (a.uid && a.uid === m.uid) || (a.email && m.email && a.email === m.email));
+  const mine = memberApps(m);
   const assigned = mine.filter(a => statusOf(a) === 'assigned');
   return {
     total: mine.length,
@@ -1410,32 +1568,146 @@ function filteredMembers(){
     return true;
   }).sort((a, b) => tsNum(b.createdAt) - tsNum(a.createdAt));
 }
+/** v11: 회원 유형별 집계 스트립 */
+function renderMemberStats(){
+  const box = $('memberStats');
+  if (!box) return;
+  if (!membersLoaded){ box.innerHTML = ''; return; }
+
+  const byRole = r => members.filter(m => roleOf(m) === r);
+  const inst = byRole('instructor');
+  const instWithProfile = inst.filter(hasProfileOf).length;
+  const instCompleted = inst.filter(m => memberStats(m).done > 0).length;
+
+  const cards = [
+    { k: '전체 회원',        v: members.length,   u: '명', main: false },
+    { k: '강사 회원',        v: inst.length,      u: '명', main: true },
+    { k: '강사 프로필 작성', v: instWithProfile,  u: '명',
+      sub: inst.length ? `${Math.round(instWithProfile / inst.length * 100)}%` : '' },
+    { k: '워크샵 이수 강사', v: instCompleted,    u: '명' },
+    { k: '학부모',           v: byRole('parent').length,  u: '명' },
+    { k: '학생',             v: byRole('student').length, u: '명' },
+    { k: '교직원',           v: byRole('staff').length,   u: '명' }
+  ];
+  box.innerHTML = cards.map(c => `
+    <div class="ms-card${c.main ? ' main' : ''}">
+      <span class="ms-k">${esc(c.k)}</span>
+      <span class="ms-v">${c.v}<em>${c.u}</em></span>
+      ${c.sub ? `<span class="ms-sub">${esc(c.sub)}</span>` : ''}
+    </div>`).join('');
+}
+
 function renderMembers(){
   const tb = $('memberTableBody');
   const list = filteredMembers();
   $('badgeMember').textContent = members.length;
+  renderMemberStats();
   if (!list.length){
-    tb.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#6A776F;">${
+    tb.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#6A776F;">${
       members.length ? '조건에 맞는 회원이 없습니다.' : '가입한 회원이 없습니다.'}</td></tr>`;
     return;
   }
   tb.innerHTML = list.map(m => {
     const s = memberStats(m);
     const r = roleOf(m);
-    const detail = roleDetail(m);
-    return `<tr>
+    return `<tr class="row-click" data-member="${esc(m.uid)}" title="클릭하면 회원 상세를 볼 수 있습니다">
       <td class="nowrap">${esc(tsText(m.createdAt, false))}</td>
       <td><span class="role-chip ${r}">${ROLES[r].icon} ${ROLES[r].label}</span></td>
       <td><b>${esc(m.name || '-')}</b></td>
       <td class="cell-sub">${esc(m.email || '-')}</td>
       <td class="nowrap cell-sub">${esc(m.phone || '-')}</td>
       <td>${esc(m.org || m.childSchool || m.school || '-')}</td>
-      <td class="cell-sub">${detail ? esc(detail) : '<span style="color:#A5B1A9;">미작성</span>'}</td>
       <td class="nowrap">${s.total}건 / <b style="color:var(--leaf);">${s.done}</b></td>
       <td class="nowrap">${r === 'instructor' ? `${s.assigned}건 / <b style="color:var(--navy);">${s.hours}</b>시수` : '-'}</td>
     </tr>`;
   }).join('');
 }
+
+/* 회원 행 클릭 → 상세 */
+$('memberTableBody').addEventListener('click', e => {
+  if (e.target.closest('button, input, a, select, label')) return;
+  const tr = e.target.closest('tr[data-member]');
+  if (tr) openMemberDetail(tr.dataset.member);
+});
+
+/* ---------- v11: 회원 상세 보기 ---------- */
+function openMemberDetail(uid){
+  const m = members.find(x => x.uid === uid);
+  if (!m) return;
+  const r = roleOf(m);
+  const st = memberStats(m);
+  const mine = memberApps(m);
+  const done = mine.filter(a => a.completed);
+  const live = mine.filter(a => !a.completed);
+  const assigned = mine.filter(a => a.assignPlace || a.assignHours != null);
+
+  const row = (k, v) => v == null || v === '' ? '' : `<dt>${esc(k)}</dt><dd>${v}</dd>`;
+  const t = v => esc(String(v ?? ''));
+  const out = [];
+
+  out.push(`<h4 class="detail-h">기본 정보</h4><dl class="detail-dl">
+    ${row('회원 유형', `<span class="role-chip ${r}">${ROLES[r].icon} ${ROLES[r].label}</span>`)}
+    ${row('가입일', t(tsText(m.createdAt, false)))}
+    ${row('이메일', m.email ? `<a href="mailto:${t(m.email)}">${t(m.email)}</a>` : '')}
+    ${row('연락처', m.phone ? `<a href="tel:${t(m.phone)}">${t(m.phone)}</a>` : '')}
+    ${row('소속 / 학교', t(m.org || m.childSchool || m.school))}
+    ${row('소속 유형', t(m.orgType))}
+  </dl>`);
+
+  const detail = roleDetail(m);
+  if (r === 'instructor'){
+    out.push(`<h4 class="detail-h">강사 프로필</h4><dl class="detail-dl">
+      ${row('전문 분야', (m.specialties || []).length ? t(m.specialties.join(' · ')) : '')}
+      ${row('경력', t(m.career))}
+      ${row('활동 가능 지역', (m.regions || []).length ? t(m.regions.join(' · ')) : '')}
+      ${row('가능 요일', (m.weekdays || []).length ? t(m.weekdays.join(' · ')) : '')}
+      ${row('가능 시간', (m.timeslots || []).length ? t(m.timeslots.join(' · ')) : '')}
+      ${row('자기소개', m.bio ? t(m.bio).replace(/\n/g, '<br>') : '')}
+      ${!hasProfileOf(m) ? '<dt>상태</dt><dd><span class="cell-sub">프로필 미작성</span></dd>' : ''}
+    </dl>`);
+  } else if (detail){
+    out.push(`<h4 class="detail-h">${ROLES[r].label} 정보</h4><dl class="detail-dl">
+      ${row('상세', t(detail))}
+      ${row('메모', (m.careNote || m.orgNote) ? t(m.careNote || m.orgNote).replace(/\n/g, '<br>') : '')}
+    </dl>`);
+  }
+
+  out.push(`<h4 class="detail-h">참여 요약</h4>
+    <div class="member-sum">
+      <div><span>총 신청</span><b>${st.total}</b>건</div>
+      <div><span>수료 완료</span><b class="ok">${st.done}</b>건</div>
+      ${r === 'instructor' ? `<div><span>배정</span><b>${st.assigned}</b>건</div>
+      <div><span>누적 시수</span><b class="navy">${st.hours}</b>시간</div>` : ''}
+    </div>`);
+
+  const appLine = a => `<li>
+      <div class="ml-top"><b>${esc(progTitle(a)) || '-'}</b>
+        ${a.certNo ? `<code class="detail-code">${esc(a.certNo)}</code>` : statusChip(a)}</div>
+      <div class="ml-sub">${esc(a.course || a.session || '-')}
+        · ${esc(a.completedAt ? `${tsText(a.completedAt, false)} 수료` : `${tsText(a.createdAt, false)} 접수`)}
+        ${a.assignPlace ? ` · 📍 ${esc(a.assignPlace)}` : ''}
+        ${a.assignHours != null ? ` · ${esc(a.assignHours)}시간` : ''}</div>
+    </li>`;
+
+  out.push(`<h4 class="detail-h">이수한 워크샵 · 연수 (${done.length})</h4>
+    ${done.length ? `<ul class="member-list">${done.map(appLine).join('')}</ul>`
+                  : '<p class="member-empty">아직 이수한 과정이 없습니다.</p>'}`);
+
+  out.push(`<h4 class="detail-h">진행 중인 신청 (${live.length})</h4>
+    ${live.length ? `<ul class="member-list">${live.map(appLine).join('')}</ul>`
+                  : '<p class="member-empty">진행 중인 신청이 없습니다.</p>'}`);
+
+  if (assigned.length){
+    out.push(`<h4 class="detail-h">배정 이력 (${assigned.length})</h4>
+      <ul class="member-list">${assigned.map(appLine).join('')}</ul>`);
+  }
+
+  $('md-kind').textContent = ROLES[r].label;
+  $('md-title').textContent = `${m.name || '이름 없음'} 님`;
+  $('md-body').innerHTML = out.join('');
+  openModal('memberDetailModal');
+}
+window.openMemberDetail = openMemberDetail;
 $('mf-q').addEventListener('input', () => { clearTimeout(qTimer); qTimer = setTimeout(renderMembers, 200); });
 $('mf-profile').addEventListener('change', renderMembers);
 $('mf-role').addEventListener('change', renderMembers);

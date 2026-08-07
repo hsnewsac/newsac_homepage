@@ -960,3 +960,39 @@ nav a.active{background:var(--sprout-soft);color:var(--leaf);}
 .detail-actions{ display:flex; flex-wrap:wrap; gap:9px; margin-top:20px; }
 .detail-actions .btn{ flex:1 1 auto; text-align:center; text-decoration:none; }
 @media (max-width:600px){ .detail-dl{ grid-template-columns:80px 1fr; font-size:.83rem; } }
+
+/* v11: 현재 개설 강좌 목록에 없는 강좌 표시 */
+.orphan-mark{ font-size:.76rem; color:#B4553C; font-weight:700; white-space:nowrap; }
+
+/* ================= v11: 회원 관리 통계 · 상세 ================= */
+.member-stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(126px,1fr));
+  gap:10px; margin:4px 0 18px; }
+.ms-card{ padding:13px 15px; background:#fff; border:1px solid var(--line);
+  border-radius:11px; display:flex; flex-direction:column; gap:3px; }
+.ms-card.main{ border-color:var(--leaf); background:#F1FAF4; }
+.ms-k{ font-size:.76rem; font-weight:700; color:#6A776F; }
+.ms-card.main .ms-k{ color:var(--leaf); }
+.ms-v{ font-size:1.42rem; font-weight:800; letter-spacing:-.02em; color:#28352E; }
+.ms-v em{ font-style:normal; font-size:.8rem; font-weight:700; color:#8A968E; margin-left:2px; }
+.ms-card.main .ms-v{ color:var(--leaf); }
+.ms-sub{ font-size:.74rem; font-weight:700; color:#8A968E; }
+
+.member-sum{ display:grid; grid-template-columns:repeat(auto-fit,minmax(96px,1fr)); gap:10px;
+  padding:14px 16px; background:#F4F7F5; border:1px solid var(--line); border-radius:11px; }
+.member-sum div{ display:flex; flex-direction:column; gap:2px; font-size:.8rem; color:#6A776F; }
+.member-sum b{ font-size:1.24rem; font-weight:800; color:#28352E; }
+.member-sum b.ok{ color:var(--leaf); }
+.member-sum b.navy{ color:var(--navy); }
+
+.member-list{ display:flex; flex-direction:column; gap:8px; list-style:none; }
+.member-list li{ padding:11px 14px; background:#fff; border:1px solid var(--line); border-radius:10px; }
+.ml-top{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:.87rem; }
+.ml-top b{ font-weight:700; color:#28352E; }
+.ml-sub{ margin-top:4px; font-size:.78rem; color:#7A867F; line-height:1.55; }
+.member-empty{ padding:14px 16px; background:#F4F7F5; border:1px dashed var(--line);
+  border-radius:10px; font-size:.83rem; color:#8A968E; }
+
+/* v11.1: 날짜 + 시각 한 줄 입력 */
+.dt-pair{ display:grid; grid-template-columns:1fr 118px; gap:8px; }
+.dt-pair input{ width:100%; }
+@media (max-width:520px){ .dt-pair{ grid-template-columns:1fr; } }

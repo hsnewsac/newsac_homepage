@@ -48,6 +48,14 @@ export const SCHOOL_LEVELS  = ['초등 저학년', '초등 고학년', '중학�
 export const CAMP_MODES     = ['방문형 (학교 방문 운영)', '집합형 (캠프 운영)', '방문형 + 집합형 병행'];
 export const RECRUIT_ROLES  = ['주강사', '보조강사', '주강사 + 보조강사'];
 
+/* v11.1: 무엇을 위한 강사 모집인가 — 폼 항목이 이 값에 따라 달라집니다 */
+export const RECRUIT_FOR = {
+  camp:     { label: '학교 캠프 강사 모집',   hint: '학생 대상 방문형·집합형 캠프에 투입할 강사' },
+  workshop: { label: '워크샵 운영 강사 모집', hint: '강사 워크샵을 진행할 강사·보조강사' }
+};
+/** 워크샵 운영 방식 */
+export const WORKSHOP_MODES = ['대면 집합 워크샵', '온라인 실시간 워크샵', '대면 + 온라인 병행'];
+
 /* ---------- v11: 날짜 → 한글 표기 ---------- */
 /** '2026-08-03' → '2026.08.03(월)' */
 export function fmtDateKo(v){
@@ -58,11 +66,25 @@ export function fmtDateKo(v){
   const pad = n => String(n).padStart(2, '0');
   return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}(${w})`;
 }
-/** 시작·종료일 → '2026.08.03(월) ~ 2026.08.21(금)' */
-export function fmtPeriodKo(start, end){
+/** v11.1: 시작·종료 일시 → 사람이 읽는 기간 문자열
+ *  같은 날    : '2026.08.29(토) 10:00~17:00'
+ *  여러 날    : '2026.08.03(월) 10:00 ~ 2026.08.21(금) 17:00'
+ *  시간 미입력: '2026.08.03(월) ~ 2026.08.21(금)'                        */
+export function fmtPeriodKo(start, end, startTime, endTime){
   if (!start && !end) return '';
-  if (start && end)   return `${fmtDateKo(start)} ~ ${fmtDateKo(end)}`;
-  return fmtDateKo(start || end);
+  const s = start || end, e = end || start;
+  const st = (startTime || '').slice(0, 5);
+  const et = (endTime   || '').slice(0, 5);
+
+  if (s === e){
+    const d = fmtDateKo(s);
+    if (st && et) return `${d} ${st}~${et}`;
+    if (st)       return `${d} ${st}~`;
+    return d;
+  }
+  const a = fmtDateKo(s) + (st ? ` ${st}` : '');
+  const b = fmtDateKo(e) + (et ? ` ${et}` : '');
+  return `${a} ~ ${b}`;
 }
 
 /* ---------- 강사 프로필 공통 상수 (강사모집 대비) ---------- */
@@ -186,6 +208,7 @@ export function initLayout(active){
         <a href="index.html"  class="${active === 'home'   ? 'active' : ''}">홈</a>
         <a href="notice.html" class="${active === 'notice' ? 'active' : ''}">공지사항</a>
         <a href="check.html"  class="${active === 'check'  ? 'active' : ''}">신청 확인</a>
+        <a href="programs.html" class="${active === 'programs' ? 'active' : ''}">교육과정</a>
         <a href="about.html"  class="${active === 'about'  ? 'active' : ''}">사업단 소개</a>
         <span id="authChip" class="auth-chip"><span class="chip-skel"></span></span>
       </nav>
@@ -215,11 +238,11 @@ export function initLayout(active){
     <div class="footer-inner">
       <div>
         <h4>한신대학교 디지털새싹 사업단</h4>
-        <p>(18101) 경기도 오산시 한신대길 137 한신대학교<br>임마누엘관 지하1층 5008호<br>사무국 031-379-0255 · hello@hsnewsac.com<br>운영시간 평일 09:00 ~ 18:00 (점심 12:00~13:00)</p>
+        <p>(18101) 경기도 오산시 한신대길 137 한신대학교<br>임마누엘관 지하1층 5008호<br>사무국 031-379-0255 · newsac26@naver.com<br>운영시간 평일 09:00 ~ 18:00 (점심 12:00~13:00)</p>
       </div>
       <div>
         <h4>바로가기</h4>
-        <p><a href="index.html">홈</a> · <a href="notice.html">공지사항</a> · <a href="check.html">신청 확인</a> · <a href="mypage.html">마이페이지</a> · <a href="about.html">사업단 소개</a></p>
+        <p><a href="index.html">홈</a> · <a href="notice.html">공지사항</a> · <a href="check.html">신청 확인</a> · <a href="mypage.html">마이페이지</a><br><a href="programs.html">교육과정</a> · <a href="about.html">사업단 소개</a></p>
       </div>
     </div>
     <div class="footer-bottom">© 2026 Hanshin University Digital Saessak.</div>`;

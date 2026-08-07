@@ -12,7 +12,7 @@ import {
 import {
   initLayout, esc, ddayInfo, noticeIsNew, catClass, fbError,
   KIND, ORG_TYPES, openModal, closeModal, bindModalEvents, toast,
-  WEEKDAYS, TIMESLOTS, ROLES, roleOf, qualificationHTML
+  WEEKDAYS, TIMESLOTS, ROLES, roleOf, qualificationHTML, RECRUIT_FOR
 } from './common.js';
 import { sendApplicationEmail, emailEnabled } from './email-config.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
@@ -89,6 +89,8 @@ function cardHTML(p){
           <span class="help qual-help" tabindex="0" role="button" aria-label="지원 자격 상세 보기">?
             <span class="help-pop"><b class="pop-title">지원 자격</b>${qualificationHTML()}</span>
           </span>` : ''}</dd>
+        ${isRecruit && p.recruitFor && RECRUIT_FOR[p.recruitFor]
+          ? `<dt>모집목적</dt><dd>${esc(RECRUIT_FOR[p.recruitFor].label)}</dd>` : ''}
         ${isRecruit && p.role ? `<dt>모집구분</dt><dd>${esc(p.role)}</dd>` : ''}
         ${isRecruit && p.mode ? `<dt>운영형태</dt><dd>${esc(p.mode)}</dd>` : ''}
         ${isRecruit && Array.isArray(p.levels) && p.levels.length
@@ -114,9 +116,28 @@ function cardHTML(p){
     </div>`;
 }
 
+/* ---------- v11: 마감 임박 순 정렬 ----------
+   접수 중인 카드를 마감일이 가까운 순으로 먼저 보여주고,
+   이미 마감된(기한 경과·정원 마감·접수 중지) 카드는 뒤로 보냅니다. */
+function isClosedCard(p){
+  const remain = (p.capacity || 0) - (p.applied || 0);
+  return !p.open || ddayInfo(p).closed || remain <= 0;
+}
+function byDeadline(list){
+  return [...list].sort((a, b) => {
+    const ca = isClosedCard(a) ? 1 : 0, cb = isClosedCard(b) ? 1 : 0;
+    if (ca !== cb) return ca - cb;                 // 접수중 먼저
+    const da = a.deadline || '9999-12-31';
+    const db = b.deadline || '9999-12-31';
+    if (da === db) return 0;                       // 동률이면 최신 등록순 유지
+    /* 접수중은 임박한 순(오름차순), 마감건은 최근 마감된 순(내림차순) */
+    return ca === 0 ? (da < db ? -1 : 1) : (da > db ? -1 : 1);
+  });
+}
+
 function renderPrograms(){
-  const edu     = programs.filter(p => p.type !== 'recruit');
-  const recruit = programs.filter(p => p.type === 'recruit');
+  const edu     = byDeadline(programs.filter(p => p.type !== 'recruit'));
+  const recruit = byDeadline(programs.filter(p => p.type === 'recruit'));
 
   const grid = $('programGrid');
   grid.innerHTML = edu.length

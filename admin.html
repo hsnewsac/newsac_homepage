@@ -112,12 +112,18 @@
               <input id="p-place" type="text" placeholder="예) 한신대학교 AI·SW관" required>
             </div>
             <div class="form-row">
-              <label for="p-start">운영 시작일 <span class="req">*</span></label>
-              <input id="p-start" type="date" required>
+              <label for="p-start">운영 시작 <span class="req">*</span></label>
+              <div class="dt-pair">
+                <input id="p-start" type="date" required>
+                <input id="p-startTime" type="time" step="300" aria-label="시작 시각">
+              </div>
             </div>
             <div class="form-row">
-              <label for="p-end">운영 종료일 <span class="req">*</span></label>
-              <input id="p-end" type="date" required>
+              <label for="p-end">운영 종료 <span class="req">*</span></label>
+              <div class="dt-pair">
+                <input id="p-end" type="date" required>
+                <input id="p-endTime" type="time" step="300" aria-label="종료 시각">
+              </div>
             </div>
             <div class="form-row">
               <label for="p-deadline">접수 마감일 <span class="req">*</span></label>
@@ -333,34 +339,46 @@
       <!-- ===== 모집 공고 등록/수정 (v10: 프로그램 탭에서 이관) ===== -->
       <div class="admin-box" id="recruitBox" style="display:none;">
         <h3 id="rFormTitle">📣 새 강사 모집 공고 등록</h3>
-        <p class="box-desc">실제 운영되는 <b>방문형·집합형 캠프</b>에 투입할 강사를 모집하는 공고입니다.
-          워크샵과 달리 운영 형태·학교급·담당 과정·시수 조건을 함께 입력합니다.</p>
+        <p class="box-desc">강사 모집 공고를 등록합니다. 맨 위 <b>모집 목적</b>을 고르면
+          그에 맞는 항목만 표시됩니다 — <b>학교 캠프 강사</b>는 운영 형태·대상 학교급까지,
+          <b>워크샵 운영 강사</b>는 진행 방식·장소 중심으로 입력합니다.</p>
         <form id="recruitForm">
           <input type="hidden" id="r-id">
           <div class="form-2col">
             <div class="form-row">
               <label for="r-title">공고명 <span class="req">*</span></label>
-              <input id="r-title" type="text" placeholder="예) 2026 하반기 디지털새싹 캠프 강사 모집" required>
+              <input id="r-title" type="text" required>
+            </div>
+            <div class="form-row">
+              <label for="r-for">모집 목적 <span class="req">*</span></label>
+              <select id="r-for" required></select>
+              <p class="form-note" style="margin-top:6px;" id="r-forHint"></p>
             </div>
             <div class="form-row">
               <label for="r-role">모집 구분 <span class="req">*</span></label>
               <select id="r-role" required></select>
             </div>
             <div class="form-row">
-              <label for="r-mode">운영 형태 <span class="req">*</span></label>
+              <label for="r-mode" id="r-modeLabel">운영 형태 <span class="req">*</span></label>
               <select id="r-mode" required></select>
             </div>
             <div class="form-row">
-              <label for="r-place">활동 지역 / 운영 학교 <span class="req">*</span></label>
-              <input id="r-place" type="text" placeholder="예) 경기 남부권(오산·화성·수원) 초·중학교" required>
+              <label for="r-place" id="r-placeLabel">활동 지역 / 운영 학교 <span class="req">*</span></label>
+              <input id="r-place" type="text" required>
             </div>
             <div class="form-row">
-              <label for="r-start">활동 시작일 <span class="req">*</span></label>
-              <input id="r-start" type="date" required>
+              <label for="r-start" id="r-startLabel">활동 시작 <span class="req">*</span></label>
+              <div class="dt-pair">
+                <input id="r-start" type="date" required>
+                <input id="r-startTime" type="time" step="300" aria-label="시작 시각">
+              </div>
             </div>
             <div class="form-row">
-              <label for="r-end">활동 종료일 <span class="req">*</span></label>
-              <input id="r-end" type="date" required>
+              <label for="r-end" id="r-endLabel">활동 종료 <span class="req">*</span></label>
+              <div class="dt-pair">
+                <input id="r-end" type="date" required>
+                <input id="r-endTime" type="time" step="300" aria-label="종료 시각">
+              </div>
             </div>
             <div class="form-row">
               <label for="r-deadline">지원 마감일 <span class="req">*</span></label>
@@ -371,22 +389,22 @@
               <input id="r-capacity" type="number" min="1" placeholder="예) 20" required>
             </div>
             <div class="form-row">
-              <label for="r-hours">운영 조건 / 시수 <span class="req">*</span></label>
-              <input id="r-hours" type="text" placeholder="예) 1개교당 8차시 · 회차별 일정 협의" required>
+              <label for="r-hours" id="r-hoursLabel">운영 조건 / 시수 <span class="req">*</span></label>
+              <input id="r-hours" type="text" required>
             </div>
             <div class="form-row">
               <label for="r-target">모집 대상 <span class="req">*</span></label>
               <input id="r-target" type="text" placeholder="예) SW·AI 교육 경력 1년 이상 강사" required>
             </div>
           </div>
-          <div class="form-row">
+          <div class="form-row" id="r-levelBlock">
             <label>대상 학교급 <span class="req">*</span>
               <span class="hint">— 이 공고로 배정될 학교급을 모두 선택하세요.</span>
             </label>
             <div class="chip-pick" id="r-levelList"></div>
           </div>
           <div class="form-row">
-            <label>담당 과정 <span class="req">*</span>
+            <label id="r-courseLabel">담당 과정 <span class="req">*</span>
               <span class="hint">— 지원자는 이 목록에서 희망 과정을 선택합니다.</span>
             </label>
             <div class="course-pick" id="r-courseList"></div>
@@ -398,7 +416,7 @@
           </div>
           <div class="form-row">
             <label for="r-content">주요 담당 업무 <span class="req">*</span></label>
-            <input id="r-content" type="text" placeholder="예) 학교 방문 캠프 강의 · 교구 운영 · 결과보고서 작성" required>
+            <input id="r-content" type="text" required>
           </div>
           <div class="form-row">
             <label for="r-qual">지원 자격 / 우대 사항</label>
@@ -473,7 +491,9 @@
     <div class="tab-panel" id="tab-member">
       <div class="admin-box">
         <h3>🧑‍🏫 회원 관리</h3>
-        <p class="box-desc">강사·학부모·학생·교직원 회원을 유형별로 조회합니다. 조회 전용이며 수정은 회원 본인이 마이페이지에서 합니다.</p>
+        <p class="box-desc">강사·학부모·학생·교직원 회원을 유형별로 조회합니다. 조회 전용이며 수정은 회원 본인이 마이페이지에서 합니다.
+          <b>회원 이름을 클릭하면 상세 정보와 이수 이력</b>을 볼 수 있습니다.</p>
+        <div class="member-stats" id="memberStats"></div>
         <div class="filter-bar">
           <div class="filter-item grow">
             <label for="mf-q">통합 검색</label>
@@ -498,16 +518,17 @@
           <table class="admin-table">
             <thead>
               <tr><th>가입일</th><th>회원 유형</th><th>이름</th><th>이메일</th><th>연락처</th>
-                  <th>소속 / 학교</th><th>유형별 정보</th><th>신청/수료</th><th>배정/시수</th></tr>
+                  <th>소속 / 학교</th><th>신청/수료</th><th>배정/시수</th></tr>
             </thead>
             <tbody id="memberTableBody">
-              <tr><td colspan="9" style="text-align:center;color:#6A776F;">불러오는 중…</td></tr>
+              <tr><td colspan="8" style="text-align:center;color:#6A776F;">불러오는 중…</td></tr>
             </tbody>
           </table>
         </div>
         <p class="form-note">
           ※ <b>강사</b> 회원의 프로필(전문분야·경력·활동지역)은 [🎯 강사 배정] 탭의 후보 검색에 사용됩니다.<br>
           ※ <b>학부모·학생</b> 회원의 관심 분야와 <b>교직원</b> 회원의 단체 참여 정보는 모집 안내 대상 선정에 활용됩니다.<br>
+          ※ 전문분야·경력·활동지역 등 유형별 상세 정보는 <b>회원 행을 클릭</b>하면 상세 창에서 볼 수 있습니다.<br>
           ※ 회원 정보는 조회만 가능하며, 수정은 회원 본인이 마이페이지에서 진행합니다.
         </p>
       </div>
@@ -585,6 +606,18 @@
         <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('assignModal')">취소</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- ===== 회원 상세 보기 모달 (v11) ===== -->
+<div class="modal-back" id="memberDetailModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="kind-chip" id="md-kind">회원</span>
+      <h3 id="md-title">회원 상세</h3>
+      <button class="modal-close" onclick="closeModal('memberDetailModal')" aria-label="닫기">✕</button>
+    </div>
+    <div id="md-body"></div>
   </div>
 </div>
 

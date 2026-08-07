@@ -32,7 +32,7 @@ async function load(){
     const a = snap.data();
     if (!a.completed){
       showError('아직 수료 처리 전입니다',
-        '이수증은 과정 종료 후 사업단에서 수료 처리를 완료하면 발급할 수 있습니다. 문의: hello@hsnewsac.com');
+        '이수증은 과정 종료 후 사업단에서 수료 처리를 완료하면 발급할 수 있습니다. 문의: newsac26@naver.com');
       return;
     }
 

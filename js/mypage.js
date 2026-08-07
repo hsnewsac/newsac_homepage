@@ -507,7 +507,7 @@ async function cancelMyApp(id){
   const a = myApps.find(x => x.id === id);
   if (!a) return;
   if (a.completed || statusOf(a) === 'assigned'){
-    alert('수료 처리되었거나 배정이 확정된 건은 취소할 수 없습니다.\n사업단(hello@hsnewsac.com / 031-379-0255)으로 문의해주세요.');
+    alert('수료 처리되었거나 배정이 확정된 건은 취소할 수 없습니다.\n사업단(newsac26@naver.com / 031-379-0255)으로 문의해주세요.');
     return;
   }
   if (!confirm(`[${a.programTitle} · ${a.course || ''}]\n신청을 취소할까요?\n\n취소 후에는 되돌릴 수 없으며, 재참여를 원하시면 다시 신청해야 합니다.`)) return;
@@ -541,7 +541,7 @@ $('linkForm').addEventListener('submit', async e => {
     }
     const a = snap.data();
     if (a.uid && a.uid !== currentUser.uid){
-      showErr('linkError', '이미 다른 계정에 연결된 신청입니다. 사업단(hello@hsnewsac.com)으로 문의해주세요.');
+      showErr('linkError', '이미 다른 계정에 연결된 신청입니다. 사업단(newsac26@naver.com)으로 문의해주세요.');
       return;
     }
     if (a.uid === currentUser.uid){
