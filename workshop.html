@@ -483,7 +483,9 @@
   onSnapshot(
     query(collection(db, 'programs'), where('type', '==', 'workshop')),
     snap => {
+      /* 상시 온라인 워크샵은 아래 #online 섹션에서 과목별로 신청받으므로 여기서는 제외 */
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .filter(p => !/온라인/.test(p.title || ''))
         .sort((a, b) => {
           const ca = isClosed(a) ? 1 : 0, cb = isClosed(b) ? 1 : 0;
           if (ca !== cb) return ca - cb;
