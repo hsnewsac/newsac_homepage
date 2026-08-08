@@ -31,6 +31,17 @@
     background:#fff;border:1.5px solid var(--line);border-radius:999px;
     font-size:.85rem;font-weight:700;color:#4A5850;}
   .ol-steps b{color:var(--leaf);}
+
+  /* 한 줄에 한 과목 — 가로형 카드 (이 페이지 전용) */
+  .on-grid{grid-template-columns:1fr;max-width:860px;margin:0 auto;}
+  .on-card{flex-direction:row;align-items:center;gap:26px;padding:22px 28px;}
+  .oc-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px;}
+  .oc-side{flex:none;width:200px;display:flex;flex-direction:column;gap:8px;}
+  .oc-side .btn{width:100%;}
+  @media (max-width:680px){
+    .on-card{flex-direction:column;align-items:stretch;gap:14px;}
+    .oc-side{width:auto;}
+  }
 </style>
 </head>
 <body>
@@ -168,22 +179,25 @@
       const mine = myEnrolls.find(e => e.courseKey === c.key);
       const n = lessonCount[c.key] || 0;
       return `<article class="on-card ${c.group === '특화' ? 'sp' : ''}">
-        <div class="oc-top"><span class="oc-ic">${c.icon}</span>
-          <span class="oc-lv">${esc(c.group)}과정 · ${esc(c.level)}</span></div>
-        <h4>${esc(c.name)}</h4>
-        <p>${esc(d.intro || c.intro)}</p>
-        <div class="oc-meta">
-          <span>총 ${n}차시</span><span>상시 개설</span>
-          ${d.note ? `<span>안내 있음</span>` : ''}
+        <div class="oc-main">
+          <div class="oc-top"><span class="oc-ic">${c.icon}</span>
+            <span class="oc-lv">${esc(c.group)}과정 · ${esc(c.level)}</span></div>
+          <h4>${esc(c.name)}</h4>
+          <p>${esc(d.intro || c.intro)}</p>
+          <div class="oc-meta">
+            <span>총 ${n}차시</span><span>상시 개설</span>
+          </div>
+          ${d.note ? `<p class="cell-sub">📌 ${esc(d.note)}</p>` : ''}
         </div>
-        ${d.note ? `<p class="cell-sub">📌 ${esc(d.note)}</p>` : ''}
-        ${mine
-          ? `<div class="oc-state done">✅ 수강 중입니다</div>
-             <a class="btn btn-navy btn-sm" href="classroom.html?enroll=${mine.id}">강의실 입장 →</a>`
-          : (me
-            ? `<button class="btn btn-navy btn-sm" data-enroll="${c.key}">수강 신청하기</button>`
-            : `<div class="oc-state wait">로그인 후 신청할 수 있습니다</div>
-               <a class="btn btn-outline btn-sm" href="mypage.html">로그인 / 회원가입</a>`)}
+        <div class="oc-side">
+          ${mine
+            ? `<div class="oc-state done">✅ 수강 중입니다</div>
+               <a class="btn btn-navy btn-sm" href="classroom.html?enroll=${mine.id}">강의실 입장 →</a>`
+            : (me
+              ? `<button class="btn btn-navy btn-sm" data-enroll="${c.key}">수강 신청하기</button>`
+              : `<div class="oc-state wait">로그인 후 신청 가능</div>
+                 <a class="btn btn-outline btn-sm" href="mypage.html">로그인 / 회원가입</a>`)}
+        </div>
       </article>`;
     }).join('');
 
