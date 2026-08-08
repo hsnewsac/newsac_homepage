@@ -207,12 +207,26 @@ function openApply(programId){
   const courses = Array.isArray(p.courses) && p.courses.length
     ? p.courses
     : Array.from({length: p.sessions || 1}, (_, i) => `${i+1}회차`); // 구버전 데이터 호환
-  $('a-course').innerHTML = '<option value="">강좌를 선택하세요</option>' +
-    courses.map(c => `<option>${esc(c)}</option>`).join('');
 
   // 강사 모집 공고면 지원서 항목으로 전환
   const isRecruit = p.type === 'recruit';
   $('recruitFields').style.display = isRecruit ? 'block' : 'none';
+
+  /* v16: 모집 공고는 지원 분야 단일 선택, 워크샵·연수는 강좌 복수 선택
+     (오전·오후 등 시간대가 다른 강좌를 한 번에 신청할 수 있습니다) */
+  const sel = $('a-course'), checks = $('a-courseChecks'), courseNote = $('a-courseNote');
+  if (isRecruit){
+    sel.style.display = ''; sel.required = true;
+    checks.style.display = 'none'; courseNote.style.display = 'none';
+    checks.innerHTML = '';
+    sel.innerHTML = '<option value="">강좌를 선택하세요</option>' +
+      courses.map(c => `<option>${esc(c)}</option>`).join('');
+  } else {
+    sel.style.display = 'none'; sel.required = false; sel.innerHTML = '';
+    checks.style.display = ''; courseNote.style.display = '';
+    checks.innerHTML = courses.map((c, i) =>
+      `<label class="chk"><input type="checkbox" name="ac" value="${esc(c)}" id="ac${i}"><span>${esc(c)}</span></label>`).join('');
+  }
 
   if (isRecruit){
     /* 공고에 이미 고정된 조건을 보여주고 확인만 받습니다.
@@ -237,8 +251,10 @@ function openApply(programId){
     $('a-role').required = both;
     $('a-agree').checked = false;
   }
-  $('a-courseLabel').innerHTML = (isRecruit ? '지원 분야' : '희망 강좌') + ' <span class="req">*</span>';
-  $('a-course').firstElementChild.textContent = isRecruit ? '지원 분야를 선택하세요' : '강좌를 선택하세요';
+  $('a-courseLabel').innerHTML = (isRecruit
+    ? '지원 분야'
+    : '희망 강좌 <span class="hint">(복수 선택 가능)</span>') + ' <span class="req">*</span>';
+  if (isRecruit) sel.firstElementChild.textContent = '지원 분야를 선택하세요';
   $('a-memo').placeholder = isRecruit
     ? '지원 동기, 강의 가능 시수, 참고사항 등을 자유롭게 적어주세요.'
     : '궁금한 점이나 요청사항을 적어주세요.';
@@ -273,6 +289,17 @@ $('applyForm').addEventListener('submit', async e => {
     $('a-agree').focus();
     return;
   }
+  /* v16: 워크샵은 복수 강좌 선택 — 선택한 강좌마다 신청을 각각 접수합니다 */
+  const isRecruitSubmit = p && p.type === 'recruit';
+  const chosenCourses = isRecruitSubmit
+    ? [$('a-course').value]
+    : [...document.querySelectorAll('#a-courseChecks input:checked')].map(c => c.value);
+  if (!chosenCourses.length || !chosenCourses[0]){
+    $('applyError').textContent = '희망 강좌를 하나 이상 선택해주세요.';
+    $('applyError').style.display = 'block';
+    return;
+  }
+
   const btn = $('applySubmitBtn');
   btn.disabled = true; btn.textContent = '접수 중…';
   try {
@@ -280,7 +307,7 @@ $('applyForm').addEventListener('submit', async e => {
       programId,
       programTitle: p ? p.title : '',
       programType: p ? p.type : '',
-      course: $('a-course').value,
+      course: chosenCourses[0],
       name: $('a-name').value.trim(),
       org: $('a-org').value.trim(),
       orgType: $('a-orgtype').value,
@@ -297,14 +324,21 @@ $('applyForm').addEventListener('submit', async e => {
       appData.applyRole = $('a-role').value || p.role || '';
       appData.agreedTerms = true;
     }
-    const ref = await addDoc(collection(db, 'applications'), appData);
-    await updateDoc(doc(db, 'programs', programId), { applied: increment(1) });
+    /* 강좌마다 신청 문서를 하나씩 만듭니다 (강좌별 승인·수료·취소 관리 유지).
+       programs.applied 증가는 규칙상 한 번에 +1만 허용되므로 건별로 반영합니다. */
+    const ids = [];
+    for (const course of chosenCourses){
+      const ref = await addDoc(collection(db, 'applications'), { ...appData, course });
+      ids.push(ref.id);
+      await updateDoc(doc(db, 'programs', programId), { applied: increment(1) }).catch(() => {});
+    }
+    const courseText = chosenCourses.join(' · ');
 
     $('applyForm').style.display = 'none';
     $('applyDoneMsg').textContent = (p && p.type === 'recruit')
-      ? `[${p.title} · ${appData.course}] 지원이 접수되었습니다. 서류 검토 후 배정 결과를 안내드립니다.`
-      : `[${p.title} · ${appData.course}] 신청이 접수되었습니다. 담당자 확인 후 안내드립니다.`;
-    $('applyDoneCode').textContent = ref.id;
+      ? `[${p.title} · ${courseText}] 지원이 접수되었습니다. 서류 검토 후 배정 결과를 안내드립니다.`
+      : `[${p.title} · ${courseText}] 신청이 접수되었습니다. (${ids.length}건) 담당자 확인 후 안내드립니다.`;
+    $('applyDoneCode').textContent = ids.join(', ');
     $('applyDone').style.display = 'block';
 
     const mailNote = $('applyDoneMail');
@@ -321,8 +355,8 @@ $('applyForm').addEventListener('submit', async e => {
         org_type: appData.orgType,
         phone: appData.phone,
         program: appData.programTitle,
-        course: appData.course,
-        app_id: ref.id,
+        course: courseText,
+        app_id: ids.join(', '),
         date: new Date().toLocaleString('ko-KR', {dateStyle:'long', timeStyle:'short'})
       });
       if (!currentUser){
