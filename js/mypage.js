@@ -407,7 +407,7 @@ async function paintClassroom(){
     box.style.display = 'block';
     grid.innerHTML = `<div class="cr-empty">아직 수강 중인 온라인 워크샵이 없습니다.<br>
       상시 개설 과목을 신청하면 이곳에서 바로 수강할 수 있습니다.<br>
-      <a class="btn btn-navy btn-sm" href="workshop.html#online">온라인 워크샵 신청하러 가기 →</a></div>`;
+      <a class="btn btn-navy btn-sm" href="online.html">온라인 워크샵 신청하러 가기 →</a></div>`;
   };
 
   let enrolls = [];
