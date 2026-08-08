@@ -131,6 +131,11 @@
       <div class="form-row">
         <label for="a-course" id="a-courseLabel">희망 강좌 <span class="req">*</span></label>
         <select id="a-course" required></select>
+        <!-- v16: 워크샵은 강좌 복수 선택 (시간대가 다른 강좌 연속 신청) -->
+        <div class="chk-grid" id="a-courseChecks" style="display:none;"></div>
+        <p class="form-note" id="a-courseNote" style="display:none;margin-top:6px;">
+          시간이 겹치지 않으면 여러 강좌를 함께 신청할 수 있습니다.
+          선택한 강좌 수만큼 신청이 각각 접수되며, 강좌별로 따로 취소할 수 있습니다.</p>
       </div>
 
       <!-- 강사 모집 공고 전용 -->
