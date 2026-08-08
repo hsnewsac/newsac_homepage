@@ -325,37 +325,7 @@
     </div>
     <p class="form-note" style="margin-top:20px;text-align:center;">
       일정이 맞지 않으시나요?
-      <a href="#online" style="text-decoration:underline;color:var(--leaf);font-weight:700;">상시 개설되는 온라인 워크샵</a>도 있습니다.
-    </p>
-  </div>
-</section>
-
-<!-- ===== 상시 온라인 워크샵 ===== -->
-<section id="online" class="on-band">
-  <div class="section">
-    <div class="section-head">
-      <span class="tag">ONLINE · 상시 개설</span>
-      <h2>온라인 워크샵</h2>
-      <p class="section-sub">과목별로 언제든 신청하고, 내 속도에 맞춰 수강하세요.
-        <a href="online.html" style="text-decoration:underline;color:var(--leaf);font-weight:700;">전용 페이지에서 검색·신청 →</a></p>
-    </div>
-
-    <div class="on-lead">
-      <b>시간과 공간의 제약으로 오프라인 워크샵 참석이 어렵다면?</b>
-      <span>온라인 워크샵은 <b>상시 개설</b>되어 정해진 일정 없이 언제든 시작할 수 있습니다.
-        아래 7종 과목 중 원하는 과목을 신청하시면, 마이페이지 <b>내 강의실</b>에서
-        바로 차시별 영상을 수강하실 수 있습니다.</span>
-    </div>
-
-    <div class="on-grid" id="onGrid">
-      <div class="ws-loading">과목 정보를 불러오는 중입니다…</div>
-    </div>
-
-    <p class="form-note" style="margin-top:22px;">
-      ※ 온라인 워크샵은 <b>로그인한 회원만</b> 신청할 수 있습니다.
-      회원가입은 <a href="mypage.html" style="text-decoration:underline;color:var(--leaf);font-weight:700;">마이페이지</a>에서 하실 수 있습니다.<br>
-      ※ 허밍블럭스·VR 등 <b>교구 실습이 포함된 과목</b>은 해당 차시만 오프라인 워크샵 참석이 필요합니다.
-      과목 상세에 안내되어 있습니다.
+      <a href="online.html" style="text-decoration:underline;color:var(--leaf);font-weight:700;">상시 개설되는 온라인 워크샵</a>도 있습니다.
     </p>
   </div>
 </section>
@@ -436,7 +406,7 @@
 
 <!-- 접수 중인 워크샵 목록 (실시간) -->
 <script type="module">
-  import { esc, ddayInfo, fbError, toast } from './js/common.js';
+  import { esc, ddayInfo, fbError } from './js/common.js';
 
   const box = document.getElementById('wsOpen');
 
@@ -466,25 +436,21 @@
     </article>`;
   }
 
-  const onBox = document.getElementById('onGrid');
-
-  let db, auth, fs, onAuthStateChanged;
+  let db, fs;
   try {
-    ({ db, auth } = await import('./js/firebase-init.js'));
+    ({ db } = await import('./js/firebase-init.js'));
     fs = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js");
-    ({ onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js"));
   } catch (e) {
     box.innerHTML = `<div class="ws-empty">워크샵 정보를 불러오지 못했습니다.<br>
       네트워크 상태를 확인한 뒤 새로고침해주세요.</div>`;
-    onBox.innerHTML = box.innerHTML;
     throw e;
   }
-  const { collection, query, where, onSnapshot, getDocs, addDoc, doc, serverTimestamp, getDoc } = fs;
+  const { collection, query, where, onSnapshot } = fs;
 
   onSnapshot(
     query(collection(db, 'programs'), where('type', '==', 'workshop')),
     snap => {
-      /* 상시 온라인 워크샵은 아래 #online 섹션에서 과목별로 신청받으므로 여기서는 제외 */
+      /* 상시 온라인 워크샵은 전용 페이지(online.html)에서 신청받으므로 여기서는 제외 */
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
         .filter(p => !/온라인/.test(p.title || ''))
         .sort((a, b) => {
@@ -504,99 +470,6 @@
     }
   );
 
-  /* ===== 상시 온라인 워크샵 (과목별) ===== */
-  const { COURSES_2026 } = await import('./js/common.js');
-  let me = null, myEnrolls = [], onCourses = {}, lessonCount = {};
-
-  async function loadOnline(){
-    try {
-      const cs = await getDocs(collection(db, 'onlineCourses'));
-      onCourses = Object.fromEntries(cs.docs.map(d => [d.id, d.data()]));
-      /* 과목별 차시 수 */
-      await Promise.all(cs.docs.map(async d => {
-        try {
-          const ls = await getDocs(collection(db, 'onlineCourses', d.id, 'lessons'));
-          lessonCount[d.id] = ls.size;
-        } catch { lessonCount[d.id] = 0; }
-      }));
-    } catch { onCourses = {}; }
-
-    if (me){
-      try {
-        const es = await getDocs(query(collection(db, 'enrollments'), where('uid', '==', me.uid)));
-        myEnrolls = es.docs.map(d => ({ id: d.id, ...d.data() }));
-      } catch { myEnrolls = []; }
-    } else myEnrolls = [];
-    paintOnline();
-  }
-
-  function paintOnline(){
-    const open = COURSES_2026.filter(c => onCourses[c.key] && onCourses[c.key].open !== false);
-    if (!open.length){
-      onBox.innerHTML = `<div class="ws-empty">현재 신청 가능한 온라인 과목이 없습니다.<br>
-        과목이 열리면 <a href="notice.html" style="text-decoration:underline;color:var(--leaf);font-weight:700;">공지사항</a>으로 안내드립니다.</div>`;
-      return;
-    }
-    onBox.innerHTML = open.map(c => {
-      const d = onCourses[c.key] || {};
-      const mine = myEnrolls.find(e => e.courseKey === c.key);
-      const n = lessonCount[c.key] || 0;
-      return `<article class="on-card ${c.group === '특화' ? 'sp' : ''}">
-        <div class="oc-top"><span class="oc-ic">${c.icon}</span>
-          <span class="oc-lv">${esc(c.group)}과정 · ${esc(c.level)}</span></div>
-        <h4>${esc(c.name)}</h4>
-        <p>${esc(d.intro || c.intro)}</p>
-        <div class="oc-meta">
-          <span>총 ${n}차시</span><span>상시 개설</span>
-          ${d.note ? `<span>안내 있음</span>` : ''}
-        </div>
-        ${d.note ? `<p class="cell-sub">📌 ${esc(d.note)}</p>` : ''}
-        ${mine
-          ? `<div class="oc-state done">✅ 수강 중입니다</div>
-             <a class="btn btn-navy btn-sm" href="classroom.html?enroll=${mine.id}">강의실 입장 →</a>`
-          : (me
-            ? `<button class="btn btn-navy btn-sm" data-enroll="${c.key}">수강 신청하기</button>`
-            : `<div class="oc-state wait">로그인 후 신청할 수 있습니다</div>
-               <a class="btn btn-outline btn-sm" href="mypage.html">로그인 / 회원가입</a>`)}
-      </article>`;
-    }).join('');
-
-    onBox.querySelectorAll('[data-enroll]').forEach(b =>
-      b.addEventListener('click', () => enroll(b.dataset.enroll, b)));
-  }
-
-  async function enroll(key, btn){
-    const c = COURSES_2026.find(x => x.key === key);
-    if (!c || !me) return;
-    if (!confirm(`[${c.name}]\n온라인 워크샵을 신청할까요?\n\n신청 즉시 마이페이지 '내 강의실'에서 수강하실 수 있습니다.`)) return;
-    btn.disabled = true; btn.textContent = '신청 중…';
-    try {
-      let prof = {};
-      try {
-        const u = await getDoc(doc(db, 'users', me.uid));
-        if (u.exists()) prof = u.data();
-      } catch { /* 프로필 없음 */ }
-      await addDoc(collection(db, 'enrollments'), {
-        uid: me.uid,
-        name: prof.name || me.displayName || me.email,
-        email: me.email || '',
-        phone: prof.phone || '',
-        org: prof.org || '',
-        orgType: prof.orgType || '',
-        courseKey: key,
-        courseName: c.name,
-        completed: false,
-        createdAt: serverTimestamp()
-      });
-      toast('수강 신청이 완료되었습니다.');
-      await loadOnline();
-    } catch (err){
-      alert(fbError(err));
-      btn.disabled = false; btn.textContent = '수강 신청하기';
-    }
-  }
-
-  onAuthStateChanged(auth, u => { me = u; loadOnline(); });
 </script>
 </body>
 </html>
