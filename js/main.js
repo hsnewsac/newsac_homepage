@@ -46,15 +46,17 @@ function cardHTML(p){
   const applied = p.applied || 0;
   const remain = p.capacity - applied;
   const dd = ddayInfo(p);
-  const closed = !p.open || dd.closed || remain <= 0;
-  const pct = Math.min(100, Math.round(applied / p.capacity * 100));
   const isRecruit = p.type === 'recruit';
+  /* v17: 모집 공고는 정원이 차도 자동 마감하지 않습니다 — 서류 검토 후 선발 방식.
+     접수 마감은 마감일 경과 또는 관리자의 접수 중지로만 처리합니다. */
+  const closed = !p.open || dd.closed || (!isRecruit && remain <= 0);
+  const pct = Math.min(100, Math.round(applied / p.capacity * 100));
   const needLogin = p.loginOnly && !currentUser;
   const wrongRole = isRecruit && currentUser && roleOf(userProfile) !== 'instructor';
   const btnClass = p.type === 'camp' ? 'btn-primary' : 'btn-navy';
 
   const seatText = isRecruit
-    ? (remain <= 0 ? '모집 마감' : `모집 <strong>${p.capacity}명</strong> · 현재 <strong>${applied}명</strong> 지원`)
+    ? `모집 <strong>${p.capacity}명</strong> · 현재 <strong>${applied}명</strong> 지원 · 서류 검토 후 선발`
     : (remain <= 0 ? '정원 마감'
         : (remain <= 10 ? `잔여 <strong>${remain}석</strong> · 마감 임박` : '회차별 선착순 마감'));
 
@@ -117,7 +119,8 @@ function cardHTML(p){
    이미 마감된(기한 경과·정원 마감·접수 중지) 카드는 뒤로 보냅니다. */
 function isClosedCard(p){
   const remain = (p.capacity || 0) - (p.applied || 0);
-  return !p.open || ddayInfo(p).closed || remain <= 0;
+  /* 모집 공고는 정원 초과 지원을 허용하므로 정원 도달로는 마감 처리하지 않음 */
+  return !p.open || ddayInfo(p).closed || (p.type !== 'recruit' && remain <= 0);
 }
 function byDeadline(list){
   return [...list].sort((a, b) => {
