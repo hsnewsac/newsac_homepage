@@ -26,11 +26,31 @@
   .ol-chip:hover{border-color:var(--leaf);color:var(--leaf);}
   .ol-chip.on{background:var(--leaf);border-color:var(--leaf);color:#fff;}
   .ol-count{width:100%;text-align:right;font-size:.8rem;color:#6A776F;max-width:860px;margin:0 auto 10px;}
-  .ol-steps{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:0 auto 30px;max-width:860px;}
-  .ol-steps span{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;
-    background:#fff;border:1.5px solid var(--line);border-radius:999px;
-    font-size:.85rem;font-weight:700;color:#4A5850;}
-  .ol-steps b{color:var(--leaf);}
+  /* 수강 절차 순서도 */
+  .ol-flow{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:920px;margin:0 auto 36px;}
+  .ol-step{position:relative;background:#fff;border:1.5px solid var(--line);border-radius:14px;
+    padding:20px 16px 18px;text-align:center;}
+  .ol-step.done{border-color:var(--sprout,#8ECFA6);background:#FBFEFC;}
+  .ol-step .no{position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+    display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;
+    border-radius:50%;background:var(--leaf);color:#fff;font-size:.8rem;font-weight:800;
+    box-shadow:0 2px 6px rgba(30,127,79,.28);}
+  .ol-step .ic{font-size:1.5rem;display:block;margin:4px 0 8px;}
+  .ol-step h4{font-size:.94rem;font-weight:800;color:#28352E;letter-spacing:-.01em;word-break:keep-all;}
+  .ol-step p{margin-top:6px;font-size:.79rem;line-height:1.6;color:#6A776F;word-break:keep-all;}
+  .ol-step p a{color:var(--leaf);font-weight:700;text-decoration:underline;}
+  .ol-step:not(:last-child)::after{content:'▸';position:absolute;right:-14px;top:50%;
+    transform:translateY(-50%);color:var(--sprout,#8ECFA6);font-size:1.3rem;font-weight:800;z-index:1;}
+  @media (max-width:760px){
+    .ol-flow{grid-template-columns:1fr 1fr;gap:12px;row-gap:22px;}
+    .ol-step:nth-child(2)::after{display:none;}
+  }
+  @media (max-width:420px){
+    .ol-flow{grid-template-columns:1fr;row-gap:22px;}
+    .ol-step:not(:last-child)::after{content:'▾';right:auto;left:50%;top:auto;bottom:-20px;
+      transform:translateX(-50%);}
+    .ol-step:nth-child(2)::after{display:block;}
+  }
 
   /* 한 줄에 한 과목 — 가로형 카드 (이 페이지 전용) */
   .on-grid{grid-template-columns:1fr;max-width:860px;margin:0 auto;}
@@ -59,11 +79,31 @@
 <section class="on-band">
   <div class="section">
 
-    <div class="ol-steps">
-      <span><b>1</b> 회원가입 · 로그인</span>
-      <span><b>2</b> 과목 선택 · 수강 신청</span>
-      <span><b>3</b> 마이페이지 <b>내 강의실</b>에서 영상 수강</span>
-      <span><b>4</b> 수료 · 이수증 발급</span>
+    <div class="ol-flow">
+      <div class="ol-step">
+        <span class="no">1</span>
+        <span class="ic">🔑</span>
+        <h4>회원가입 · 로그인</h4>
+        <p><a href="mypage.html">마이페이지</a>에서 강사 회원으로 가입합니다.</p>
+      </div>
+      <div class="ol-step">
+        <span class="no">2</span>
+        <span class="ic">📚</span>
+        <h4>과목 수강 신청</h4>
+        <p>아래 목록에서 원하는 과목을 골라 신청합니다. 여러 과목도 가능합니다.</p>
+      </div>
+      <div class="ol-step">
+        <span class="no">3</span>
+        <span class="ic">🖥️</span>
+        <h4>내 강의실에서 수강</h4>
+        <p>마이페이지 <b>내 강의실</b>에서 차시별 영상을 내 속도로 시청합니다.</p>
+      </div>
+      <div class="ol-step done">
+        <span class="no">4</span>
+        <span class="ic">🎓</span>
+        <h4>수료 · 이수증 발급</h4>
+        <p>필수 차시를 모두 이수하면 사업단 확인 후 이수증이 발급됩니다.</p>
+      </div>
     </div>
 
     <!-- 검색 · 필터 -->
