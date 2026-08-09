@@ -132,12 +132,18 @@
               </div>
             </div>
             <div class="form-row">
-              <label for="p-open">접수 시작일 (선택)</label>
-              <input id="p-open" type="date">
+              <label for="p-open">접수 시작 (선택)</label>
+              <div class="dt-pair">
+                <input id="p-open" type="date">
+                <input id="p-openTime" type="time" step="300" aria-label="접수 시작 시각">
+              </div>
             </div>
             <div class="form-row">
-              <label for="p-deadline">접수 마감일 <span class="req">*</span></label>
-              <input id="p-deadline" type="date" required>
+              <label for="p-deadline">접수 마감 <span class="req">*</span></label>
+              <div class="dt-pair">
+                <input id="p-deadline" type="date" required>
+                <input id="p-deadlineTime" type="time" step="300" aria-label="접수 마감 시각">
+              </div>
             </div>
             <div class="form-row">
               <label for="p-capacity">모집 정원 <span class="req">*</span></label>

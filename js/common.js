@@ -324,8 +324,19 @@ export function ddayInfo(p){
   const diff = Math.round((end - today) / 86400000);
   const md = (end.getMonth()+1) + '/' + end.getDate();
   if (diff < 0) return { text:'접수마감', closed:true };
-  if (diff === 0) return { text:'오늘 마감!', closed:false, urgent:true };
+  if (diff === 0){
+    /* v19: 마감일 당일 — 마감 시각이 지정되어 있으면 그 시각 이후 마감 */
+    if (p.deadlineTime && new Date() >= new Date(p.deadline + 'T' + p.deadlineTime + ':00'))
+      return { text:'접수마감', closed:true };
+    return { text: p.deadlineTime ? `오늘 ${p.deadlineTime} 마감!` : '오늘 마감!', closed:false, urgent:true };
+  }
   return { text:`D-${diff} · ${md} 마감`, closed:false, urgent: diff <= 7 };
+}
+
+/** v19: 접수 시작(날짜+시각) 전인지 — openDate가 없으면 항상 false */
+export function notYetOpen(p){
+  if (!p || !p.openDate) return false;
+  return new Date() < new Date(p.openDate + 'T' + (p.openTime || '00:00') + ':00');
 }
 export function todayStr(){
   const t = new Date();

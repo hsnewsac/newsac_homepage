@@ -406,7 +406,7 @@
 
 <!-- 접수 중인 워크샵 목록 (실시간) -->
 <script type="module">
-  import { esc, ddayInfo, fbError } from './js/common.js';
+  import { esc, ddayInfo, notYetOpen, fbError } from './js/common.js';
 
   const box = document.getElementById('wsOpen');
 
@@ -415,15 +415,10 @@
     return !p.open || ddayInfo(p).closed || remain <= 0;
   };
 
-  const todayYmd = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  };
-
   function card(p){
     const dd = ddayInfo(p);
     const closed = isClosed(p);
-    const notYet = !closed && p.openDate && todayYmd() < p.openDate;
+    const notYet = !closed && notYetOpen(p);
     const remain = (p.capacity || 0) - (p.applied || 0);
     return `<article class="ws-oc${closed ? ' closed' : ''}">
       <div class="ws-oc-top">
