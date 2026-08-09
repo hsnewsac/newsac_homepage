@@ -246,9 +246,14 @@ $('programForm').addEventListener('submit', async e => {
   if (start && end && start === end && st && et && st > et){
     alert('종료 시각이 시작 시각보다 빠릅니다.'); return;
   }
+  const openDate = $('p-open').value;
+  if (openDate && $('p-deadline').value && openDate > $('p-deadline').value){
+    alert('접수 시작일이 접수 마감일보다 늦습니다.'); return;
+  }
   const data = {
-    type: $('p-type').value,
+    type: $('p-type').value || 'workshop',
     wsKind: $('p-wskind').value,          // v18: 정규(regular) / 미니(mini)
+    openDate,                             // v19: 접수 시작일 (없으면 즉시 접수)
     title: $('p-title').value.trim(),
     target: $('p-target').value.trim(),
     startDate: start,
@@ -339,20 +344,13 @@ function editProgram(id){
   if (p.type === 'recruit'){ editRecruit(id); return; }
   switchTab('program');
   $('p-id').value = p.id;
-  /* v10: '집합형 연수(camp)'는 신규 등록에서 제외했지만,
-     기존에 등록된 camp 프로그램을 수정할 때는 유형이 비어버리지 않도록
-     임시 옵션을 넣어줍니다. (저장하면 그대로 camp로 유지됩니다) */
-  if (p.type && !$('p-type').querySelector(`option[value="${p.type}"]`)){
-    const opt = document.createElement('option');
-    opt.value = p.type;
-    opt.textContent = `${KIND[p.type] || p.type} (이전 유형)`;
-    opt.dataset.legacy = '1';
-    $('p-type').prepend(opt);
-  }
-  $('p-type').value = p.type;
+  /* v19: 유형은 숨은 필드로 유지합니다 — 이 폼은 강사 워크샵 전용이지만
+     기존 camp 프로그램을 수정해도 유형이 workshop으로 바뀌지 않도록 원래 값을 보존합니다 */
+  $('p-type').value = p.type || 'workshop';
   /* 구버전 데이터는 wsKind가 없으므로 제목으로 추정해 채웁니다 */
   $('p-wskind').value = p.wsKind || (/미니|mini|교구/i.test(p.title || '') ? 'mini' : 'regular');
   $('p-title').value = p.title;
+  $('p-open').value = p.openDate || '';
   $('p-target').value = p.target || WORKSHOP_TARGET;
   $('p-start').value = p.startDate || '';
   $('p-end').value   = p.endDate || '';
@@ -375,8 +373,7 @@ function editProgram(id){
 function resetProgramForm(){
   $('programForm').reset();
   $('p-id').value = '';
-  /* 수정 중 추가된 이전 유형 옵션 제거 */
-  $('p-type').querySelectorAll('option[data-legacy]').forEach(o => o.remove());
+  $('p-type').value = 'workshop';
   $('p-applied').value = 0;
   $('p-applied').disabled = false;
   $('p-target').value = WORKSHOP_TARGET;   // 기본 대상 문구 복원
@@ -407,16 +404,20 @@ function renderAdminTable(){
     tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#6A776F;">등록된 프로그램이 없습니다. 위에서 새 프로그램을 등록하세요.</td></tr>';
     return;
   }
+  const ymd = (d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)(new Date());
   tb.innerHTML = programs.map(p => {
     const dd = ddayInfo(p);
     const closed = !p.open || dd.closed;
+    const notYet = !closed && p.openDate && ymd < p.openDate;
+    const mini = p.type === 'workshop' && (p.wsKind === 'mini' || (!p.wsKind && /미니|mini|교구/i.test(p.title || '')));
     return `<tr>
       <td><span class="chip ${p.type}">${KIND[p.type] || ''}</span>
+        ${mini ? '<span class="chip minik" title="온라인 워크샵 병행 이수 필요">미니</span>' : ''}
         ${p.loginOnly ? '<span class="chip lock" title="로그인 회원만 신청 가능">🔐</span>' : ''}</td>
       <td><b>${esc(p.title)}</b></td>
-      <td>${esc(p.deadline)}</td>
+      <td>${esc(p.deadline)}${p.openDate ? `<br><span class="cell-sub">시작 ${esc(p.openDate)}</span>` : ''}</td>
       <td>${p.applied || 0} / ${p.capacity}</td>
-      <td><span class="chip ${closed ? 'close' : 'open'}">${closed ? '마감' : '접수중'}</span></td>
+      <td><span class="chip ${closed ? 'close' : 'open'}">${closed ? '마감' : (notYet ? '접수예정' : '접수중')}</span></td>
       <td><div class="t-actions">
         <button class="mini-btn" onclick="editProgram('${p.id}')">수정</button>
         <button class="mini-btn" onclick="toggleOpen('${p.id}')">${p.open ? '마감처리' : '접수재개'}</button>

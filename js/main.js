@@ -42,6 +42,12 @@ onAuthStateChanged(auth, async user => {
 });
 
 /* ---------- 프로그램 카드 ---------- */
+/** 오늘 날짜 yyyy-mm-dd (로컬 기준) */
+function todayYmd(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function cardHTML(p){
   const applied = p.applied || 0;
   const remain = p.capacity - applied;
@@ -50,6 +56,8 @@ function cardHTML(p){
   /* v17: 모집 공고는 정원이 차도 자동 마감하지 않습니다 — 서류 검토 후 선발 방식.
      접수 마감은 마감일 경과 또는 관리자의 접수 중지로만 처리합니다. */
   const closed = !p.open || dd.closed || (!isRecruit && remain <= 0);
+  /* v19: 접수 시작일 전이면 '접수 예정'으로 표시하고 신청을 막습니다 */
+  const notYet = !closed && !!p.openDate && todayYmd() < p.openDate;
   const pct = Math.min(100, Math.round(applied / p.capacity * 100));
   const needLogin = p.loginOnly && !currentUser;
   const wrongRole = isRecruit && currentUser && roleOf(userProfile) !== 'instructor';
@@ -63,6 +71,9 @@ function cardHTML(p){
   let action;
   if (closed){
     action = `<button class="btn ${btnClass}" disabled>${isRecruit ? '모집이 마감되었습니다' : '접수가 마감되었습니다'}</button>`;
+  } else if (notYet){
+    const [, m, d] = p.openDate.split('-');
+    action = `<button class="btn ${btnClass}" disabled>${Number(m)}월 ${Number(d)}일부터 접수합니다</button>`;
   } else if (needLogin){
     action = `<a class="btn ${btnClass}" href="mypage.html?next=apply">🔐 로그인 후 ${isRecruit ? '지원하기' : '신청하기'}</a>`;
   } else if (wrongRole){
@@ -76,7 +87,9 @@ function cardHTML(p){
       <div class="open-top">
         ${closed
           ? `<span class="status end">${isRecruit ? '모집마감' : '접수마감'}</span>`
-          : `<span class="status live">${isRecruit ? '모집중' : '접수중'}</span><span class="dday ${dd.urgent ? '' : 'calm'}">${esc(dd.text)}</span>`}
+          : (notYet
+            ? `<span class="status soon">${isRecruit ? '모집 예정' : '접수 예정'}</span>`
+            : `<span class="status live">${isRecruit ? '모집중' : '접수중'}</span><span class="dday ${dd.urgent ? '' : 'calm'}">${esc(dd.text)}</span>`)}
         <span class="kind-label">${KIND[p.type] || ''}${p.type === 'workshop' && (p.wsKind === 'mini' || /미니|mini|교구/i.test(p.title || '')) ? ' · 미니(교구)' : ''}</span>
         ${p.loginOnly ? '<span class="kind-label lock">🔐 회원 전용</span>' : ''}
       </div>
@@ -189,6 +202,10 @@ function paintAuthNote(){
 function openApply(programId){
   const p = programs.find(x => x.id === programId);
   if (!p) return;
+  if (p.openDate && todayYmd() < p.openDate){
+    alert('아직 접수 시작 전입니다. 접수가 열리면 신청할 수 있습니다.');
+    return;
+  }
   if (p.loginOnly && !currentUser){
     location.href = 'mypage.html?next=apply';
     return;
