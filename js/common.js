@@ -279,10 +279,20 @@ export function initLayout(active){
         <a href="index.html"  class="${active === 'home'   ? 'active' : ''}">홈</a>
         <a href="notice.html" class="${active === 'notice' ? 'active' : ''}">공지사항</a>
         <a href="check.html"  class="${active === 'check'  ? 'active' : ''}">신청 확인</a>
-        <a href="workshop.html" class="${active === 'workshop' ? 'active' : ''}">강사 워크샵</a>
-        <a href="online.html" class="${active === 'online' ? 'active' : ''}">온라인 워크샵</a>
-        <a href="programs.html" class="${active === 'programs' ? 'active' : ''}">교육과정</a>
-        <a href="about.html"  class="${active === 'about'  ? 'active' : ''}">사업단 소개</a>
+        <div class="nav-item">
+          <a href="workshop.html" class="nav-parent ${['workshop','online'].includes(active) ? 'active' : ''}">강사 워크샵<i class="nav-caret">▾</i></a>
+          <div class="nav-sub">
+            <a href="workshop.html" class="${active === 'workshop' ? 'active' : ''}">강사 워크샵</a>
+            <a href="online.html" class="${active === 'online' ? 'active' : ''}">온라인 워크샵</a>
+          </div>
+        </div>
+        <div class="nav-item">
+          <a href="about.html" class="nav-parent ${['about','programs'].includes(active) ? 'active' : ''}">소개<i class="nav-caret">▾</i></a>
+          <div class="nav-sub">
+            <a href="about.html" class="${active === 'about' ? 'active' : ''}">사업단 소개</a>
+            <a href="programs.html" class="${active === 'programs' ? 'active' : ''}">교육과정</a>
+          </div>
+        </div>
         <span id="authChip" class="auth-chip"><span class="chip-skel"></span></span>
       </nav>
     </div>`;
