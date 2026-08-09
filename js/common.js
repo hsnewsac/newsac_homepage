@@ -255,6 +255,32 @@ export const WEEKDAYS  = ['월', '화', '수', '목', '금', '토'];
 export const TIMESLOTS = ['오전 (09~12시)', '오후 (13~17시)', '저녁 (18~21시)', '협의 가능'];
 
 /* ---------- 헤더/푸터 주입 ---------- */
+/* =========================================================
+   v28: 글래스 모션 아이콘 — 프로스트 유리 타일 뒤에서
+   컬러 레이어가 튀어나오는 아이콘 컴포넌트 (사이트 공용)
+========================================================= */
+const GLYPHS = {
+  home:    '<path d="M3 11.2 12 4l9 7.2"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M10 20v-5h4v5"/>',
+  notice:  '<path d="M3 10v4h3l10 5V5L6 10H3z"/><path d="M19 9.5a4 4 0 0 1 0 5"/>',
+  search:  '<circle cx="10.5" cy="10.5" r="6"/><path d="M15.2 15.2 20 20"/>',
+  cap:     '<path d="M2.5 9.5 12 5l9.5 4.5L12 14z"/><path d="M6.5 11.8V16c0 1.8 11 1.8 11 0v-4.2"/><path d="M21 10v4.5"/>',
+  sprout:  '<path d="M12 20v-7"/><path d="M12 13C12 9 9 7 4.8 7c0 4 3 6 7.2 6z"/><path d="M12 13c0-4 3-6 7.2-6 0 4-3 6-7.2 6z"/>',
+  teacher: '<rect x="3" y="4" width="18" height="11" rx="1.6"/><path d="M8 8h8M8 11h5"/><path d="M12 15v3"/><path d="m8.5 21 3.5-3 3.5 3"/>',
+  laptop:  '<rect x="4.5" y="5" width="15" height="10" rx="1.6"/><path d="M2.5 18.5h19"/>',
+  school:  '<path d="M4 20V9.5L12 4l8 5.5V20"/><path d="M2.5 20h19"/><path d="M10 20v-4.5h4V20"/>',
+  book:    '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M19 18v3H6.5A1.5 1.5 0 0 1 5 19.5"/>',
+  users:   '<circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c0-3 2.5-4.8 5.5-4.8s5.5 1.8 5.5 4.8"/><circle cx="16.8" cy="9.5" r="2.6"/><path d="M16.5 14.4c2.6.3 4.5 2 4.5 4.6"/>',
+  bus:     '<rect x="4" y="4" width="16" height="12.5" rx="2"/><path d="M4 10h16"/><circle cx="8.2" cy="19" r="1.6"/><circle cx="15.8" cy="19" r="1.6"/>',
+  key:     '<circle cx="8" cy="15.5" r="4"/><path d="M11 12.5 20 3.5"/><path d="m16.5 7 3 3M14 9.5l2 2"/>',
+  person:  '<circle cx="12" cy="8" r="3.6"/><path d="M5.5 20c0-3.6 3-5.6 6.5-5.6s6.5 2 6.5 5.6"/>',
+  monitor: '<rect x="3.5" y="4.5" width="17" height="11.5" rx="1.6"/><path d="M9.5 20h5M12 16v4"/>'
+};
+/** 글래스 모션 아이콘 마크업. color: green·amber·blue·purple·pink·teal / extra: 'on'(항상 컬러) 'lg'(크게) */
+export function gicon(name, color = 'green', extra = ''){
+  return `<span class="gic gc-${color} ${extra}"><i class="gbg"></i><i class="gtile"></i>` +
+    `<svg viewBox="0 0 24 24" aria-hidden="true">${GLYPHS[name] || ''}</svg></span>`;
+}
+
 export function initLayout(active){
   const header = document.getElementById('site-header');
   if (header){
@@ -276,21 +302,21 @@ export function initLayout(active){
         <span></span><span></span><span></span>
       </button>
       <nav id="gnb">
-        <a href="index.html"  class="${active === 'home'   ? 'active' : ''}"><span class="nav-ic">🏠</span>홈</a>
-        <a href="notice.html" class="${active === 'notice' ? 'active' : ''}"><span class="nav-ic">📢</span>공지사항</a>
-        <a href="check.html"  class="${active === 'check'  ? 'active' : ''}"><span class="nav-ic">🔎</span>신청 확인</a>
+        <a href="index.html"  class="${active === 'home'   ? 'active' : ''}">${gicon('home', 'green')}홈</a>
+        <a href="notice.html" class="${active === 'notice' ? 'active' : ''}">${gicon('notice', 'amber')}공지사항</a>
+        <a href="check.html"  class="${active === 'check'  ? 'active' : ''}">${gicon('search', 'blue')}신청 확인</a>
         <div class="nav-item">
-          <a href="workshop.html" class="nav-parent ${['workshop','online'].includes(active) ? 'active' : ''}"><span class="nav-ic">🎓</span>강사 워크샵<i class="nav-caret">▾</i></a>
+          <a href="workshop.html" class="nav-parent ${['workshop','online'].includes(active) ? 'active' : ''}">${gicon('cap', 'purple')}강사 워크샵<i class="nav-caret">▾</i></a>
           <div class="nav-sub">
-            <a href="workshop.html" class="${active === 'workshop' ? 'active' : ''}"><span class="nav-ic">🧑‍🏫</span>강사 워크샵</a>
-            <a href="online.html" class="${active === 'online' ? 'active' : ''}"><span class="nav-ic">💻</span>온라인 워크샵</a>
+            <a href="workshop.html" class="${active === 'workshop' ? 'active' : ''}">${gicon('teacher', 'purple')}강사 워크샵</a>
+            <a href="online.html" class="${active === 'online' ? 'active' : ''}">${gicon('laptop', 'pink')}온라인 워크샵</a>
           </div>
         </div>
         <div class="nav-item">
-          <a href="about.html" class="nav-parent ${['about','programs'].includes(active) ? 'active' : ''}"><span class="nav-ic">🌱</span>소개<i class="nav-caret">▾</i></a>
+          <a href="about.html" class="nav-parent ${['about','programs'].includes(active) ? 'active' : ''}">${gicon('sprout', 'teal')}소개<i class="nav-caret">▾</i></a>
           <div class="nav-sub">
-            <a href="about.html" class="${active === 'about' ? 'active' : ''}"><span class="nav-ic">🏫</span>사업단 소개</a>
-            <a href="programs.html" class="${active === 'programs' ? 'active' : ''}"><span class="nav-ic">📚</span>교육과정</a>
+            <a href="about.html" class="${active === 'about' ? 'active' : ''}">${gicon('school', 'teal')}사업단 소개</a>
+            <a href="programs.html" class="${active === 'programs' ? 'active' : ''}">${gicon('book', 'amber')}교육과정</a>
           </div>
         </div>
         <span id="authChip" class="auth-chip"><span class="chip-skel"></span></span>
@@ -371,9 +397,9 @@ async function mountAuthChip(){
           <a href="mypage.html" class="chip-on" title="${esc(u.email)}">
             <i>👤</i>${esc(shortName(u))} 님<i class="nav-caret">▾</i></a>
           <div class="nav-sub">
-            <a href="mypage.html"><span class="nav-ic">👤</span>마이페이지</a>
-            <a href="mypage.html?goto=classroom"><span class="nav-ic">📚</span>내 강의실</a>
-            ${admin ? `<a href="admin.html"><span class="nav-ic">🔑</span>대시보드</a>` : ''}
+            <a href="mypage.html">${gicon('person', 'green')}마이페이지</a>
+            <a href="mypage.html?goto=classroom">${gicon('monitor', 'purple')}내 강의실</a>
+            ${admin ? `<a href="admin.html">${gicon('key', 'amber')}대시보드</a>` : ''}
           </div>
         </div>`;
     });
