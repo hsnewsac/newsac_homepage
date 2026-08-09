@@ -1500,26 +1500,36 @@ a:hover > .gic svg, a.active > .gic svg,
   .vd-track i::after{animation:none;}
 }
 
-/* ----- v29: 마이페이지 탭 — 글래스 필 스타일 ----- */
-.my-tabs{border-bottom:none;padding-bottom:4px;}
-.my-tabs .atab{
+/* ----- v29: 탭(관리자·마이페이지 공용) — 글래스 필 스타일 ----- */
+.admin-tabs{border-bottom:none;padding-bottom:4px;}
+.admin-tabs .atab{
+  display:inline-flex;align-items:center;
   background:rgba(255,255,255,.5);
   backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
   border:1px solid rgba(255,255,255,.65);
   box-shadow:0 4px 14px rgba(23,34,27,.07);
   transition:transform .18s ease, box-shadow .18s ease, color .18s ease, background .18s ease;
 }
-.my-tabs .atab:hover{color:var(--leaf);border-color:rgba(255,255,255,.8);
-  transform:translateY(-2px);box-shadow:0 8px 20px rgba(30,127,79,.14);}
+.admin-tabs .atab:hover{border-color:rgba(255,255,255,.85);
+  transform:translateY(-2px);box-shadow:0 8px 20px rgba(23,34,27,.12);}
+/* 관리자 탭 — 네이비 계열 활성 */
+.admin-tabs .atab:hover{color:var(--navy);}
+.admin-tabs .atab.active{
+  background:linear-gradient(135deg, rgba(42,84,128,.94), rgba(27,58,92,.94));
+  border-color:rgba(255,255,255,.5);color:#fff;
+  box-shadow:0 8px 22px rgba(27,58,92,.28);
+}
+.admin-tabs .atab.active .tab-badge{background:rgba(255,255,255,.28);color:#fff;}
+/* 마이페이지 탭 — 새싹 그린 활성 */
+.my-tabs .atab:hover{color:var(--leaf);box-shadow:0 8px 20px rgba(30,127,79,.14);}
 .my-tabs .atab.active{
   background:linear-gradient(135deg, rgba(46,155,98,.92), rgba(30,127,79,.92));
-  border-color:rgba(255,255,255,.55);color:#fff;
   box-shadow:0 8px 22px rgba(30,127,79,.28);
 }
-.my-tabs .atab.active .tab-badge{background:rgba(255,255,255,.28);color:#fff;}
-.my-tabs .gic{width:24px;height:24px;margin-right:6px;}
-.my-tabs .gic svg{width:13px;height:13px;}
-.my-tabs .gic .gbg{inset:2px;border-radius:7px;}
+/* 탭 안 아이콘 크기 */
+.admin-tabs .gic{width:24px;height:24px;margin-right:6px;}
+.admin-tabs .gic svg{width:13px;height:13px;}
+.admin-tabs .gic .gbg{inset:2px;border-radius:7px;}
 
 /* 인쇄물(이수증·서명부)은 유리 효과 없이 종이 그대로 */
 @media print{
