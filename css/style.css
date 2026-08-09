@@ -1531,6 +1531,35 @@ a:hover > .gic svg, a.active > .gic svg,
 .admin-tabs .gic svg{width:13px;height:13px;}
 .admin-tabs .gic .gbg{inset:2px;border-radius:7px;}
 
+/* ----- v31: 관리자 좌측 사이드 탭 레이아웃 ----- */
+.admin-shell{display:grid;grid-template-columns:210px 1fr;gap:20px;align-items:start;}
+.admin-main{min-width:0;}
+.admin-tabs.side{
+  display:flex;flex-direction:column;gap:6px;flex-wrap:nowrap;
+  position:sticky;top:88px;padding:10px;border-bottom:none;
+  background:var(--glass-bg-strong);
+  backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border:var(--glass-border);border-radius:20px;box-shadow:var(--glass-shadow);
+}
+.admin-tabs.side .atab{
+  width:100%;justify-content:flex-start;padding:11px 13px;border-radius:13px;
+  background:transparent;border:1px solid transparent;box-shadow:none;font-size:.89rem;}
+.admin-tabs.side .atab:hover{transform:none;background:rgba(255,255,255,.62);
+  border-color:rgba(255,255,255,.7);box-shadow:0 4px 12px rgba(23,34,27,.08);}
+.admin-tabs.side .atab.active{
+  background:linear-gradient(135deg, rgba(42,84,128,.94), rgba(27,58,92,.94));
+  border-color:rgba(255,255,255,.5);color:#fff;
+  box-shadow:0 6px 18px rgba(27,58,92,.26);}
+.admin-tabs.side .at-label{flex:1;text-align:left;}
+.admin-tabs.side .tab-badge{margin-left:auto;}
+@media (max-width:1000px){
+  .admin-shell{grid-template-columns:1fr;gap:14px;}
+  .admin-tabs.side{position:static;flex-direction:row;flex-wrap:wrap;border-radius:16px;}
+  .admin-tabs.side .atab{width:auto;}
+  .admin-tabs.side .at-label{flex:none;}
+  .admin-tabs.side .tab-badge{margin-left:6px;}
+}
+
 /* ----- v30: 관리자 신청 현황 대시보드 ----- */
 #tab-dash .dash-cards{grid-template-columns:repeat(4,1fr);gap:12px;}
 #tab-dash .dash-card{
