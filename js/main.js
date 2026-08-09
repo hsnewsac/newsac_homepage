@@ -10,7 +10,7 @@ import {
   increment, serverTimestamp, getDoc as fsGetDoc, doc as fsDoc
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 import {
-  initLayout, esc, ddayInfo, noticeIsNew, catClass, fbError,
+  initLayout, esc, ddayInfo, notYetOpen, noticeIsNew, catClass, fbError,
   KIND, ORG_TYPES, openModal, closeModal, bindModalEvents, toast,
   ROLES, roleOf, qualificationHTML, RECRUIT_FOR
 } from './common.js';
@@ -42,12 +42,6 @@ onAuthStateChanged(auth, async user => {
 });
 
 /* ---------- 프로그램 카드 ---------- */
-/** 오늘 날짜 yyyy-mm-dd (로컬 기준) */
-function todayYmd(){
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
 function cardHTML(p){
   const applied = p.applied || 0;
   const remain = p.capacity - applied;
@@ -56,8 +50,8 @@ function cardHTML(p){
   /* v17: 모집 공고는 정원이 차도 자동 마감하지 않습니다 — 서류 검토 후 선발 방식.
      접수 마감은 마감일 경과 또는 관리자의 접수 중지로만 처리합니다. */
   const closed = !p.open || dd.closed || (!isRecruit && remain <= 0);
-  /* v19: 접수 시작일 전이면 '접수 예정'으로 표시하고 신청을 막습니다 */
-  const notYet = !closed && !!p.openDate && todayYmd() < p.openDate;
+  /* v19: 접수 시작(날짜+시각) 전이면 '접수 예정'으로 표시하고 신청을 막습니다 */
+  const notYet = !closed && notYetOpen(p);
   const pct = Math.min(100, Math.round(applied / p.capacity * 100));
   const needLogin = p.loginOnly && !currentUser;
   const wrongRole = isRecruit && currentUser && roleOf(userProfile) !== 'instructor';
@@ -73,7 +67,7 @@ function cardHTML(p){
     action = `<button class="btn ${btnClass}" disabled>${isRecruit ? '모집이 마감되었습니다' : '접수가 마감되었습니다'}</button>`;
   } else if (notYet){
     const [, m, d] = p.openDate.split('-');
-    action = `<button class="btn ${btnClass}" disabled>${Number(m)}월 ${Number(d)}일부터 접수합니다</button>`;
+    action = `<button class="btn ${btnClass}" disabled>${Number(m)}월 ${Number(d)}일${p.openTime ? ` ${p.openTime}` : ''}부터 접수합니다</button>`;
   } else if (needLogin){
     action = `<a class="btn ${btnClass}" href="mypage.html?next=apply">🔐 로그인 후 ${isRecruit ? '지원하기' : '신청하기'}</a>`;
   } else if (wrongRole){
@@ -202,7 +196,7 @@ function paintAuthNote(){
 function openApply(programId){
   const p = programs.find(x => x.id === programId);
   if (!p) return;
-  if (p.openDate && todayYmd() < p.openDate){
+  if (notYetOpen(p)){
     alert('아직 접수 시작 전입니다. 접수가 열리면 신청할 수 있습니다.');
     return;
   }

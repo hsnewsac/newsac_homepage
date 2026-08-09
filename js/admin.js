@@ -15,7 +15,7 @@ import {
   signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
 import {
-  initLayout, esc, ddayInfo, todayStr, catClass, fbError,
+  initLayout, esc, ddayInfo, notYetOpen, todayStr, catClass, fbError,
   KIND, ORG_TYPES, SPECIALTIES, REGIONS, CAREER_LEVELS,
   COURSES_2026, courseByKey, WORKSHOP_TARGET, qualificationHTML,
   SCHOOL_LEVELS, CAMP_MODES, RECRUIT_ROLES, RECRUIT_FOR, WORKSHOP_MODES, fmtPeriodKo,
@@ -246,14 +246,20 @@ $('programForm').addEventListener('submit', async e => {
   if (start && end && start === end && st && et && st > et){
     alert('종료 시각이 시작 시각보다 빠릅니다.'); return;
   }
-  const openDate = $('p-open').value;
-  if (openDate && $('p-deadline').value && openDate > $('p-deadline').value){
+  const openDate = $('p-open').value, openTime = $('p-openTime').value;
+  const dl = $('p-deadline').value, dlTime = $('p-deadlineTime').value;
+  if (openDate && dl && openDate > dl){
     alert('접수 시작일이 접수 마감일보다 늦습니다.'); return;
+  }
+  if (openDate && dl && openDate === dl && openTime && dlTime && openTime > dlTime){
+    alert('접수 마감 시각이 시작 시각보다 빠릅니다.'); return;
   }
   const data = {
     type: $('p-type').value || 'workshop',
     wsKind: $('p-wskind').value,          // v18: 정규(regular) / 미니(mini)
-    openDate,                             // v19: 접수 시작일 (없으면 즉시 접수)
+    openDate,                             // v19: 접수 시작 (없으면 즉시 접수)
+    openTime,
+    deadlineTime: dlTime,                 // v19: 마감 시각 (없으면 마감일 자정까지)
     title: $('p-title').value.trim(),
     target: $('p-target').value.trim(),
     startDate: start,
@@ -351,6 +357,8 @@ function editProgram(id){
   $('p-wskind').value = p.wsKind || (/미니|mini|교구/i.test(p.title || '') ? 'mini' : 'regular');
   $('p-title').value = p.title;
   $('p-open').value = p.openDate || '';
+  $('p-openTime').value = p.openTime || '';
+  $('p-deadlineTime').value = p.deadlineTime || '';
   $('p-target').value = p.target || WORKSHOP_TARGET;
   $('p-start').value = p.startDate || '';
   $('p-end').value   = p.endDate || '';
@@ -404,18 +412,17 @@ function renderAdminTable(){
     tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#6A776F;">등록된 프로그램이 없습니다. 위에서 새 프로그램을 등록하세요.</td></tr>';
     return;
   }
-  const ymd = (d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)(new Date());
   tb.innerHTML = programs.map(p => {
     const dd = ddayInfo(p);
     const closed = !p.open || dd.closed;
-    const notYet = !closed && p.openDate && ymd < p.openDate;
+    const notYet = !closed && notYetOpen(p);
     const mini = p.type === 'workshop' && (p.wsKind === 'mini' || (!p.wsKind && /미니|mini|교구/i.test(p.title || '')));
     return `<tr>
       <td><span class="chip ${p.type}">${KIND[p.type] || ''}</span>
         ${mini ? '<span class="chip minik" title="온라인 워크샵 병행 이수 필요">미니</span>' : ''}
         ${p.loginOnly ? '<span class="chip lock" title="로그인 회원만 신청 가능">🔐</span>' : ''}</td>
       <td><b>${esc(p.title)}</b></td>
-      <td>${esc(p.deadline)}${p.openDate ? `<br><span class="cell-sub">시작 ${esc(p.openDate)}</span>` : ''}</td>
+      <td>${esc(p.deadline)}${p.deadlineTime ? ` ${esc(p.deadlineTime)}` : ''}${p.openDate ? `<br><span class="cell-sub">시작 ${esc(p.openDate)}${p.openTime ? ` ${esc(p.openTime)}` : ''}</span>` : ''}</td>
       <td>${p.applied || 0} / ${p.capacity}</td>
       <td><span class="chip ${closed ? 'close' : 'open'}">${closed ? '마감' : (notYet ? '접수예정' : '접수중')}</span></td>
       <td><div class="t-actions">

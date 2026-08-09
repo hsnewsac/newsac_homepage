@@ -1015,7 +1015,7 @@ nav a.active{background:var(--sprout-soft);color:var(--leaf);}
   border-radius:10px; font-size:.83rem; color:#8A968E; }
 
 /* v11.1: 날짜 + 시각 한 줄 입력 */
-.dt-pair{ display:grid; grid-template-columns:1fr 118px; gap:8px; }
+.dt-pair{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .dt-pair input{ width:100%; }
 @media (max-width:520px){ .dt-pair{ grid-template-columns:1fr; } }
 
