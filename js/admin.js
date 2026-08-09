@@ -763,6 +763,34 @@ function toggleAll(on){
 }
 Object.assign(window, { toggleOne, toggleAll });
 
+/* ==================== v27: 홈 방문객 대시보드 수치 ==================== */
+const VDASH_KEYS = ['students', 'instructors', 'visit', 'group', 'workshops', 'goal'];
+async function loadVdashForm(){
+  try {
+    const s = await getDoc(doc(db, 'stats', 'public'));
+    const d = s.exists() ? s.data() : {};
+    VDASH_KEYS.forEach(k => {
+      const el = $('vd-' + k);
+      if (el) el.value = d[k] ?? (k === 'goal' ? 4800 : 0);
+    });
+  } catch (e){ /* 최초에는 문서가 없을 수 있음 */ }
+}
+loadVdashForm();
+
+$('vdashForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const data = {};
+  VDASH_KEYS.forEach(k => data[k] = Number($('vd-' + k).value) || 0);
+  if (!data.goal) data.goal = 4800;
+  const btn = $('vdashSaveBtn');
+  btn.disabled = true; btn.textContent = '저장 중…';
+  try {
+    await setDoc(doc(db, 'stats', 'public'), { ...data, updatedAt: serverTimestamp() }, { merge: true });
+    toast('홈 대시보드 수치를 저장했습니다.');
+  } catch (err){ alert(fbError(err)); }
+  finally { btn.disabled = false; btn.textContent = '저장 — 홈에 바로 반영'; }
+});
+
 /* ==================== 신청자: 수료 처리 ==================== */
 /** 발급번호 채번 + 수료 표시 (단건) */
 async function issueCert(id){

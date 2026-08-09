@@ -1296,7 +1296,7 @@ nav a:hover > .nav-ic, .nav-sub a:hover .nav-ic{animation:navIcBounce .5s ease;}
 .nav-caret{font-style:normal;font-size:.68rem;margin-left:4px;opacity:.55;transition:transform .18s;}
 .nav-item:hover .nav-caret{transform:translateY(1px);}
 .nav-sub{
-  position:absolute;top:calc(100% + 10px);left:50%;
+  position:absolute;top:calc(100% + 24px);left:50%;
   transform:translateX(-50%) translateY(6px);
   min-width:158px;display:flex;flex-direction:column;gap:2px;padding:8px;
   background:rgba(255,255,255,.92);
@@ -1310,7 +1310,7 @@ nav a:hover > .nav-ic, .nav-sub a:hover .nav-ic{animation:navIcBounce .5s ease;}
   transition:opacity .14s ease, transform .14s ease, visibility .14s;
 }
 /* 부모와 하위 메뉴 사이 간격을 지나도 호버가 끊기지 않게 하는 다리 */
-.nav-sub::before{content:'';position:absolute;left:0;right:0;top:-12px;height:12px;}
+.nav-sub::before{content:'';position:absolute;left:0;right:0;top:-26px;height:26px;}
 .nav-item:hover .nav-sub, .nav-item:focus-within .nav-sub{
   opacity:1;visibility:visible;pointer-events:auto;transform:translateX(-50%) translateY(0);
 }
@@ -1387,6 +1387,56 @@ nav a:hover > .nav-ic, .nav-sub a:hover .nav-ic{animation:navIcBounce .5s ease;}
     background:rgba(255,255,255,.94);
   }
   header{background:rgba(248,251,247,.96);}
+}
+
+/* ----- v27: 방문객 대시보드 (홈) ----- */
+.vdash{padding-top:14px;}
+.vdash .section{padding-top:34px;padding-bottom:38px;}
+.vdash-head{text-align:center;max-width:720px;margin:0 auto 28px;}
+.vdash-head .tag{color:var(--leaf);font-weight:800;font-size:.85rem;letter-spacing:.08em;}
+.vdash-head h1{font-size:clamp(1.7rem,4vw,2.4rem);font-weight:800;letter-spacing:-.02em;margin-top:8px;word-break:keep-all;}
+.vdash-head h1 em{font-style:normal;color:var(--leaf);}
+.vdash-head p{margin-top:10px;color:#4A5850;font-size:.98rem;line-height:1.75;word-break:keep-all;}
+.vdash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;
+  max-width:1000px;margin:0 auto 16px;}
+.vd-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:24px 12px 20px;
+  background:var(--glass-bg-strong);
+  backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border:var(--glass-border);border-radius:20px;box-shadow:var(--glass-shadow);
+  opacity:0;transform:translateY(16px);animation:vdIn .6s ease forwards;
+  transition:transform .2s ease, box-shadow .2s ease;}
+.vd-card:hover{transform:translateY(-4px);box-shadow:0 14px 40px rgba(30,127,79,.16);}
+.vd-card:nth-child(1){animation-delay:.05s}
+.vd-card:nth-child(2){animation-delay:.13s}
+.vd-card:nth-child(3){animation-delay:.21s}
+.vd-card:nth-child(4){animation-delay:.29s}
+.vd-card:nth-child(5){animation-delay:.37s}
+@keyframes vdIn{to{opacity:1;transform:none;}}
+.vd-ic{font-size:1.7rem;}
+.vd-num{font-size:1.8rem;font-weight:800;color:var(--leaf);letter-spacing:-.02em;line-height:1.1;}
+.vd-lbl{font-size:.83rem;font-weight:700;color:#4A5850;}
+.vd-goal{max-width:1000px;margin:0 auto;padding:22px 28px;
+  background:var(--glass-bg);
+  backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border:var(--glass-border);border-radius:20px;box-shadow:var(--glass-shadow);
+  opacity:0;transform:translateY(16px);animation:vdIn .6s ease .48s forwards;}
+.vd-goal-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  font-size:.98rem;font-weight:700;color:#28352E;word-break:keep-all;}
+.vd-goal-head b{color:var(--leaf);}
+.vd-pct{font-size:1.5rem;font-weight:800;color:var(--leaf) !important;letter-spacing:-.02em;}
+.vd-track{height:15px;border-radius:99px;background:rgba(255,255,255,.6);
+  border:1px solid rgba(255,255,255,.75);overflow:hidden;margin-top:12px;}
+.vd-track i{display:block;height:100%;width:0;border-radius:99px;position:relative;overflow:hidden;
+  background:linear-gradient(90deg,var(--sprout),var(--leaf));
+  transition:width 1.6s cubic-bezier(.22,.8,.3,1);}
+.vd-track i::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(110deg,transparent 25%,rgba(255,255,255,.55) 50%,transparent 75%);
+  animation:vdShimmer 2.6s infinite;}
+@keyframes vdShimmer{from{transform:translateX(-100%);}to{transform:translateX(100%);}}
+.vd-goal-sub{margin-top:10px;font-size:.86rem;color:#5A6862;}
+@media (prefers-reduced-motion:reduce){
+  .vd-card,.vd-goal{animation:none;opacity:1;transform:none;}
+  .vd-track i::after{animation:none;}
 }
 
 /* 인쇄물(이수증·서명부)은 유리 효과 없이 종이 그대로 */

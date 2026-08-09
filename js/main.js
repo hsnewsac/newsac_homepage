@@ -42,6 +42,53 @@ onAuthStateChanged(auth, async user => {
   renderPrograms();
 });
 
+/* ---------- v27: 방문객 대시보드 ----------
+   수치는 stats/public 문서에서 읽습니다 (관리자 대시보드에서 입력).
+   강사 워크샵 건수는 미입력 시 등록된 워크샵 프로그램 수로 대체합니다. */
+const VDASH_DEFAULTS = { students: 0, instructors: 0, visit: 0, group: 0, workshops: 0, goal: 4800 };
+let vdashStats = null, vdashPainted = false;
+
+function countUp(el, to, dur = 1400){
+  if (!el) return;
+  const t0 = performance.now();
+  const step = now => {
+    const p = Math.min(1, (now - t0) / dur);
+    const e = 1 - Math.pow(1 - p, 3);          // ease-out
+    el.textContent = Math.round(to * e).toLocaleString('ko-KR');
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+function paintVdash(){
+  if (!vdashStats || vdashPainted || !$('vd-students')) return;
+  vdashPainted = true;
+  const s = vdashStats;
+  countUp($('vd-students'), s.students);
+  countUp($('vd-instructors'), s.instructors);
+  countUp($('vd-visit'), s.visit);
+  countUp($('vd-group'), s.group);
+  countUp($('vd-workshops'), s.workshops || programs.filter(p => p.type === 'workshop').length);
+  const goal = s.goal || 4800;
+  $('vd-goalTotal').textContent = goal.toLocaleString('ko-KR');
+  const pct = Math.min(100, Math.round((s.students / goal) * 100));
+  setTimeout(() => { $('vd-fill').style.width = pct + '%'; }, 250);
+  countUp($('vd-goalPct'), pct, 1600);
+  setTimeout(() => { $('vd-goalPct').textContent = pct + '%'; }, 1650);
+  $('vd-goalSub').textContent =
+    `지금까지 ${s.students.toLocaleString('ko-KR')}명의 학생이 디지털새싹과 함께했습니다.`;
+}
+
+(async () => {
+  let d = {};
+  try {
+    const snap = await fsGetDoc(fsDoc(db, 'stats', 'public'));
+    if (snap.exists()) d = snap.data();
+  } catch (e) { /* 수치 미공개 시 0으로 표시 */ }
+  vdashStats = { ...VDASH_DEFAULTS, ...d };
+  paintVdash();
+})();
+
 /* ---------- 프로그램 카드 ---------- */
 function cardHTML(p){
   const applied = p.applied || 0;
@@ -154,6 +201,11 @@ function renderPrograms(){
   grid.innerHTML = edu.length
     ? edu.map(cardHTML).join('')
     : '<div class="open-empty">현재 접수 중인 프로그램이 없습니다.<br>새로운 연수 일정은 공지사항을 통해 안내드립니다.</div>';
+
+  /* 대시보드의 워크샵 건수를 프로그램 수로 보정 (수기 입력이 없을 때) */
+  if (vdashStats && !vdashStats.workshops && $('vd-workshops') && vdashPainted){
+    $('vd-workshops').textContent = programs.filter(p => p.type === 'workshop').length;
+  }
 
   const rSec = $('recruit-now');
   if (recruit.length){
