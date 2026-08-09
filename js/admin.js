@@ -185,7 +185,7 @@ function switchTab(name){
   window.scrollTo({ top: 0, behavior: 'smooth' });
   if ((name === 'member' || name === 'assign') && !membersLoaded) loadMembers();
   if (name === 'assign') renderAssign();
-  if (name === 'class') renderClassroom();
+  if (name === 'online') renderClassroom();
 }
 window.switchTab = switchTab;
 
@@ -349,7 +349,7 @@ function editProgram(id){
   if (!p) return;
   /* v10: 강사 모집 공고는 [강사 배정] 탭의 전용 폼에서 수정합니다 */
   if (p.type === 'recruit'){ editRecruit(id); return; }
-  switchTab('program');
+  switchTab('workshop');
   $('p-id').value = p.id;
   /* v19: 유형은 숨은 필드로 유지합니다 — 이 폼은 강사 워크샵 전용이지만
      기존 camp 프로그램을 수정해도 유형이 workshop으로 바뀌지 않도록 원래 값을 보존합니다 */
@@ -742,7 +742,7 @@ function renderPager(pages, count){
   html += btn(Math.min(pages, page + 1), '›', 'nav');
   box.innerHTML = html + `<span class="pager-info">${count}건 · ${page}/${pages} 페이지</span>`;
 }
-function goPage(p){ page = p; renderApplicants(); window.scrollTo({top: $('tab-apply').offsetTop - 20, behavior:'smooth'}); }
+function goPage(p){ page = p; renderApplicants(); window.scrollTo({top: $('tab-workshop').offsetTop - 20, behavior:'smooth'}); }
 window.goPage = goPage;
 
 /* ==================== 신청자: 선택 ==================== */
