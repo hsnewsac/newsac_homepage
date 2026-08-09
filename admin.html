@@ -304,6 +304,7 @@
             <button class="mini-btn" onclick="bulkUncomplete()">↩️ 선택 수료취소</button>
             <button class="mini-btn danger" onclick="bulkDelete()">🗑 선택 삭제</button>
             <span class="ra-divider"></span>
+            <button class="btn btn-outline btn-sm" onclick="openWalkIn()">➕ 현장 접수 등록</button>
             <button class="btn btn-outline btn-sm" onclick="downloadCSV('filtered')">CSV (검색결과)</button>
             <button class="btn btn-outline btn-sm" onclick="downloadCSV('all')">CSV (전체)</button>
             <button class="btn btn-outline btn-sm" onclick="printAttendance()">🖨 서명부 인쇄</button>
@@ -822,6 +823,61 @@
 </div>
 
 <!-- ===== 수강생 직접 추가 모달 (v13) ===== -->
+<!-- ===== v21: 현장 접수 등록 모달 ===== -->
+<div class="modal-back" id="walkInModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="kind-chip">현장 접수</span>
+      <h3>현장 접수 등록</h3>
+      <button class="modal-close" onclick="closeModal('walkInModal')" aria-label="닫기">✕</button>
+    </div>
+    <form id="walkInForm">
+      <div class="form-error" id="wiError"></div>
+      <p class="form-note" style="margin-bottom:14px;">
+        홈페이지로 신청하지 않고 <b>워크샵 현장에서 접수</b>한 분을 등록합니다.
+        등록 즉시 <b>승인완료</b> 상태로 신청 명단·서명부·수료 처리 대상에 포함됩니다.</p>
+      <div class="form-row">
+        <label for="wi-program">프로그램 <span class="req">*</span></label>
+        <select id="wi-program" required></select>
+      </div>
+      <div class="form-row">
+        <label for="wi-course">강좌 <span class="req">*</span></label>
+        <select id="wi-course" required></select>
+      </div>
+      <div class="form-2col">
+        <div class="form-row">
+          <label for="wi-name">강사명 <span class="req">*</span></label>
+          <input id="wi-name" type="text" placeholder="홍길동" required>
+        </div>
+        <div class="form-row">
+          <label for="wi-phone">전화번호</label>
+          <input id="wi-phone" type="tel" placeholder="010-0000-0000">
+        </div>
+        <div class="form-row">
+          <label for="wi-org">소속기관</label>
+          <input id="wi-org" type="text" placeholder="○○초등학교 / 프리랜서">
+        </div>
+        <div class="form-row">
+          <label for="wi-orgtype">소속기관 유형</label>
+          <select id="wi-orgtype"></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="wi-email">이메일 <span class="hint">(입력 시 — 같은 이메일의 회원 마이페이지에 자동 표시)</span></label>
+        <input id="wi-email" type="email" placeholder="example@hs.ac.kr">
+      </div>
+      <div class="form-row">
+        <label for="wi-memo">메모 <span class="hint">(선택)</span></label>
+        <input id="wi-memo" type="text" placeholder="예) 8/18 현장 접수 · 서명부 21번">
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button type="submit" class="btn btn-navy btn-sm" id="wiSaveBtn" style="flex:1;">등록</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('walkInModal')">취소</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="modal-back" id="addEnrollModal">
   <div class="modal">
     <div class="modal-head">

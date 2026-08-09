@@ -920,6 +920,73 @@ async function deleteApplicant(id){
   } catch (err) { alert(fbError(err)); }
 }
 
+/* ==================== v21: 현장 접수 등록 ====================
+   홈페이지 신청 없이 워크샵 현장에서 접수한 분을 관리자가 직접 등록합니다.
+   등록 즉시 승인완료 상태가 되어 명단·서명부·수료 처리에 포함됩니다. */
+function openWalkIn(){
+  const sel = $('wi-program');
+  const list = programs.filter(p => p.type !== 'recruit');
+  if (!list.length){ alert('등록된 워크샵 프로그램이 없습니다. 프로그램 탭에서 먼저 등록해주세요.'); return; }
+  $('walkInForm').reset();
+  $('wiError').style.display = 'none';
+  sel.innerHTML = '<option value="">프로그램을 선택하세요</option>' +
+    list.map(p => `<option value="${p.id}">${esc(p.title)}${p.period ? ` · ${esc(p.period)}` : ''}</option>`).join('');
+  $('wi-course').innerHTML = '<option value="">프로그램을 먼저 선택하세요</option>';
+  $('wi-orgtype').innerHTML = '<option value="">선택</option>' +
+    ORG_TYPES.map(t => `<option>${esc(t)}</option>`).join('');
+  openModal('walkInModal');
+}
+window.openWalkIn = openWalkIn;
+
+$('wi-program').addEventListener('change', () => {
+  const p = programs.find(x => x.id === $('wi-program').value);
+  const courses = p && Array.isArray(p.courses) && p.courses.length ? p.courses : [];
+  $('wi-course').innerHTML = courses.length
+    ? '<option value="">강좌를 선택하세요</option>' + courses.map(c => `<option>${esc(c)}</option>`).join('')
+    : '<option value="">개설 강좌가 없습니다</option>';
+});
+
+$('walkInForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const p = programs.find(x => x.id === $('wi-program').value);
+  const err = $('wiError');
+  err.style.display = 'none';
+  if (!p){ err.textContent = '프로그램을 선택해주세요.'; err.style.display = 'block'; return; }
+  if (!$('wi-course').value){ err.textContent = '강좌를 선택해주세요.'; err.style.display = 'block'; return; }
+  const btn = $('wiSaveBtn');
+  btn.disabled = true; btn.textContent = '등록 중…';
+  try {
+    await addDoc(collection(db, 'applications'), {
+      programId: p.id,
+      programTitle: p.title,
+      programType: p.type,
+      programWsKind: p.wsKind || null,
+      course: $('wi-course').value,
+      name: $('wi-name').value.trim(),
+      org: $('wi-org').value.trim(),
+      orgType: $('wi-orgtype').value,
+      phone: $('wi-phone').value.trim(),
+      email: $('wi-email').value.trim(),
+      memo: $('wi-memo').value.trim(),
+      uid: null,
+      applicantRole: null,
+      status: 'assigned',            // 현장 참석 확정이므로 승인완료로 등록
+      statusMemo: '현장 접수',
+      walkIn: true,
+      completed: false,
+      createdAt: serverTimestamp(),
+      statusAt: serverTimestamp()
+    });
+    await updateDoc(doc(db, 'programs', p.id), { applied: increment(1) }).catch(() => {});
+    toast(`현장 접수를 등록했습니다 — ${$('wi-name').value.trim()}`);
+    closeModal('walkInModal');
+  } catch (e2){
+    err.textContent = fbError(e2); err.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = '등록';
+  }
+});
+
 /* ==================== 신청자: 일괄 처리 ==================== */
 function pickSelected(){
   const list = applications.filter(a => selected.has(a.id));
