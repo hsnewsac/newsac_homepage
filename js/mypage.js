@@ -799,4 +799,10 @@ onAuthStateChanged(auth, async user => {
     toast('로그인되었습니다. 신청 페이지로 이동합니다.');
     setTimeout(() => location.href = 'index.html#open-now', 900);
   }
+
+  /* v26: 헤더 칩 메뉴의 '내 강의실' — 활동 현황 탭의 내 강의실로 스크롤 */
+  if (params.get('goto') === 'classroom'){
+    switchMyTab('home');
+    setTimeout(() => $('classroomBox')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 250);
+  }
 });

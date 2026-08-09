@@ -1276,8 +1276,23 @@ nav a.active::after{
 }
 .menu-btn{border-radius:999px;}
 
+/* 메뉴 아이콘 — 호버 시 통통 튀는 모션 */
+.nav-ic{display:inline-block;margin-right:5px;font-size:.92em;line-height:1;}
+nav a:hover > .nav-ic, .nav-sub a:hover .nav-ic{animation:navIcBounce .5s ease;}
+@keyframes navIcBounce{
+  0%{transform:translateY(0) rotate(0);}
+  35%{transform:translateY(-4px) rotate(-10deg) scale(1.15);}
+  70%{transform:translateY(1px) rotate(7deg);}
+  100%{transform:translateY(0) rotate(0);}
+}
+@media (prefers-reduced-motion:reduce){
+  nav a:hover > .nav-ic, .nav-sub a:hover .nav-ic{animation:none;}
+}
+
 /* 하위 메뉴 — 부모에 마우스를 올리면 아래로 플로팅되는 유리 카드 */
 .nav-item{position:relative;display:inline-flex;}
+/* 겹침 방지: 열린 항목을 형제 메뉴·다른 하위 메뉴 위로 올립니다 */
+.nav-item:hover, .nav-item:focus-within{z-index:6;}
 .nav-caret{font-style:normal;font-size:.68rem;margin-left:4px;opacity:.55;transition:transform .18s;}
 .nav-item:hover .nav-caret{transform:translateY(1px);}
 .nav-sub{
@@ -1290,14 +1305,19 @@ nav a.active::after{
   border:1px solid rgba(255,255,255,.75);
   border-radius:16px;
   box-shadow:0 14px 34px rgba(23,34,27,.16);
-  opacity:0;visibility:hidden;
-  transition:opacity .18s ease, transform .18s ease, visibility .18s;
+  opacity:0;visibility:hidden;pointer-events:none;
+  z-index:5;
+  transition:opacity .14s ease, transform .14s ease, visibility .14s;
 }
 /* 부모와 하위 메뉴 사이 간격을 지나도 호버가 끊기지 않게 하는 다리 */
 .nav-sub::before{content:'';position:absolute;left:0;right:0;top:-12px;height:12px;}
 .nav-item:hover .nav-sub, .nav-item:focus-within .nav-sub{
-  opacity:1;visibility:visible;transform:translateX(-50%) translateY(0);
+  opacity:1;visibility:visible;pointer-events:auto;transform:translateX(-50%) translateY(0);
 }
+
+/* 로그인 칩 메뉴 — 오른쪽 끝에 붙으므로 하위 메뉴를 우측 정렬 */
+.chip-menu .nav-sub{left:auto;right:0;transform:translateY(6px);}
+.chip-menu:hover .nav-sub, .chip-menu:focus-within .nav-sub{transform:translateY(0);}
 .nav-sub a{padding:10px 14px;border-radius:10px;font-size:.9rem;white-space:nowrap;text-align:left;}
 .nav-sub a:hover{transform:none;background:rgba(95,201,126,.14);color:var(--leaf);}
 .nav-sub a.active::after{left:14px;transform:none;bottom:5px;}

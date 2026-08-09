@@ -276,21 +276,21 @@ export function initLayout(active){
         <span></span><span></span><span></span>
       </button>
       <nav id="gnb">
-        <a href="index.html"  class="${active === 'home'   ? 'active' : ''}">홈</a>
-        <a href="notice.html" class="${active === 'notice' ? 'active' : ''}">공지사항</a>
-        <a href="check.html"  class="${active === 'check'  ? 'active' : ''}">신청 확인</a>
+        <a href="index.html"  class="${active === 'home'   ? 'active' : ''}"><span class="nav-ic">🏠</span>홈</a>
+        <a href="notice.html" class="${active === 'notice' ? 'active' : ''}"><span class="nav-ic">📢</span>공지사항</a>
+        <a href="check.html"  class="${active === 'check'  ? 'active' : ''}"><span class="nav-ic">🔎</span>신청 확인</a>
         <div class="nav-item">
-          <a href="workshop.html" class="nav-parent ${['workshop','online'].includes(active) ? 'active' : ''}">강사 워크샵<i class="nav-caret">▾</i></a>
+          <a href="workshop.html" class="nav-parent ${['workshop','online'].includes(active) ? 'active' : ''}"><span class="nav-ic">🎓</span>강사 워크샵<i class="nav-caret">▾</i></a>
           <div class="nav-sub">
-            <a href="workshop.html" class="${active === 'workshop' ? 'active' : ''}">강사 워크샵</a>
-            <a href="online.html" class="${active === 'online' ? 'active' : ''}">온라인 워크샵</a>
+            <a href="workshop.html" class="${active === 'workshop' ? 'active' : ''}"><span class="nav-ic">🧑‍🏫</span>강사 워크샵</a>
+            <a href="online.html" class="${active === 'online' ? 'active' : ''}"><span class="nav-ic">💻</span>온라인 워크샵</a>
           </div>
         </div>
         <div class="nav-item">
-          <a href="about.html" class="nav-parent ${['about','programs'].includes(active) ? 'active' : ''}">소개<i class="nav-caret">▾</i></a>
+          <a href="about.html" class="nav-parent ${['about','programs'].includes(active) ? 'active' : ''}"><span class="nav-ic">🌱</span>소개<i class="nav-caret">▾</i></a>
           <div class="nav-sub">
-            <a href="about.html" class="${active === 'about' ? 'active' : ''}">사업단 소개</a>
-            <a href="programs.html" class="${active === 'programs' ? 'active' : ''}">교육과정</a>
+            <a href="about.html" class="${active === 'about' ? 'active' : ''}"><span class="nav-ic">🏫</span>사업단 소개</a>
+            <a href="programs.html" class="${active === 'programs' ? 'active' : ''}"><span class="nav-ic">📚</span>교육과정</a>
           </div>
         </div>
         <span id="authChip" class="auth-chip"><span class="chip-skel"></span></span>
@@ -364,14 +364,18 @@ async function mountAuthChip(){
       el.innerHTML = `<span class="chip-skel"></span>`;
       const admin = await checkIsAdmin(u.uid);
       _isAdminCache = admin;
-      /* v12: 관리자도 마이페이지를 쓸 수 있도록 링크를 둘 다 노출합니다 */
-      el.innerHTML = admin
-        ? `<a href="admin.html" class="chip-admin" title="관리자 페이지">
-             <i>🔑</i><b>관리자</b></a>
-           <a href="mypage.html" class="chip-on" title="${esc(u.email)}">
-             <i>👤</i>${esc(shortName(u))} 님</a>`
-        : `<a href="mypage.html" class="chip-on" title="${esc(u.email)}">
-             <i>👤</i>${esc(shortName(u))} 님</a>`;
+      /* v26: 로그인하면 '이름님' 버튼 하나만 표시하고,
+         호버 시 마이페이지·내 강의실·(관리자) 대시보드가 플로팅됩니다 */
+      el.innerHTML = `
+        <div class="nav-item chip-menu">
+          <a href="mypage.html" class="chip-on" title="${esc(u.email)}">
+            <i>👤</i>${esc(shortName(u))} 님<i class="nav-caret">▾</i></a>
+          <div class="nav-sub">
+            <a href="mypage.html"><span class="nav-ic">👤</span>마이페이지</a>
+            <a href="mypage.html?goto=classroom"><span class="nav-ic">📚</span>내 강의실</a>
+            ${admin ? `<a href="admin.html"><span class="nav-ic">🔑</span>대시보드</a>` : ''}
+          </div>
+        </div>`;
     });
   } catch (e) { /* 파이어베이스 미로드 시 칩 생략 */ }
 }
