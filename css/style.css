@@ -1597,6 +1597,26 @@ a:hover > .gic svg, a.active > .gic svg,
   #tab-dash .dash-card:hover .gic svg{animation:none;}
 }
 
+/* ----- v32: 마크다운 본문 (수강 안내·과제 안내·과목 소개) ----- */
+.md > *:first-child{margin-top:0;}
+.md > *:last-child{margin-bottom:0;}
+.md p{margin:.5em 0;line-height:1.75;}
+.md h3,.md h4,.md h5,.md h6{margin:.9em 0 .4em;font-weight:800;color:#28352E;letter-spacing:-.01em;}
+.md h3{font-size:1.02rem;} .md h4{font-size:.95rem;} .md h5,.md h6{font-size:.9rem;}
+.md ul,.md ol{margin:.5em 0 .5em 1.15em;display:flex;flex-direction:column;gap:4px;}
+.md ul{list-style:disc;} .md ol{list-style:decimal;}
+.md li{line-height:1.7;}
+.md a{color:var(--leaf);font-weight:700;text-decoration:underline;word-break:break-all;}
+.md strong{font-weight:800;color:#28352E;}
+.md code{background:rgba(23,34,27,.06);border-radius:5px;padding:1px 6px;font-size:.92em;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+.md blockquote{margin:.6em 0;padding:.5em .9em;border-left:3px solid var(--sprout);
+  background:rgba(255,255,255,.45);border-radius:0 8px 8px 0;color:#4A5850;}
+.md hr{border:none;border-top:1px solid var(--line);margin:.9em 0;}
+.md.sm{font-size:.86rem;line-height:1.7;color:#5A6862;}
+.md.sm p{margin:.35em 0;}
+.md.sm.note{font-size:.82rem;color:#6A776F;}
+
 /* 인쇄물(이수증·서명부)은 유리 효과 없이 종이 그대로 */
 @media print{
   body::before{display:none !important;}

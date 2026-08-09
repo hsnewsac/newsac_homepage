@@ -69,6 +69,15 @@
   .cr-sub a{color:var(--navy);text-decoration:underline;word-break:break-all;}
   .cr-sub.warn{background:#FDF3E8;border-color:#F0D9BC;color:#8C5A1E;}
 
+  .tf-list{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
+  .tf-item{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;
+    background:rgba(255,255,255,.75);border:1px solid var(--line);
+    font-size:.84rem;font-weight:700;color:var(--navy);text-decoration:none;word-break:break-all;}
+  .tf-item:hover{border-color:var(--navy);}
+  .tf-item span{font-weight:600;color:#8A968E;font-size:.78rem;}
+  .cr-task input[type=file]{width:100%;padding:9px 12px;border:1.5px dashed var(--line);
+    border-radius:10px;background:var(--paper);font-size:.85rem;}
+
   .cr-nav{display:flex;gap:10px;flex-wrap:wrap;}
   .cr-nav .btn{flex:1;text-align:center;text-decoration:none;}
   .cr-msg{padding:44px 28px;text-align:center;background:#fff;
@@ -106,7 +115,7 @@
 </script>
 
 <script type="module">
-import { esc, fbError, toast, acceptedOnlineKeys } from './js/common.js';
+import { esc, fbError, toast, acceptedOnlineKeys, mdToHtml } from './js/common.js';
 
 const root = document.getElementById('crRoot');
 const params = new URLSearchParams(location.search);
@@ -118,10 +127,11 @@ if (!enrollId){
   throw new Error('no enroll id');
 }
 
-let db, auth, fs, onAuthStateChanged;
+let db, auth, storage, fs, st, onAuthStateChanged;
 try {
-  ({ db, auth } = await import('./js/firebase-init.js'));
+  ({ db, auth, storage } = await import('./js/firebase-init.js'));
   fs = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js");
+  st = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-storage.js");
   ({ onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js"));
 } catch (e){
   root.innerHTML = `<div class="cr-msg">강의실을 불러오지 못했습니다.<br>네트워크 상태를 확인한 뒤 새로고침해주세요.</div>`;
@@ -256,7 +266,7 @@ function render(lessonId){
           <span class="cell-sub">${current.order}차시${current.required === false ? ' · 선택 차시' : ''}</span>
         </div>
         <h2>${esc(current.title)}</h2>
-        ${current.desc ? `<p>${esc(current.desc)}</p>` : ''}
+        ${current.desc ? `<div class="md">${mdToHtml(current.desc)}</div>` : ''}
       </div>
 
       ${online ? (current.videoId ? `
@@ -295,20 +305,32 @@ function render(lessonId){
   if (online && current.videoId) mountPlayer();
 }
 
+function fileRow(f){
+  const kb = f.size ? (f.size > 1048576 ? (f.size/1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(f.size/1024)) + 'KB') : '';
+  return `<a class="tf-item" href="${esc(f.url)}" target="_blank" rel="noopener">📎 ${esc(f.name)}${kb ? ` <span>${kb}</span>` : ''}</a>`;
+}
+
 function taskHTML(p){
   const submitted = !!p.taskAt;
+  const files = Array.isArray(p.taskFiles) ? p.taskFiles : [];
   return `<div class="cr-task">
     <h3>📝 과제 제출</h3>
-    <div class="guide">${esc(current.taskDesc || '과제 안내가 등록되지 않았습니다.')}</div>
+    <div class="guide md">${current.taskDesc ? mdToHtml(current.taskDesc) : '<p>과제 안내가 등록되지 않았습니다.</p>'}</div>
     ${submitted ? `<div class="cr-sub ${p.taskOk === false ? 'warn' : ''}">
-        <b>${p.taskOk === false ? '보완 요청됨' : '제출 완료'}</b>
+        <b>${p.taskOk === false ? '보완 요청됨' : (p.taskOk === true ? '확인 완료' : '제출 완료')}</b>
         ${p.taskUrl ? `<br>링크 · <a href="${esc(p.taskUrl)}" target="_blank" rel="noopener">${esc(p.taskUrl)}</a>` : ''}
         ${p.taskText ? `<br>내용 · ${esc(p.taskText).replace(/\n/g, '<br>')}` : ''}
+        ${files.length ? `<div class="tf-list">${files.map(fileRow).join('')}</div>` : ''}
         ${p.taskReview ? `<br>사업단 메모 · ${esc(p.taskReview)}` : ''}
         <br><span class="cell-sub">다시 제출하면 내용이 갱신됩니다.</span>
       </div>` : ''}
     <form id="taskForm">
       <div class="form-error" id="taskError"></div>
+      <div class="form-row">
+        <label for="t-file">파일 첨부 <span class="hint">(이미지·PDF·문서 등 · 1개당 20MB 이하 · 최대 5개)</span></label>
+        <input id="t-file" type="file" multiple>
+        <p class="form-note" style="margin-top:6px;">새로 첨부하면 기존 첨부는 교체됩니다. 파일 없이 링크·설명만 제출해도 됩니다.</p>
+      </div>
       <div class="form-row">
         <label for="t-url">제출 링크 <span class="hint">(캔바·구글 드라이브·유튜브 등)</span></label>
         <input id="t-url" type="url" placeholder="https://" value="${esc(p.taskUrl || '')}">
@@ -326,26 +348,56 @@ async function submitTask(e){
   e.preventDefault();
   const url = document.getElementById('t-url').value.trim();
   const text = document.getElementById('t-text').value.trim();
+  const picked = [...(document.getElementById('t-file').files || [])].slice(0, 5);
   const errBox = document.getElementById('taskError');
-  if (!url && !text){
-    errBox.textContent = '제출 링크나 설명 중 하나는 입력해주세요.';
+  const prev = progress[current.id] || {};
+  const keepFiles = Array.isArray(prev.taskFiles) ? prev.taskFiles : [];
+
+  if (!url && !text && !picked.length && !keepFiles.length){
+    errBox.textContent = '파일·링크·설명 중 하나는 제출해주세요.';
     errBox.style.display = 'block';
     return;
   }
+  const tooBig = picked.find(f => f.size > 20 * 1024 * 1024);
+  if (tooBig){
+    errBox.textContent = `${tooBig.name} 파일이 20MB를 넘습니다. 용량을 줄여 다시 첨부해주세요.`;
+    errBox.style.display = 'block';
+    return;
+  }
+
   const btn = document.getElementById('taskBtn');
   btn.disabled = true; btn.textContent = '제출 중…';
+  errBox.style.display = 'none';
   try {
+    /* 새 파일이 있으면 업로드해 교체, 없으면 기존 첨부 유지 */
+    let files = keepFiles;
+    if (picked.length){
+      files = [];
+      for (let i = 0; i < picked.length; i++){
+        const f = picked[i];
+        btn.textContent = `업로드 중… (${i + 1}/${picked.length})`;
+        const safe = f.name.replace(/[^\w.\-가-힣 ]/g, '_');
+        const path = `taskFiles/${enr.uid}/${enrollId}_${current.id}/${Date.now()}_${safe}`;
+        const ref = st.ref(storage, path);
+        await st.uploadBytes(ref, f);
+        files.push({ name: f.name, size: f.size, url: await st.getDownloadURL(ref), path });
+      }
+    }
+    btn.textContent = '저장 중…';
     await setDoc(doc(db, 'enrollments', enrollId, 'progress', current.id), {
-      taskUrl: url, taskText: text,
+      taskUrl: url, taskText: text, taskFiles: files,
       taskAt: serverTimestamp(), taskOk: null, taskReview: '',
       lastAt: serverTimestamp()
     }, { merge: true });
     progress[current.id] = { ...(progress[current.id] || {}),
-      taskUrl: url, taskText: text, taskAt: new Date(), taskOk: null, taskReview: '' };
+      taskUrl: url, taskText: text, taskFiles: files,
+      taskAt: new Date(), taskOk: null, taskReview: '' };
     toast('과제를 제출했습니다.');
     render(current.id);
   } catch (err){
-    errBox.textContent = fbError(err);
+    errBox.textContent = /storage|CORS|unauthorized/i.test(String(err?.code || err))
+      ? '파일 업로드에 실패했습니다. 잠시 후 다시 시도하거나, 링크로 제출해주세요.'
+      : fbError(err);
     errBox.style.display = 'block';
   } finally { btn.disabled = false; }
 }

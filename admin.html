@@ -588,12 +588,12 @@
         <form id="courseForm">
           <div class="form-error" id="courseError"></div>
           <div class="form-row">
-            <label for="oc-intro">과목 소개 <span class="hint">(신청 화면에 표시됩니다)</span></label>
-            <textarea id="oc-intro" rows="2"></textarea>
+            <label for="oc-intro">과목 소개 <span class="hint">(신청 화면에 표시 · 마크다운 사용 가능)</span></label>
+            <textarea id="oc-intro" rows="3"></textarea>
           </div>
           <div class="form-row">
-            <label for="oc-note">수강 안내 <span class="hint">(선택 — 준비물·유의사항 등)</span></label>
-            <textarea id="oc-note" rows="2"
+            <label for="oc-note">수강 안내 <span class="hint">(선택 — 준비물·유의사항 등 · 마크다운 사용 가능)</span></label>
+            <textarea id="oc-note" rows="4"
               placeholder="예) 허밍블럭스 교구 실습 차시는 오프라인 워크샵 참석이 필요합니다."></textarea>
           </div>
           <label class="form-check">
@@ -636,8 +636,8 @@
             <input id="l-title" type="text" placeholder="예) 생성형 AI 이해와 프롬프트 기초" required>
           </div>
           <div class="form-row">
-            <label for="l-desc">차시 설명</label>
-            <textarea id="l-desc" rows="2" placeholder="이 차시에서 무엇을 배우는지 간단히 적어주세요."></textarea>
+            <label for="l-desc">차시 설명 <span class="hint">— 마크다운 사용 가능</span></label>
+            <textarea id="l-desc" rows="3" placeholder="이 차시에서 무엇을 배우는지 간단히 적어주세요."></textarea>
           </div>
 
           <!-- 온라인 전용 -->
@@ -681,7 +681,7 @@
             <span>📝 <b>과제 제출</b> 받기</span>
           </label>
           <div class="form-row" id="l-taskRow" style="display:none;">
-            <label for="l-task">과제 안내</label>
+            <label for="l-task">과제 안내 <span class="hint">— 마크다운 사용 가능 (**굵게**, - 목록, [링크](url), # 제목)</span></label>
             <textarea id="l-task" rows="2"
               placeholder="예) 오늘 실습한 프롬프트로 만든 이미지를 캔바 링크로 제출해주세요."></textarea>
           </div>
