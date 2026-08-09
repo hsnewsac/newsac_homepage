@@ -502,7 +502,9 @@ function paintApps(){
     <td>${statusChip(a)}${a.statusMemo ? `<br><span class="cell-sub">📝 ${esc(a.statusMemo)}</span>` : ''}</td>
     <td>${a.completed
       ? '<span class="status-chip done">수료완료</span>'
-      : '<span class="status-chip wait">미수료</span>'}</td>
+      : '<span class="status-chip wait">미수료</span>'
+        + (/미니|mini|교구/i.test(a.programTitle || '')
+          ? '<br><span class="cell-sub">📌 <a href="online.html" style="text-decoration:underline;">온라인 워크샵</a> 병행 이수 필요</span>' : '')}</td>
     <td><div class="t-actions">
       ${a.completed
         ? `<a class="mini-btn" href="cert.html?id=${a.id}" target="_blank" rel="noopener">이수증</a>`
