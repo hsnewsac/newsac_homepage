@@ -837,6 +837,13 @@
         홈페이지로 신청하지 않고 <b>워크샵 현장에서 접수</b>한 분을 등록합니다.
         등록 즉시 <b>승인완료</b> 상태로 신청 명단·서명부·수료 처리 대상에 포함됩니다.</p>
       <div class="form-row">
+        <label for="wi-search">회원 · 이전 신청자 불러오기 <span class="hint">(이름·이메일·전화·소속으로 검색)</span></label>
+        <input id="wi-search" type="search" placeholder="예) 홍길동 / hong@ / 0107 — 2글자 이상 입력" autocomplete="off">
+        <div id="wi-results" class="wi-results" style="display:none;"></div>
+        <p class="form-note" id="wi-linked" style="display:none;margin-top:6px;color:var(--leaf);font-weight:700;"></p>
+      </div>
+      <input type="hidden" id="wi-uid">
+      <div class="form-row">
         <label for="wi-program">프로그램 <span class="req">*</span></label>
         <select id="wi-program" required></select>
       </div>

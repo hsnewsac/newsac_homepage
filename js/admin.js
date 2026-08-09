@@ -929,14 +929,78 @@ function openWalkIn(){
   if (!list.length){ alert('등록된 워크샵 프로그램이 없습니다. 프로그램 탭에서 먼저 등록해주세요.'); return; }
   $('walkInForm').reset();
   $('wiError').style.display = 'none';
+  $('wi-uid').value = '';
+  $('wi-linked').style.display = 'none';
+  $('wi-results').style.display = 'none';
+  $('wi-results').innerHTML = '';
   sel.innerHTML = '<option value="">프로그램을 선택하세요</option>' +
     list.map(p => `<option value="${p.id}">${esc(p.title)}${p.period ? ` · ${esc(p.period)}` : ''}</option>`).join('');
   $('wi-course').innerHTML = '<option value="">프로그램을 먼저 선택하세요</option>';
   $('wi-orgtype').innerHTML = '<option value="">선택</option>' +
     ORG_TYPES.map(t => `<option>${esc(t)}</option>`).join('');
+  if (!membersLoaded) loadMembers();   // 회원 검색을 위해 백그라운드 로드
   openModal('walkInModal');
 }
 window.openWalkIn = openWalkIn;
+
+/* v21.1: 회원·이전 신청자 검색 → 클릭하면 입력 칸 자동 채움 (회원이면 계정 연결) */
+let wiHits = [];
+function wiSearch(){
+  const q = $('wi-search').value.trim().toLowerCase();
+  const box = $('wi-results');
+  if (q.length < 2){ box.style.display = 'none'; box.innerHTML = ''; return; }
+
+  const hits = [], seen = new Set();
+  if (membersLoaded){
+    members.forEach(m => {
+      const hay = [m.name, m.email, m.phone, m.org, m.school, m.childSchool]
+        .map(v => String(v ?? '').toLowerCase()).join(' ');
+      if (!hay.includes(q)) return;
+      seen.add('u' + m.uid);
+      hits.push({ kind: '회원', name: m.name || '', org: m.org || m.school || m.childSchool || '',
+        orgType: m.orgType || '', phone: m.phone || '', email: m.email || '', uid: m.uid });
+    });
+  }
+  applications.forEach(a => {
+    const hay = [a.name, a.email, a.phone, a.org]
+      .map(v => String(v ?? '').toLowerCase()).join(' ');
+    if (!hay.includes(q)) return;
+    if (a.uid && seen.has('u' + a.uid)) return;                     // 회원으로 이미 표시됨
+    if (a.email && hits.some(h => h.email === a.email)) return;     // 같은 이메일 중복 제거
+    const k = `${a.email}|${a.phone}|${a.name}`;
+    if (seen.has(k)) return; seen.add(k);
+    hits.push({ kind: '신청 이력', name: a.name || '', org: a.org || '', orgType: a.orgType || '',
+      phone: a.phone || '', email: a.email || '', uid: a.uid || '', last: progTitle(a) });
+  });
+
+  wiHits = hits.slice(0, 8);
+  box.innerHTML = wiHits.length
+    ? wiHits.map((h, i) => `<div class="wi-hit" data-wi="${i}">
+        <span class="chip ${h.kind === '회원' ? 'member' : 'workshop'}">${h.kind}</span>
+        <b>${esc(h.name)}</b>
+        <span class="cell-sub">${esc(h.org || '-')} · ${esc(h.email || h.phone || '-')}${h.last ? ` · ${esc(h.last)}` : ''}</span>
+      </div>`).join('')
+    : `<div class="wi-hit" style="cursor:default;color:#8A968E;">검색 결과가 없습니다${membersLoaded ? '' : ' (회원 명단 불러오는 중…)'}</div>`;
+  box.style.display = 'block';
+  box.querySelectorAll('[data-wi]').forEach(el =>
+    el.addEventListener('click', () => wiPick(wiHits[Number(el.dataset.wi)])));
+}
+function wiPick(h){
+  $('wi-name').value = h.name;
+  $('wi-org').value = h.org;
+  $('wi-orgtype').value = h.orgType || '';
+  $('wi-phone').value = h.phone;
+  $('wi-email').value = h.email;
+  $('wi-uid').value = h.uid || '';
+  $('wi-search').value = '';
+  $('wi-results').style.display = 'none';
+  const l = $('wi-linked');
+  l.style.display = 'block';
+  l.innerHTML = h.uid
+    ? `✅ <b>${esc(h.name)}</b>님의 회원 계정과 연결되어 등록됩니다 — 마이페이지에 자동 표시`
+    : `✅ 이전 신청 정보(<b>${esc(h.name)}</b>)를 불러왔습니다`;
+}
+$('wi-search').addEventListener('input', wiSearch);
 
 $('wi-program').addEventListener('change', () => {
   const p = programs.find(x => x.id === $('wi-program').value);
@@ -968,7 +1032,7 @@ $('walkInForm').addEventListener('submit', async e => {
       phone: $('wi-phone').value.trim(),
       email: $('wi-email').value.trim(),
       memo: $('wi-memo').value.trim(),
-      uid: null,
+      uid: $('wi-uid').value || null,   // 회원 불러오기로 연결된 경우 계정에 귀속
       applicantRole: null,
       status: 'assigned',            // 현장 참석 확정이므로 승인완료로 등록
       statusMemo: '현장 접수',
