@@ -46,7 +46,17 @@ header{
 nav{margin-left:auto;display:flex;align-items:center;gap:4px;}
 nav a,nav button.navlink{padding:8px 12px;border-radius:8px;font-size:.92rem;font-weight:600;color:#3C4A41;background:none;border:none;}
 nav a:hover,nav button.navlink:hover{background:var(--sprout-soft);color:var(--leaf);}
-.menu-btn{display:none;margin-left:auto;background:none;border:1px solid var(--line);border-radius:8px;padding:7px 11px;font-size:1rem;}
+/* 햄버거 버튼 — 열리면 X로 모핑 */
+.menu-btn{display:none;margin-left:auto;background:none;border:1px solid var(--line);border-radius:8px;
+  width:42px;height:40px;padding:0;position:relative;cursor:pointer;}
+.menu-btn span{position:absolute;left:12px;right:12px;height:2px;border-radius:2px;background:#3C4A41;
+  transition:transform .28s ease, top .28s ease, opacity .18s ease;}
+.menu-btn span:nth-child(1){top:13px;}
+.menu-btn span:nth-child(2){top:19px;}
+.menu-btn span:nth-child(3){top:25px;}
+.menu-btn.open span:nth-child(1){top:19px;transform:rotate(45deg);}
+.menu-btn.open span:nth-child(2){opacity:0;transform:scaleX(.3);}
+.menu-btn.open span:nth-child(3){top:19px;transform:rotate(-45deg);}
 
 /* ===== 관리자 바 ===== */
 .admin-bar{display:none;background:var(--navy);color:#fff;font-size:.88rem;}
@@ -1266,11 +1276,12 @@ nav a.active{
 /* 모바일 드롭다운 — 캡슐 아래에 뜨는 유리 카드 */
 @media (max-width:840px){
   nav{
-    top:60px;left:8px;right:8px;
-    background:rgba(255,255,255,.92);
+    /* 캡슐 바로 아래에서 8px 간격을 두고 펼쳐져 바와 겹치지 않습니다 */
+    top:calc(100% + 8px);left:8px;right:8px;
+    background:rgba(255,255,255,.97);
     backdrop-filter:var(--glass-blur);
     -webkit-backdrop-filter:var(--glass-blur);
-    border:1px solid rgba(255,255,255,.7);
+    border:1px solid rgba(255,255,255,.8);
     border-radius:22px;
     box-shadow:0 14px 36px rgba(23,34,27,.18);
     overflow:hidden;
