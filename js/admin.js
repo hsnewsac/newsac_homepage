@@ -780,9 +780,66 @@ async function notifyCert(a, certNo){
   });
 }
 
+/* ==================== v18: 미니(교구 사용법) 워크샵 온라인 이수 연동 ====================
+   강사워크샵 미니·교구사용법 워크샵은 당일 참석만으로 수료되지 않고,
+   신청 강좌에 대응하는 상시 온라인 워크샵 과목까지 이수해야 최종 수료증이 발급됩니다.
+   수료 처리 전에 온라인 이수 상태를 확인하고, 미충족 건은 막거나(일괄) 예외 확인(개별)을 받습니다. */
+function isMiniApp(a){
+  return /미니|mini|교구/i.test(`${progTitle(a)} ${a.programTitle || ''}`);
+}
+
+/** 대응 온라인 워크샵 이수 여부: 수료 처리됐거나 필수 차시 진도 100%면 충족 */
+async function onlineDoneFor(a){
+  const key = guessCourseKey(a.course || a.session);
+  const c = key ? courseByKey(key) : null;
+  const label = c ? `${c.name.split(':')[0]} · ${c.level}` : (a.course || '-');
+  if (!key) return { ok: false, why: '대응 온라인 과목을 찾지 못함 — 강좌명 확인 필요', label };
+
+  let enr = null;
+  try {
+    const by = a.uid
+      ? query(collection(db, 'enrollments'), where('uid', '==', a.uid))
+      : query(collection(db, 'enrollments'), where('email', '==', a.email || '-'));
+    const snap = await getDocs(by);
+    enr = snap.docs.map(d => ({ id: d.id, ...d.data() })).find(e => e.courseKey === key) || null;
+  } catch (e){ return { ok: false, why: `온라인 수강 정보 조회 실패(${label})`, label }; }
+
+  if (!enr) return { ok: false, why: `온라인 워크샵 [${label}] 미신청`, label };
+  if (enr.completed) return { ok: true, label };
+
+  try {
+    const ls = await getDocs(collection(db, 'onlineCourses', key, 'lessons'));
+    const lessons = ls.docs.map(d => ({ id: d.id, ...d.data() }));
+    const req = lessons.filter(l => l.required !== false);
+    if (!req.length) return { ok: false, why: `온라인 워크샵 [${label}] 차시 미등록`, label };
+    const pr = await getDocs(collection(db, 'enrollments', enr.id, 'progress'));
+    const prog = Object.fromEntries(pr.docs.map(d => [d.id, d.data()]));
+    const done = l => {
+      const q = prog[l.id];
+      if (!q) return false;
+      if (l.mode === 'offline') return !!q.done;
+      if (q.done) return true;
+      return !!l.durationSec && (q.watchedSec || 0) >= l.durationSec * 0.9;
+    };
+    const doneN = req.filter(done).length;
+    return doneN >= req.length
+      ? { ok: true, label }
+      : { ok: false, why: `온라인 워크샵 [${label}] 진도 ${doneN}/${req.length}차시`, label };
+  } catch (e){
+    return { ok: false, why: `온라인 워크샵 [${label}] 진도 확인 실패`, label };
+  }
+}
+
 async function completeApp(id){
   const a = applications.find(x => x.id === id);
-  if (!a || !confirm(`${a.name}님 (${progTitle(a)} · ${a.course || ''})\n수료 처리하고 이수증 발급번호를 채번할까요?`)) return;
+  if (!a) return;
+  if (isMiniApp(a)){
+    const chk = await onlineDoneFor(a);
+    if (!chk.ok && !confirm(`⚠️ 미니(교구 사용법) 워크샵 신청 건입니다.\n` +
+        `미니 워크샵은 대응 온라인 워크샵까지 이수해야 최종 수료됩니다.\n\n` +
+        `${a.name}님 현재 상태: ${chk.why}\n\n그래도 예외로 수료 처리할까요?`)) return;
+  }
+  if (!confirm(`${a.name}님 (${progTitle(a)} · ${a.course || ''})\n수료 처리하고 이수증 발급번호를 채번할까요?`)) return;
   try {
     const certNo = await issueCert(id);
     await notifyCert(a, certNo);
@@ -818,8 +875,23 @@ function pickSelected(){
   return list;
 }
 async function bulkComplete(){
-  const list = pickSelected().filter(a => !a.completed);
-  if (!list.length){ if (selected.size) alert('선택된 항목이 모두 이미 수료 처리되어 있습니다.'); return; }
+  const cand = pickSelected().filter(a => !a.completed);
+  if (!cand.length){ if (selected.size) alert('선택된 항목이 모두 이미 수료 처리되어 있습니다.'); return; }
+
+  /* v18: 미니(교구) 워크샵은 온라인 이수 확인 후 미충족 건 제외 */
+  const list = [], blocked = [];
+  for (const a of cand){
+    if (isMiniApp(a)){
+      const chk = await onlineDoneFor(a);
+      if (!chk.ok){ blocked.push(`· ${a.name} — ${chk.why}`); continue; }
+    }
+    list.push(a);
+  }
+  if (blocked.length){
+    alert(`미니(교구 사용법) 워크샵 ${blocked.length}건은 온라인 이수가 확인되지 않아 일괄 처리에서 제외합니다.\n` +
+      `예외 처리가 필요하면 해당 건의 [수료처리] 버튼으로 개별 진행해주세요.\n\n${blocked.join('\n')}`);
+  }
+  if (!list.length) return;
   const mailNote = certEmailEnabled() ? '\n수료 안내 메일도 함께 발송됩니다.' : '';
   if (!confirm(`선택한 ${list.length}명을 일괄 수료 처리할까요?\n이수증 발급번호가 순차 채번됩니다.${mailNote}`)) return;
 
