@@ -6,13 +6,14 @@
 ========================================================= */
 import { db, auth } from './firebase-init.js';
 import {
-  collection, addDoc, updateDoc, doc, onSnapshot, query, orderBy,
+  collection, addDoc, updateDoc, doc, onSnapshot, query, orderBy, where, getDocs,
   increment, serverTimestamp, getDoc as fsGetDoc, doc as fsDoc
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 import {
   initLayout, esc, ddayInfo, notYetOpen, noticeIsNew, catClass, fbError,
   KIND, ORG_TYPES, openModal, closeModal, bindModalEvents, toast,
-  ROLES, roleOf, qualificationHTML, RECRUIT_FOR
+  ROLES, roleOf, qualificationHTML, RECRUIT_FOR,
+  guessCourseKey, acceptedOnlineKeys, courseByKey
 } from './common.js';
 import { sendApplicationEmail, emailEnabled } from './email-config.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
@@ -349,10 +350,39 @@ $('applyForm').addEventListener('submit', async e => {
     }
     const courseText = chosenCourses.join(' · ');
 
+    /* v23: 미니(교구 사용법) 워크샵을 회원이 신청하면 대응 온라인 워크샵을
+       내 강의실에 자동 등록합니다 (이미 수강 중인 과목은 건너뜀).
+       실패해도 신청 접수에는 영향을 주지 않습니다. */
+    let autoEnrolled = 0;
+    if (currentUser && p && p.type !== 'recruit'
+        && (p.wsKind === 'mini' || /미니|mini|교구/i.test(p.title || ''))){
+      try {
+        const es = await getDocs(query(collection(db, 'enrollments'), where('uid', '==', currentUser.uid)));
+        const mine = es.docs.map(d => d.data().courseKey);
+        for (const course of chosenCourses){
+          const key = guessCourseKey(course);
+          if (!key || acceptedOnlineKeys(course).some(k => mine.includes(k))) continue;
+          await addDoc(collection(db, 'enrollments'), {
+            uid: currentUser.uid,
+            name: appData.name, email: appData.email, phone: appData.phone,
+            org: appData.org, orgType: appData.orgType,
+            courseKey: key,
+            courseName: courseByKey(key)?.name || course,
+            completed: false,
+            createdAt: serverTimestamp(),
+            linkedFrom: ids[0] || null
+          });
+          mine.push(key);
+          autoEnrolled++;
+        }
+      } catch (e) { /* 자동 연동 실패 시 온라인 워크샵 페이지에서 직접 신청 가능 */ }
+    }
+
     $('applyForm').style.display = 'none';
     $('applyDoneMsg').textContent = (p && p.type === 'recruit')
       ? `[${p.title} · ${courseText}] 지원이 접수되었습니다. 서류 검토 후 배정 결과를 안내드립니다.`
-      : `[${p.title} · ${courseText}] 신청이 접수되었습니다. (${ids.length}건) 담당자 확인 후 안내드립니다.`;
+      : `[${p.title} · ${courseText}] 신청이 접수되었습니다. (${ids.length}건) 담당자 확인 후 안내드립니다.`
+        + (autoEnrolled ? ` 수료에 필요한 온라인 워크샵 ${autoEnrolled}과목이 마이페이지 내 강의실에 함께 등록되었습니다.` : '');
     $('applyDoneCode').textContent = ids.join(', ');
     $('applyDone').style.display = 'block';
 
