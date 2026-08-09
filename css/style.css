@@ -1552,6 +1552,11 @@ a:hover > .gic svg, a.active > .gic svg,
   box-shadow:0 6px 18px rgba(27,58,92,.26);}
 .admin-tabs.side .at-label{flex:1;text-align:left;}
 .admin-tabs.side .tab-badge{margin-left:auto;}
+/* 마이페이지 사이드 탭 — 활성 색만 새싹 그린으로 */
+.my-shell .atab.active{
+  background:linear-gradient(135deg, rgba(46,155,98,.92), rgba(30,127,79,.92));
+  box-shadow:0 6px 18px rgba(30,127,79,.26);}
+.my-shell .atab:hover{box-shadow:0 4px 12px rgba(30,127,79,.14);}
 @media (max-width:1000px){
   .admin-shell{grid-template-columns:1fr;gap:14px;}
   .admin-tabs.side{position:static;flex-direction:row;flex-wrap:wrap;border-radius:16px;}

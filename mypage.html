@@ -180,13 +180,14 @@
     <div class="dash-cards my-cards" id="myCards"></div>
 
     <!-- v14: 탭 내비게이션 — 정보가 세로로 길게 쌓이지 않도록 영역별로 나눕니다 -->
-    <div class="admin-tabs my-tabs">
-      <button class="atab active" data-mytab="home"    onclick="switchMyTab('home')"><span class="gic gc-green"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.2 12 4l9 7.2"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M10 20v-5h4v5"/></svg></span>활동 현황</button>
-      <button class="atab"        data-mytab="apps"    onclick="switchMyTab('apps')"><span class="gic gc-amber"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M19 18v3H6.5A1.5 1.5 0 0 1 5 19.5"/></svg></span>신청 내역 <span class="tab-badge" id="myBadgeApps">0</span></button>
-      <button class="atab"        data-mytab="info"    onclick="switchMyTab('info')"><span class="gic gc-blue"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5.5 20c0-3.6 3-5.6 6.5-5.6s6.5 2 6.5 5.6"/></svg></span>내 정보</button>
-      <button class="atab"        data-mytab="account" onclick="switchMyTab('account')"><span class="gic gc-purple"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15.5" r="4"/><path d="M11 12.5 20 3.5"/><path d="m16.5 7 3 3M14 9.5l2 2"/></svg></span>계정 설정</button>
+    <div class="admin-shell my-shell">
+      <div class="admin-tabs my-tabs side" role="tablist">
+      <button class="atab active" data-mytab="home"    onclick="switchMyTab('home')"><span class="gic gc-green"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.2 12 4l9 7.2"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M10 20v-5h4v5"/></svg></span><span class="at-label">활동 현황</span></button>
+      <button class="atab"        data-mytab="apps"    onclick="switchMyTab('apps')"><span class="gic gc-amber"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M19 18v3H6.5A1.5 1.5 0 0 1 5 19.5"/></svg></span><span class="at-label">신청 내역</span> <span class="tab-badge" id="myBadgeApps">0</span></button>
+      <button class="atab"        data-mytab="info"    onclick="switchMyTab('info')"><span class="gic gc-blue"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5.5 20c0-3.6 3-5.6 6.5-5.6s6.5 2 6.5 5.6"/></svg></span><span class="at-label">내 정보</span></button>
+      <button class="atab"        data-mytab="account" onclick="switchMyTab('account')"><span class="gic gc-purple"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15.5" r="4"/><path d="M11 12.5 20 3.5"/><path d="m16.5 7 3 3M14 9.5l2 2"/></svg></span><span class="at-label">계정 설정</span></button>
     </div>
-
+      <div class="admin-main">
     <!-- ===== 탭 1: 활동 현황 ===== -->
     <div class="tab-panel on" id="mytab-home">
 
@@ -486,6 +487,9 @@
     </div>
 
     </div><!-- /mytab-account -->
+      </div>
+    </div>
+
 
   </div>
 </section>
