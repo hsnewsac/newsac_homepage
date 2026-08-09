@@ -507,7 +507,9 @@ function paintApps(){
           ? '<br><span class="cell-sub">📌 <a href="online.html" style="text-decoration:underline;">온라인 워크샵</a> 병행 이수 필요</span>' : '')}</td>
     <td><div class="t-actions">
       ${a.completed
-        ? `<a class="mini-btn" href="cert.html?id=${a.id}" target="_blank" rel="noopener">이수증</a>`
+        ? ((!a.certNo && (a.programWsKind === 'mini' || (!a.programWsKind && /미니|mini|교구/i.test(a.programTitle || ''))))
+            ? '<span class="cell-sub">이수증 대기<br>(온라인 이수 확인 중)</span>'
+            : `<a class="mini-btn" href="cert.html?id=${a.id}" target="_blank" rel="noopener">이수증</a>`)
         : (locked
             ? '<span class="cell-sub">사업단 문의</span>'
             : `<button class="mini-btn danger" onclick="cancelMyApp('${a.id}')">신청취소</button>`)}
