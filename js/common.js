@@ -272,7 +272,9 @@ export function initLayout(active){
         <span>디지털새싹 사업단<small>한신대학교</small></span>
       </a>
       <button class="menu-btn" aria-label="메뉴 열기"
-        onclick="document.getElementById('gnb').classList.toggle('open')">☰</button>
+        onclick="document.getElementById('gnb').classList.toggle('open');this.classList.toggle('open')">
+        <span></span><span></span><span></span>
+      </button>
       <nav id="gnb">
         <a href="index.html"  class="${active === 'home'   ? 'active' : ''}">홈</a>
         <a href="notice.html" class="${active === 'notice' ? 'active' : ''}">공지사항</a>
@@ -285,7 +287,10 @@ export function initLayout(active){
       </nav>
     </div>`;
     header.querySelectorAll('#gnb a').forEach(a => {
-      a.addEventListener('click', () => document.getElementById('gnb').classList.remove('open'));
+      a.addEventListener('click', () => {
+        document.getElementById('gnb').classList.remove('open');
+        header.querySelector('.menu-btn')?.classList.remove('open');
+      });
     });
     mountAuthChip();
   }
