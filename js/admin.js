@@ -1051,6 +1051,32 @@ $('walkInForm').addEventListener('submit', async e => {
       statusAt: serverTimestamp()
     });
     await updateDoc(doc(db, 'programs', p.id), { applied: increment(1) }).catch(() => {});
+
+    /* v23: 미니 워크샵 현장 접수가 회원과 연결된 경우 온라인 수강도 자동 등록 */
+    const wiUid = $('wi-uid').value;
+    const isMiniP = p.wsKind === 'mini' || (!p.wsKind && /미니|mini|교구/i.test(p.title || ''));
+    if (wiUid && isMiniP){
+      try {
+        const key = guessCourseKey($('wi-course').value);
+        if (key){
+          const es = await getDocs(query(collection(db, 'enrollments'), where('uid', '==', wiUid)));
+          const mine = es.docs.map(d => d.data().courseKey);
+          if (!acceptedOnlineKeys($('wi-course').value).some(k => mine.includes(k))){
+            await addDoc(collection(db, 'enrollments'), {
+              uid: wiUid,
+              name: $('wi-name').value.trim(), email: $('wi-email').value.trim(),
+              phone: $('wi-phone').value.trim(), org: $('wi-org').value.trim(),
+              orgType: $('wi-orgtype').value,
+              courseKey: key,
+              courseName: courseByKey(key)?.name || $('wi-course').value,
+              completed: false,
+              createdAt: serverTimestamp()
+            });
+            toast('현장 접수 등록 + 온라인 수강 연동 완료');
+          }
+        }
+      } catch (e){ /* 연동 실패해도 접수 등록은 유지 */ }
+    }
     toast(`현장 접수를 등록했습니다 — ${$('wi-name').value.trim()}`);
     closeModal('walkInModal');
   } catch (e2){
@@ -1098,6 +1124,67 @@ async function bulkComplete(){
   selected.clear();
   toast(`일괄 수료 처리 ${ok}건 완료${fail ? ` · ${fail}건 실패` : ''}`, fail ? 'warn' : 'ok');
 }
+
+/* ==================== v23: 미니 신청자 → 온라인 수강 일괄 연동 ====================
+   미니 워크샵 신청자는 온라인 워크샵도 이수해야 하므로, 선택한 신청자를
+   대응 온라인 과목 수강(enrollments)에 자동 등록합니다.
+   강의실 이용에 계정이 필요하므로 회원(uid 연결 또는 이메일이 회원과 일치)만 등록됩니다. */
+async function bulkLinkOnline(){
+  const cand = pickSelected();
+  if (!cand.length) return;
+  if (!membersLoaded){
+    toast('회원 명단을 불러오는 중입니다…');
+    await loadMembers();
+  }
+
+  /* 중복 방지용: 전체 수강 등록의 uid|courseKey 집합 */
+  let existing = new Set();
+  try {
+    const snap = await getDocs(collection(db, 'enrollments'));
+    snap.docs.forEach(d => existing.add(`${d.data().uid}|${d.data().courseKey}`));
+  } catch (err){ alert(fbError(err)); return; }
+
+  const todo = [], skipped = [];
+  for (const a of cand){
+    if (!isMiniApp(a)){ skipped.push(`· ${a.name} — 미니 워크샵 신청이 아님`); continue; }
+    const key = guessCourseKey(a.course || a.session);
+    if (!key){ skipped.push(`· ${a.name} — 온라인 과목 매칭 실패(강좌명 확인)`); continue; }
+    const uid = a.uid || members.find(m => a.email && m.email === a.email)?.uid || '';
+    if (!uid){ skipped.push(`· ${a.name} — 회원 아님(가입 후 다시 연동 가능)`); continue; }
+    const dup = acceptedOnlineKeys(a.course || a.session).some(k => existing.has(`${uid}|${k}`));
+    if (dup){ skipped.push(`· ${a.name} — 이미 온라인 수강 중`); continue; }
+    existing.add(`${uid}|${key}`);
+    todo.push({ a, uid, key });
+  }
+
+  if (skipped.length){
+    alert(`연동에서 제외되는 ${skipped.length}건:\n\n${skipped.join('\n')}`);
+  }
+  if (!todo.length){ if (!skipped.length) alert('연동할 대상이 없습니다.'); return; }
+  if (!confirm(`${todo.length}명을 대응 온라인 워크샵 수강에 등록할까요?\n` +
+    `등록 즉시 각자의 마이페이지 내 강의실에 과목이 나타나고, 학습 현황에도 표시됩니다.`)) return;
+
+  let ok = 0, fail = 0;
+  for (const { a, uid, key } of todo){
+    try {
+      await addDoc(collection(db, 'enrollments'), {
+        uid,
+        name: a.name || '', email: a.email || '', phone: a.phone || '',
+        org: a.org || '', orgType: a.orgType || '',
+        courseKey: key,
+        courseName: courseByKey(key)?.name || a.course || '',
+        completed: false,
+        createdAt: serverTimestamp(),
+        linkedFrom: a.id
+      });
+      ok++;
+    } catch (e){ console.error(e); fail++; }
+  }
+  selected.clear();
+  toast(`온라인 수강 연동 ${ok}건 완료${fail ? ` · ${fail}건 실패` : ''}`, fail ? 'warn' : 'ok');
+  if ($('cl-progressBox').style.display !== 'none') loadClassProgress().catch(() => {});
+}
+window.bulkLinkOnline = bulkLinkOnline;
 
 /** v20: 선택한 미니 수료 건 중 온라인 이수가 확인된 건만 이수증 일괄 발급 */
 async function bulkIssueMiniCerts(){
