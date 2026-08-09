@@ -2296,52 +2296,173 @@ function makeChart(id, config){
 }
 const C = { leaf:'#1E7F4F', sprout:'#5FC97E', navy:'#1B3A5C', sun:'#F5C542', red:'#C64B3C', line:'#D7E4DA' };
 
-function renderDashboard(){
-  $('d-total').textContent = applications.length;
-  const todayKey = new Date().toDateString();
-  $('d-today').textContent = applications.filter(a => {
-    try { return a.createdAt?.toDate && a.createdAt.toDate().toDateString() === todayKey; }
+/* ==================== v30: 신청 현황 대시보드 ====================
+   KPI 8종 + 차트 8종. 프로그램별 차트는 유형(집합형/워크샵/온라인/모집)으로,
+   추이 차트는 기간(14·30·90일)으로 나눠 볼 수 있습니다. */
+let dashEnrolls = [];          // 온라인 수강 등록 (대시보드 집계용)
+let dashProgCat = '';          // 프로그램 차트 유형 필터
+let dashTrendDays = 14;        // 추이 기간
+
+/** 프로그램 유형 분류: camp(집합형) / workshop(강사 워크샵) / online(온라인) / recruit(모집) */
+function progCategory(p){
+  if (p.type === 'recruit') return 'recruit';
+  if (p.type === 'camp' || /캠프/.test(p.title || '')) return 'camp';
+  if (/온라인/.test(p.title || '')) return 'online';
+  return 'workshop';
+}
+
+async function loadDashEnrolls(){
+  try {
+    const snap = await getDocs(collection(db, 'enrollments'));
+    dashEnrolls = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderDashboard();
+  } catch (e){ /* 권한·네트워크 문제 시 온라인 지표만 생략 */ }
+}
+loadDashEnrolls();
+
+function dayCount(list, date){
+  const key = date.toDateString();
+  return list.filter(a => {
+    try { return a.createdAt?.toDate && a.createdAt.toDate().toDateString() === key; }
     catch { return false; }
   }).length;
-  const openCount = programs.filter(p => p.open && !ddayInfo(p).closed && (p.applied || 0) < p.capacity).length;
-  $('d-open').textContent = openCount;
-  const fills = programs.map(p => Math.min(1, (p.applied || 0) / (p.capacity || 1)));
-  $('d-fill').textContent = fills.length
-    ? Math.round(fills.reduce((a,b) => a+b, 0) / fills.length * 100) + '%' : '0%';
-  $('d-done').textContent = applications.filter(a => a.completed).length;
+}
+
+function renderDashboard(){
+  const total = applications.length;
+  const today = dayCount(applications, new Date());
+  const y = new Date(); y.setDate(y.getDate() - 1);
+  const yest = dayCount(applications, y);
+  $('d-total').textContent = total;
+  $('d-totalSub').innerHTML = today
+    ? `오늘 <b class="up">+${today}</b>${yest ? ` · 어제 ${yest}` : ''}`
+    : (yest ? `어제 ${yest}건` : '오늘 신청 없음');
+
+  const waiting = applications.filter(a => ['applied', 'review'].includes(statusOf(a)));
+  $('d-wait').textContent = waiting.length;
+  $('d-waitSub').textContent = waiting.length
+    ? `검토중 ${waiting.filter(a => statusOf(a) === 'review').length}건 포함`
+    : '모두 처리 완료';
+
+  const openList = programs.filter(p => p.open && !ddayInfo(p).closed);
+  $('d-open').textContent = openList.length;
+  const soon = openList.filter(p => ddayInfo(p).urgent).length;
+  $('d-openSub').innerHTML = soon ? `마감 임박 <b class="warn">${soon}건</b>` : `전체 ${programs.length}개 중`;
+
+  const fillTargets = programs.filter(p => p.type !== 'recruit');
+  const fills = fillTargets.map(p => Math.min(1, (p.applied || 0) / (p.capacity || 1)));
+  const avgFill = fills.length ? Math.round(fills.reduce((a, b) => a + b, 0) / fills.length * 100) : 0;
+  $('d-fill').textContent = avgFill + '%';
+  const full = fillTargets.filter(p => (p.applied || 0) >= (p.capacity || 1)).length;
+  $('d-fillSub').textContent = full ? `정원 마감 ${full}건` : '워크샵·연수 기준';
+
+  const doneN = applications.filter(a => a.completed).length;
+  $('d-done').textContent = doneN;
+  $('d-doneSub').textContent = total ? `수료율 ${Math.round(doneN / total * 100)}%` : '—';
+
+  const pending = applications.filter(a => a.completed && !a.certNo && isMiniApp(a)).length;
+  $('d-pending').textContent = pending;
+  $('d-pendingSub').textContent = pending ? '미니 — 온라인 이수 확인 필요' : '대기 건 없음';
+
+  $('d-enroll').textContent = dashEnrolls.length;
+  const enrDone = dashEnrolls.filter(e => e.completed).length;
+  $('d-enrollSub').textContent = dashEnrolls.length ? `수료 ${enrDone}명` : '수강 등록 없음';
+
   $('d-member').textContent = membersLoaded
     ? `${members.filter(m => roleOf(m) === 'instructor').length}/${members.length}` : '—';
+  $('d-memberSub').textContent = membersLoaded
+    ? `회원 신청 ${applications.filter(a => a.uid).length}건` : '회원 탭에서 불러옵니다';
 
-  makeChart('chartPrograms', {
-    type: 'bar',
-    data: {
-      labels: programs.map(p => p.title.length > 14 ? p.title.slice(0,14) + '…' : p.title),
-      datasets: [
-        { label: '신청', data: programs.map(p => p.applied || 0), backgroundColor: C.sprout },
-        { label: '정원', data: programs.map(p => p.capacity), backgroundColor: C.line }
-      ]
-    },
-    options: { responsive:true, maintainAspectRatio:false,
-      scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
+  /* ① 프로그램별 신청/정원 — 유형 필터 (온라인은 과목별 수강 인원) */
+  if (dashProgCat === 'online'){
+    const byCourse = {};
+    dashEnrolls.forEach(e => {
+      const n = (courseByKey(e.courseKey)?.name || e.courseName || '(미지정)').split(':')[0];
+      byCourse[n] = (byCourse[n] || 0) + 1;
+    });
+    const ent = Object.entries(byCourse).sort((a, b) => b[1] - a[1]);
+    makeChart('chartPrograms', {
+      type: 'bar',
+      data: { labels: ent.map(e => e[0]),
+        datasets: [{ label: '수강 등록', data: ent.map(e => e[1]), backgroundColor: C.sprout, borderRadius: 6 }] },
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
+  } else {
+    const list = programs.filter(p => !dashProgCat || progCategory(p) === dashProgCat);
+    makeChart('chartPrograms', {
+      type: 'bar',
+      data: {
+        labels: list.map(p => p.title.length > 14 ? p.title.slice(0, 14) + '…' : p.title),
+        datasets: [
+          { label: '신청', data: list.map(p => p.applied || 0), backgroundColor: C.sprout, borderRadius: 6 },
+          { label: '정원', data: list.map(p => p.capacity), backgroundColor: C.line, borderRadius: 6 }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
+  }
+
+  /* ② 신청 추이 — 기간 선택 + 누적선 */
+  const days = [], counts = [];
+  for (let i = dashTrendDays - 1; i >= 0; i--){
+    const d = new Date(); d.setDate(d.getDate() - i);
+    days.push((d.getMonth() + 1) + '/' + d.getDate());
+    counts.push(dayCount(applications, d));
+  }
+  let acc = 0;
+  const cum = counts.map(n => (acc += n));
+  makeChart('chartDaily', {
+    type: 'line',
+    data: { labels: days, datasets: [
+      { label: '일별 신청', data: counts, borderColor: C.leaf,
+        backgroundColor: 'rgba(95,201,126,.18)', fill: true, tension: .3, pointRadius: dashTrendDays > 30 ? 0 : 2 },
+      { label: '누적', data: cum, borderColor: C.navy, borderDash: [5, 4],
+        fill: false, tension: .3, pointRadius: 0, yAxisID: 'y1' }
+    ] },
+    options: { responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        y: { beginAtZero: true, ticks: { precision: 0 } },
+        y1: { position: 'right', beginAtZero: true, grid: { drawOnChartArea: false }, ticks: { precision: 0 } }
+      } }
   });
 
+  /* ③ 강좌별 신청 분포 */
   const courseCount = {};
   applications.forEach(a => {
     const key = a.course || a.session || '(미지정)';
     courseCount[key] = (courseCount[key] || 0) + 1;
   });
-  const courseEntries = Object.entries(courseCount).sort((a,b) => b[1]-a[1]).slice(0,8);
+  const courseEntries = Object.entries(courseCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
   makeChart('chartCourses', {
     type: 'bar',
     data: {
-      labels: courseEntries.map(e => e[0].length > 16 ? e[0].slice(0,16) + '…' : e[0]),
-      datasets: [{ label:'신청', data: courseEntries.map(e => e[1]), backgroundColor: C.navy }]
+      labels: courseEntries.map(e => e[0].length > 16 ? e[0].slice(0, 16) + '…' : e[0]),
+      datasets: [{ label: '신청', data: courseEntries.map(e => e[1]), backgroundColor: C.navy, borderRadius: 6 }]
     },
-    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false } },
-      scales:{ x:{ beginAtZero:true, ticks:{ precision:0 } } } }
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
   });
 
+  /* ④ 진행 상태 분포 */
+  const stCount = { applied: 0, review: 0, assigned: 0, rejected: 0 };
+  applications.forEach(a => { stCount[statusOf(a)] = (stCount[statusOf(a)] || 0) + 1; });
+  makeChart('chartStatus', {
+    type: 'doughnut',
+    data: {
+      labels: ['신청접수', '검토중', '승인완료', '반려'],
+      datasets: [{ data: [stCount.applied, stCount.review, stCount.assigned, stCount.rejected],
+        backgroundColor: [C.line, C.sun, C.leaf, C.red], borderWidth: 0 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '58%',
+      plugins: { legend: { position: 'right' } } }
+  });
+
+  /* ⑤ 소속기관 유형 분포 */
   const typeCount = {};
   applications.forEach(a => {
     const key = a.orgType || '(미입력)';
@@ -2351,33 +2472,82 @@ function renderDashboard(){
     type: 'doughnut',
     data: {
       labels: Object.keys(typeCount),
-      datasets: [{ data: Object.values(typeCount),
+      datasets: [{ data: Object.values(typeCount), borderWidth: 0,
         backgroundColor: [C.leaf, C.navy, C.sun, C.red, C.sprout, '#8ADCA0'] }]
     },
-    options: { responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ position:'right' } } }
+    options: { responsive: true, maintainAspectRatio: false, cutout: '58%',
+      plugins: { legend: { position: 'right' } } }
   });
 
-  const days = [], counts = [];
-  for (let i = 13; i >= 0; i--){
-    const d = new Date(); d.setDate(d.getDate() - i);
-    days.push((d.getMonth()+1) + '/' + d.getDate());
-    const key = d.toDateString();
-    counts.push(applications.filter(a => {
-      try { return a.createdAt?.toDate && a.createdAt.toDate().toDateString() === key; }
-      catch { return false; }
-    }).length);
-  }
-  makeChart('chartDaily', {
-    type: 'line',
-    data: { labels: days,
-      datasets: [{ label:'신청', data: counts, borderColor: C.leaf,
-        backgroundColor: 'rgba(95,201,126,.18)', fill:true, tension:.3 }] },
-    options: { responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false } },
-      scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
+  /* ⑥ 온라인 워크샵 과목별 수강 (신청 / 수료) */
+  const onCount = {};
+  dashEnrolls.forEach(e => {
+    const n = (courseByKey(e.courseKey)?.name || e.courseName || '(미지정)').split(':')[0];
+    if (!onCount[n]) onCount[n] = { all: 0, done: 0 };
+    onCount[n].all++;
+    if (e.completed) onCount[n].done++;
+  });
+  const onEnt = Object.entries(onCount).sort((a, b) => b[1].all - a[1].all);
+  makeChart('chartOnline', {
+    type: 'bar',
+    data: {
+      labels: onEnt.map(e => e[0]),
+      datasets: [
+        { label: '수강', data: onEnt.map(e => e[1].all), backgroundColor: C.sprout, borderRadius: 6 },
+        { label: '수료', data: onEnt.map(e => e[1].done), backgroundColor: C.leaf, borderRadius: 6 }
+      ]
+    },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+
+  /* ⑦ 요일별 신청 분포 — 홍보·오픈 시점 참고 */
+  const wd = [0, 0, 0, 0, 0, 0, 0];
+  applications.forEach(a => {
+    try { if (a.createdAt?.toDate) wd[a.createdAt.toDate().getDay()]++; } catch { /* 무시 */ }
+  });
+  makeChart('chartWeekday', {
+    type: 'bar',
+    data: { labels: ['일', '월', '화', '수', '목', '금', '토'],
+      datasets: [{ label: '신청', data: wd, borderRadius: 6,
+        backgroundColor: wd.map((_, i) => (i === 0 || i === 6) ? C.sun : C.navy) }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+
+  /* ⑧ 소속기관 TOP 8 */
+  const orgCount = {};
+  applications.forEach(a => {
+    const key = (a.org || '').trim();
+    if (key) orgCount[key] = (orgCount[key] || 0) + 1;
+  });
+  const orgEnt = Object.entries(orgCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  makeChart('chartOrgTop', {
+    type: 'bar',
+    data: {
+      labels: orgEnt.map(e => e[0].length > 14 ? e[0].slice(0, 14) + '…' : e[0]),
+      datasets: [{ label: '신청', data: orgEnt.map(e => e[1]), backgroundColor: C.sprout, borderRadius: 6 }]
+    },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
   });
 }
+
+/* 대시보드 필터 칩 */
+document.querySelectorAll('#progChips .dc-chip').forEach(b =>
+  b.addEventListener('click', () => {
+    dashProgCat = b.dataset.cat;
+    document.querySelectorAll('#progChips .dc-chip').forEach(x => x.classList.toggle('on', x === b));
+    renderDashboard();
+  }));
+document.querySelectorAll('#trendChips .dc-chip').forEach(b =>
+  b.addEventListener('click', () => {
+    dashTrendDays = Number(b.dataset.days);
+    document.querySelectorAll('#trendChips .dc-chip').forEach(x => x.classList.toggle('on', x === b));
+    renderDashboard();
+  }));
 
 /* ==================== 실시간 구독 (프로그램/공지) ==================== */
 onSnapshot(
