@@ -77,7 +77,7 @@ function cardHTML(p){
         ${closed
           ? `<span class="status end">${isRecruit ? '모집마감' : '접수마감'}</span>`
           : `<span class="status live">${isRecruit ? '모집중' : '접수중'}</span><span class="dday ${dd.urgent ? '' : 'calm'}">${esc(dd.text)}</span>`}
-        <span class="kind-label">${KIND[p.type] || ''}</span>
+        <span class="kind-label">${KIND[p.type] || ''}${p.type === 'workshop' && (p.wsKind === 'mini' || /미니|mini|교구/i.test(p.title || '')) ? ' · 미니(교구)' : ''}</span>
         ${p.loginOnly ? '<span class="kind-label lock">🔐 회원 전용</span>' : ''}
       </div>
       <h3>${esc(p.title)}</h3>
@@ -310,6 +310,7 @@ $('applyForm').addEventListener('submit', async e => {
       programId,
       programTitle: p ? p.title : '',
       programType: p ? p.type : '',
+      programWsKind: (p && p.wsKind) || null,   // v18: 정규/미니 구분 (마이페이지 안내용)
       course: chosenCourses[0],
       name: $('a-name').value.trim(),
       org: $('a-org').value.trim(),

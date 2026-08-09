@@ -98,6 +98,15 @@
               </select>
             </div>
             <div class="form-row">
+              <label for="p-wskind">워크샵 구분 <span class="req">*</span></label>
+              <select id="p-wskind" required>
+                <option value="regular">정규 — 당일 참여로 수료</option>
+                <option value="mini">미니(교구 사용법) — 온라인 워크샵 병행 이수 필요</option>
+              </select>
+              <p class="form-note" style="margin-top:6px;">미니로 등록하면 수료 처리 시
+                신청 강좌에 대응하는 온라인 워크샵 이수 여부를 자동 확인합니다.</p>
+            </div>
+            <div class="form-row">
               <label for="p-title">프로그램명 <span class="req">*</span></label>
               <input id="p-title" type="text" placeholder="예) 2026 디지털새싹 강사 역량강화 워크샵" required>
             </div>

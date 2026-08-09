@@ -242,6 +242,7 @@ section{scroll-margin-top:76px;}
 .chip.camp{background:var(--sprout-soft);color:var(--leaf);}
 .chip.workshop{background:var(--navy-soft);color:var(--navy);}
 .chip.open{background:var(--sprout-soft);color:var(--leaf);}
+.chip.minik{background:#FDF3E7;color:#B4763C;margin-left:6px;}
 .chip.close{background:#EDEFEA;color:#6A776F;}
 .table-scroll{overflow-x:auto;}
 .mini-btn{

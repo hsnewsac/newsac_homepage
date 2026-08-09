@@ -248,6 +248,7 @@ $('programForm').addEventListener('submit', async e => {
   }
   const data = {
     type: $('p-type').value,
+    wsKind: $('p-wskind').value,          // v18: 정규(regular) / 미니(mini)
     title: $('p-title').value.trim(),
     target: $('p-target').value.trim(),
     startDate: start,
@@ -292,6 +293,7 @@ async function syncApplications(programId, before, after){
   const patch = {};
   if (before.title !== after.title) patch.programTitle = after.title;
   if (before.type  !== after.type)  patch.programType  = after.type;
+  if (before.wsKind !== after.wsKind) patch.programWsKind = after.wsKind || null;
 
   /* 강좌 이름이 바뀐 경우: 정확히 1개가 빠지고 1개가 새로 생겼다면 '이름 변경'으로 보고 확인 */
   const oldC = Array.isArray(before.courses) ? before.courses : [];
@@ -348,6 +350,8 @@ function editProgram(id){
     $('p-type').prepend(opt);
   }
   $('p-type').value = p.type;
+  /* 구버전 데이터는 wsKind가 없으므로 제목으로 추정해 채웁니다 */
+  $('p-wskind').value = p.wsKind || (/미니|mini|교구/i.test(p.title || '') ? 'mini' : 'regular');
   $('p-title').value = p.title;
   $('p-target').value = p.target || WORKSHOP_TARGET;
   $('p-start').value = p.startDate || '';
@@ -678,7 +682,7 @@ function renderApplicants(){
     <td class="c-check"><input type="checkbox" data-id="${a.id}"
       ${selected.has(a.id) ? 'checked' : ''} onchange="toggleOne('${a.id}', this.checked)"></td>
     <td class="c-appinfo">
-      <div class="ai-prog">${esc(progTitle(a)) || '-'}${a.programType === 'recruit' ? '<span class="chip recruit">모집</span>' : ''}</div>
+      <div class="ai-prog">${esc(progTitle(a)) || '-'}${a.programType === 'recruit' ? '<span class="chip recruit">모집</span>' : ''}${isMiniApp(a) ? '<span class="chip minik" title="온라인 워크샵 병행 이수 필요">미니</span>' : ''}</div>
       <div class="ai-sub">
         <span class="ai-when">🗓 ${progPeriod(a) ? esc(progPeriod(a)) : '일정 미등록'}</span>
         <span class="ai-got">접수 ${esc(tsText(a.createdAt))}</span>
@@ -785,6 +789,9 @@ async function notifyCert(a, certNo){
    신청 강좌에 대응하는 상시 온라인 워크샵 과목까지 이수해야 최종 수료증이 발급됩니다.
    수료 처리 전에 온라인 이수 상태를 확인하고, 미충족 건은 막거나(일괄) 예외 확인(개별)을 받습니다. */
 function isMiniApp(a){
+  /* v18: 프로그램의 워크샵 구분(wsKind)을 우선 사용, 구버전 데이터는 제목으로 추정 */
+  const p = progOf(a);
+  if (p && p.wsKind) return p.wsKind === 'mini';
   return /미니|mini|교구/i.test(`${progTitle(a)} ${a.programTitle || ''}`);
 }
 
