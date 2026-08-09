@@ -123,6 +123,8 @@ section{scroll-margin-top:76px;}
 }
 .status.end{background:#EDEFEA;color:#6A776F;}
 .status.end::before{background:#9AA79E;}
+.status.soon{background:#FFF3DD;color:#8A5A12;}
+.status.soon::before{background:#E0A93F;}
 .dday{font-size:.78rem;font-weight:800;padding:5px 12px;border-radius:999px;background:#FBE9E4;color:var(--red);}
 .dday.calm{background:var(--navy-soft);color:var(--navy);}
 .kind-label{margin-left:auto;font-size:.78rem;font-weight:800;letter-spacing:.05em;color:var(--leaf);}
