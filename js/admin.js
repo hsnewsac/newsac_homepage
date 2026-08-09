@@ -840,8 +840,9 @@ async function onlineDoneFor(a){
       const prog = Object.fromEntries(pr.docs.map(d => [d.id, d.data()]));
       const done = l => {
         const q = prog[l.id];
+        /* v24: 오프라인(교구 실습) 차시는 미니 워크샵 수료(참석 인정)로 갈음됩니다 */
+        if (l.mode === 'offline') return !!(q && q.done) || !!a.completed;
         if (!q) return false;
-        if (l.mode === 'offline') return !!q.done;
         if (q.done) return true;
         return !!l.durationSec && (q.watchedSec || 0) >= l.durationSec * 0.9;
       };
