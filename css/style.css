@@ -1269,11 +1269,8 @@ nav a, nav button.navlink{
   transition:color .16s ease, transform .16s ease;
 }
 nav a:hover, nav button.navlink:hover{background:none;color:var(--leaf);transform:scale(1.08);}
+/* 현재 페이지 표시는 아이콘 컬러 팝 + 초록 글자로 충분하므로 밑줄 없음 */
 nav a.active{color:var(--leaf);background:none;position:relative;}
-nav a.active::after{
-  content:'';position:absolute;left:50%;transform:translateX(-50%);
-  bottom:1px;width:16px;height:3px;border-radius:3px;background:var(--sprout);
-}
 .menu-btn{border-radius:999px;}
 
 /* ----- v28: 글래스 모션 아이콘 (사이트 공용) -----
@@ -1323,8 +1320,28 @@ a:hover > .gic svg, a.active > .gic svg,
 @supports not (background: color-mix(in srgb, red 50%, blue)){
   a:hover > .gic .gtile, a.active > .gic .gtile, .gic.on .gtile{background:rgba(255,255,255,.35);}
 }
+/* 대시보드 수치 아이콘 — 마우스가 지나가면 팝 + 흔들림 모션 */
+.vd-stat{cursor:default;}
+.vd-stat:hover .gic .gbg{transform:translate(5px,-5px) rotate(24deg) scale(1.07);}
+.vd-stat:hover .gic svg{animation:gicWiggle .55s ease;}
+@keyframes gicWiggle{
+  0%{transform:rotate(0);}
+  30%{transform:rotate(-11deg) scale(1.14);}
+  65%{transform:rotate(8deg);}
+  100%{transform:rotate(0);}
+}
+
+/* 목록 카드 — 호버 시 살짝 커지며 반응 */
+.open-card,.on-card,.ws-oc{
+  transition:transform .22s ease, box-shadow .22s ease, border-color .2s ease;}
+.open-card:hover,.on-card:hover,.ws-oc:hover{
+  transform:translateY(-4px) scale(1.015);
+  box-shadow:0 16px 42px rgba(23,34,27,.16);}
+
 @media (prefers-reduced-motion:reduce){
   .gic .gbg{transition:opacity .22s ease;}
+  .vd-stat:hover .gic svg{animation:none;}
+  .open-card:hover,.on-card:hover,.ws-oc:hover{transform:none;}
 }
 
 /* 하위 메뉴 — 부모에 마우스를 올리면 아래로 플로팅되는 유리 카드 */
@@ -1358,7 +1375,6 @@ a:hover > .gic svg, a.active > .gic svg,
 .chip-menu:hover .nav-sub, .chip-menu:focus-within .nav-sub{transform:translateY(0);}
 .nav-sub a{padding:10px 14px;border-radius:10px;font-size:.9rem;white-space:nowrap;text-align:left;}
 .nav-sub a:hover{transform:none;background:rgba(95,201,126,.14);color:var(--leaf);}
-.nav-sub a.active::after{left:14px;transform:none;bottom:5px;}
 
 /* 모바일 — 하위 메뉴를 평평하게 펼쳐 기존처럼 세로 나열 */
 @media (max-width:840px){
@@ -1430,8 +1446,7 @@ a:hover > .gic svg, a.active > .gic svg,
 /* ----- v27.1: 방문객 대시보드 (홈) — 콤팩트 단일 패널 ----- */
 .vdash .section{padding-top:30px;padding-bottom:26px;}
 .vdash-head{text-align:center;margin:0 auto 16px;}
-.vdash-head .tag{color:var(--leaf);font-weight:800;font-size:.78rem;letter-spacing:.1em;}
-.vdash-head h1{font-size:clamp(1.35rem,3vw,1.85rem);font-weight:800;letter-spacing:-.02em;margin-top:6px;word-break:keep-all;}
+.vdash-head h1{font-size:clamp(1.35rem,3vw,1.85rem);font-weight:800;letter-spacing:-.02em;word-break:keep-all;}
 .vdash-head h1 em{font-style:normal;color:var(--leaf);}
 
 .vd-panel{max-width:980px;margin:0 auto;padding:22px 30px 20px;
