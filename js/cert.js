@@ -41,6 +41,14 @@ async function load(){
         '이수증은 과정 종료 후 사업단에서 수료 처리를 완료하면 발급할 수 있습니다. 문의: newsac26@naver.com');
       return;
     }
+    /* v20: 미니(교구 사용법) 워크샵은 온라인 워크샵 이수 확인 후 발급번호가 채번됩니다 */
+    if (kind === 'app' && !a.certNo
+        && (a.programWsKind === 'mini' || /미니|mini|교구/i.test(a.programTitle || ''))){
+      showError('이수증 발급 대기 중입니다',
+        '미니(교구 사용법) 워크샵은 신청 강좌에 해당하는 온라인 워크샵 이수까지 확인된 뒤 이수증이 발급됩니다. ' +
+        '온라인 워크샵을 모두 이수하셨다면 사업단(newsac26@naver.com / 031-379-0255)으로 문의해주세요.');
+      return;
+    }
 
     // 교육 기간
     let period = '-';

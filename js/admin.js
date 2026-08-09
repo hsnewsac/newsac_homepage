@@ -704,13 +704,17 @@ function renderApplicants(){
     <td class="nowrap"><span class="cell-sub">${esc(a.phone)}<br>${esc(a.email) || '-'}</span></td>
     <td>${statusChip(a)}${a.assignPlace ? `<br><span class="cell-sub">${esc(a.assignPlace)}</span>` : ''}</td>
     <td>${a.completed
-      ? `<span class="status-chip done">수료</span><br><span class="cell-sub">${esc(a.certNo || '')}</span>`
+      ? `<span class="status-chip done">수료</span><br><span class="cell-sub">${a.certNo
+          ? esc(a.certNo)
+          : (isMiniApp(a) ? '이수증 대기 — 온라인 이수 확인 중' : '')}</span>`
       : '<span class="status-chip wait">미수료</span>'}</td>
     <td class="c-act"><div class="t-actions">
       <button class="mini-btn" onclick="openAssign('${a.id}')">${a.programType === 'recruit' ? '배정/상태' : '승인/상태'}</button>
       <button class="mini-btn" onclick="openEditApp('${a.id}')">✏️ 수정</button>
       ${a.completed
-        ? `<a class="mini-btn" href="cert.html?id=${a.id}" target="_blank" rel="noopener">이수증</a>
+        ? `${(!a.certNo && isMiniApp(a))
+            ? `<button class="mini-btn" onclick="issueMiniCert('${a.id}')">🎓 이수증발급</button>`
+            : `<a class="mini-btn" href="cert.html?id=${a.id}" target="_blank" rel="noopener">이수증</a>`}
            <button class="mini-btn" onclick="uncompleteApp('${a.id}')">수료취소</button>`
         : `<button class="mini-btn" onclick="completeApp('${a.id}')">수료처리</button>`}
       <button class="mini-btn danger" onclick="deleteApplicant('${a.id}')">삭제</button>
@@ -848,12 +852,29 @@ async function onlineDoneFor(a){
 async function completeApp(id){
   const a = applications.find(x => x.id === id);
   if (!a) return;
+
+  /* v20: 미니(교구 사용법) 워크샵의 수료 처리는 '참석 인정'만 기록합니다.
+     이수증 발급번호는 온라인 워크샵 이수가 확인된 뒤 [이수증발급]에서 채번합니다. */
   if (isMiniApp(a)){
-    const chk = await onlineDoneFor(a);
-    if (!chk.ok && !confirm(`⚠️ 미니(교구 사용법) 워크샵 신청 건입니다.\n` +
-        `미니 워크샵은 대응 온라인 워크샵까지 이수해야 최종 수료됩니다.\n\n` +
-        `${a.name}님 현재 상태: ${chk.why}\n\n그래도 예외로 수료 처리할까요?`)) return;
+    if (!confirm(`${a.name}님 (${progTitle(a)} · ${a.course || ''})\n` +
+      `미니 워크샵 수료(참석 인정) 처리할까요?\n\n` +
+      `이수증은 대응 온라인 워크샵 이수가 확인된 뒤 [🎓 이수증발급] 버튼으로 발급됩니다.`)) return;
+    try {
+      await updateDoc(doc(db, 'applications', id), {
+        completed: true, completedAt: serverTimestamp()
+      });
+      const chk = await onlineDoneFor(a);
+      if (chk.ok && confirm('온라인 워크샵 이수도 이미 확인되었습니다.\n이수증을 바로 발급할까요?')){
+        const certNo = await issueCert(id);
+        await notifyCert(a, certNo).catch(() => {});
+        toast(`수료 + 이수증 발급 완료 · ${certNo}`);
+      } else {
+        toast('미니 워크샵 수료 처리 완료 — 이수증은 온라인 이수 확인 후 발급하세요.');
+      }
+    } catch (err) { alert(fbError(err)); }
+    return;
   }
+
   if (!confirm(`${a.name}님 (${progTitle(a)} · ${a.course || ''})\n수료 처리하고 이수증 발급번호를 채번할까요?`)) return;
   try {
     const certNo = await issueCert(id);
@@ -861,6 +882,22 @@ async function completeApp(id){
     toast(`수료 처리 완료 · ${certNo}`);
   } catch (err) { alert(fbError(err)); }
 }
+
+/** v20: 미니 워크샵 이수증 발급 — 온라인 이수 확인 후 발급번호 채번 */
+async function issueMiniCert(id){
+  const a = applications.find(x => x.id === id);
+  if (!a) return;
+  const chk = await onlineDoneFor(a);
+  if (!chk.ok && !confirm(`⚠️ 온라인 워크샵 이수가 아직 확인되지 않았습니다.\n\n` +
+      `${a.name}님 현재 상태: ${chk.why}\n\n그래도 예외로 이수증을 발급할까요?`)) return;
+  if (!confirm(`${a.name}님에게 이수증 발급번호를 채번할까요?`)) return;
+  try {
+    const certNo = await issueCert(id);
+    await notifyCert(a, certNo).catch(() => {});
+    toast(`이수증 발급 완료 · ${certNo}`);
+  } catch (err) { alert(fbError(err)); }
+}
+window.issueMiniCert = issueMiniCert;
 async function uncompleteApp(id){
   const a = applications.find(x => x.id === id);
   if (!a || !confirm(`${a.name}님의 수료 처리를 취소할까요?\n발급번호(${a.certNo || '-'})는 회수되며, 기발급 이수증은 무효 처리해야 합니다.`)) return;
@@ -890,28 +927,58 @@ function pickSelected(){
   return list;
 }
 async function bulkComplete(){
-  const cand = pickSelected().filter(a => !a.completed);
-  if (!cand.length){ if (selected.size) alert('선택된 항목이 모두 이미 수료 처리되어 있습니다.'); return; }
+  const list = pickSelected().filter(a => !a.completed);
+  if (!list.length){ if (selected.size) alert('선택된 항목이 모두 이미 수료 처리되어 있습니다.'); return; }
 
-  /* v18: 미니(교구) 워크샵은 온라인 이수 확인 후 미충족 건 제외 */
-  const list = [], blocked = [];
-  for (const a of cand){
-    if (isMiniApp(a)){
-      const chk = await onlineDoneFor(a);
-      if (!chk.ok){ blocked.push(`· ${a.name} — ${chk.why}`); continue; }
-    }
-    list.push(a);
-  }
-  if (blocked.length){
-    alert(`미니(교구 사용법) 워크샵 ${blocked.length}건은 온라인 이수가 확인되지 않아 일괄 처리에서 제외합니다.\n` +
-      `예외 처리가 필요하면 해당 건의 [수료처리] 버튼으로 개별 진행해주세요.\n\n${blocked.join('\n')}`);
-  }
-  if (!list.length) return;
-  const mailNote = certEmailEnabled() ? '\n수료 안내 메일도 함께 발송됩니다.' : '';
-  if (!confirm(`선택한 ${list.length}명을 일괄 수료 처리할까요?\n이수증 발급번호가 순차 채번됩니다.${mailNote}`)) return;
+  /* v20: 미니는 참석 인정만(발급번호 없음), 정규는 수료+발급번호 채번 */
+  const minis = list.filter(isMiniApp);
+  const regs  = list.filter(a => !isMiniApp(a));
+  const mailNote = certEmailEnabled() && regs.length ? '\n(정규 건은 수료 안내 메일도 함께 발송됩니다.)' : '';
+  if (!confirm(`선택한 ${list.length}명을 일괄 수료 처리할까요?` +
+    (regs.length ? `\n· 정규 ${regs.length}건 — 이수증 발급번호 즉시 채번` : '') +
+    (minis.length ? `\n· 미니 ${minis.length}건 — 참석 인정만, 이수증은 온라인 이수 확인 후 [🎓 미니 이수증 발급]으로` : '') +
+    mailNote)) return;
 
   let ok = 0, fail = 0;
-  for (const a of list){
+  for (const a of regs){
+    try {
+      const certNo = await issueCert(a.id);
+      await notifyCert(a, certNo).catch(()=>{});
+      ok++;
+    } catch (e){ console.error(e); fail++; }
+  }
+  for (const a of minis){
+    try {
+      await updateDoc(doc(db, 'applications', a.id), {
+        completed: true, completedAt: serverTimestamp()
+      });
+      ok++;
+    } catch (e){ console.error(e); fail++; }
+  }
+  selected.clear();
+  toast(`일괄 수료 처리 ${ok}건 완료${fail ? ` · ${fail}건 실패` : ''}`, fail ? 'warn' : 'ok');
+}
+
+/** v20: 선택한 미니 수료 건 중 온라인 이수가 확인된 건만 이수증 일괄 발급 */
+async function bulkIssueMiniCerts(){
+  const cand = pickSelected().filter(a => a.completed && !a.certNo && isMiniApp(a));
+  if (!cand.length){
+    if (selected.size) alert('선택된 항목 중 이수증 발급 대기 상태인 미니 워크샵 수료 건이 없습니다.\n(미니 수료 처리 후 발급번호가 없는 건이 대상입니다)');
+    return;
+  }
+  const ready = [], waiting = [];
+  for (const a of cand){
+    const chk = await onlineDoneFor(a);
+    if (chk.ok) ready.push(a);
+    else waiting.push(`· ${a.name} — ${chk.why}`);
+  }
+  if (waiting.length){
+    alert(`온라인 이수가 확인되지 않아 제외되는 건 ${waiting.length}건:\n\n${waiting.join('\n')}\n\n(예외 발급은 해당 건의 [🎓 이수증발급] 버튼으로 개별 진행)`);
+  }
+  if (!ready.length) return;
+  if (!confirm(`온라인 이수가 확인된 ${ready.length}건에 이수증 발급번호를 채번할까요?`)) return;
+  let ok = 0, fail = 0;
+  for (const a of ready){
     try {
       const certNo = await issueCert(a.id);
       await notifyCert(a, certNo).catch(()=>{});
@@ -919,8 +986,9 @@ async function bulkComplete(){
     } catch (e){ console.error(e); fail++; }
   }
   selected.clear();
-  toast(`일괄 수료 처리 ${ok}건 완료${fail ? ` · ${fail}건 실패` : ''}`, fail ? 'warn' : 'ok');
+  toast(`미니 이수증 발급 ${ok}건 완료${fail ? ` · ${fail}건 실패` : ''}`, fail ? 'warn' : 'ok');
 }
+window.bulkIssueMiniCerts = bulkIssueMiniCerts;
 async function bulkUncomplete(){
   const list = pickSelected().filter(a => a.completed);
   if (!list.length){ if (selected.size) alert('선택된 항목 중 수료 처리된 건이 없습니다.'); return; }
