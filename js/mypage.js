@@ -17,7 +17,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
 import {
   initLayout, esc, fbError, toast, tsText, tsNum,
-  courseByKey, guessCourseKey,
+  courseByKey, acceptedOnlineKeys, acceptedOnlineLabel,
   ORG_TYPES, SPECIALTIES, REGIONS, CAREER_LEVELS,
   ROLES, ROLE_ORDER, roleOf, GRADES, INTERESTS, STAFF_DUTIES,
   STATUS, STATUS_ORDER, statusOf, statusChip, statusSet, checkIsAdmin
@@ -482,13 +482,19 @@ function paintMiniGuide(enrolls, cards){
   if (!pend.length){ box.style.display = 'none'; return; }
 
   list.innerHTML = pend.map(a => {
-    const key = guessCourseKey(a.course || a.session);
-    const c = key ? courseByKey(key) : null;
-    const cname = c ? c.name : (a.course || '대응 온라인 과목');
-    const enr = key ? enrolls.find(e => e.courseKey === key) : null;
+    /* 음악코딩은 기본·특수 어느 과목을 이수해도 인정됩니다 (같은 교구 사용) */
+    const keys = acceptedOnlineKeys(a.course || a.session);
+    const cname = acceptedOnlineLabel(keys) || (a.course || '대응 온라인 과목');
+    const cands = keys.length ? enrolls.filter(e => keys.includes(e.courseKey)) : [];
+    const enr = cands.find(e => e.completed)
+      || cands.slice().sort((x, y) => {
+           const rx = cards.find(cd => cd.e.id === x.id)?.rate || 0;
+           const ry = cards.find(cd => cd.e.id === y.id)?.rate || 0;
+           return ry - rx;
+         })[0] || null;
     const card = enr ? cards.find(x => x.e.id === enr.id) : null;
     let state, action = '';
-    if (!key){
+    if (!keys.length){
       state = '대응 온라인 과목을 확인할 수 없습니다. 사업단으로 문의해주세요.';
     } else if (!enr){
       state = `<b>${esc(cname)}</b> 온라인 워크샵 수강 신청이 필요합니다.`;
