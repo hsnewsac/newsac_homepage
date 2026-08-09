@@ -106,7 +106,7 @@
 </script>
 
 <script type="module">
-import { esc, fbError, toast } from './js/common.js';
+import { esc, fbError, toast, acceptedOnlineKeys } from './js/common.js';
 
 const root = document.getElementById('crRoot');
 const params = new URLSearchParams(location.search);
@@ -127,7 +127,7 @@ try {
   root.innerHTML = `<div class="cr-msg">강의실을 불러오지 못했습니다.<br>네트워크 상태를 확인한 뒤 새로고침해주세요.</div>`;
   throw e;
 }
-const { doc, getDoc, getDocs, collection, setDoc, serverTimestamp } = fs;
+const { doc, getDoc, getDocs, collection, setDoc, serverTimestamp, query, where } = fs;
 
 let enr = null, course = null, lessons = [], progress = {};
 let current = null;         // 현재 보고 있는 차시
@@ -162,6 +162,11 @@ onAuthStateChanged(auth, async user => {
     const pr = await getDocs(collection(db, 'enrollments', enrollId, 'progress'));
     progress = Object.fromEntries(pr.docs.map(d => [d.id, d.data()]));
 
+    /* v24: 미니(교구 사용법) 워크샵을 이미 수료한 수강생은 이 과목의
+       오프라인(교구 실습) 차시를 자동 출석 처리합니다 —
+       미니 워크샵 참석이 곧 해당 차시의 현장 실습이기 때문입니다. */
+    try { await syncMiniAttendance(user); } catch (e){ /* 실패해도 수강에는 지장 없음 */ }
+
     if (!lessons.length){
       root.innerHTML = `<div class="cr-msg">아직 등록된 차시가 없습니다.<br>
         차시가 열리면 안내드리겠습니다.</div>`;
@@ -177,6 +182,27 @@ onAuthStateChanged(auth, async user => {
     root.innerHTML = `<div class="cr-msg">${esc(fbError(err))}</div>`;
   }
 });
+
+/* ---------- v24: 미니 워크샵 수료 → 오프라인 차시 자동 출석 ---------- */
+async function syncMiniAttendance(user){
+  const offline = lessons.filter(l => l.mode === 'offline' && !(progress[l.id]?.done));
+  if (!offline.length) return;
+  /* 내 신청 내역 중 '수료 처리된 미니(교구) 워크샵'이 이 과목과 대응하는지 확인 */
+  const snap = await getDocs(query(collection(db, 'applications'), where('uid', '==', user.uid)));
+  const hasMini = snap.docs.some(d => {
+    const a = d.data();
+    const mini = a.programWsKind === 'mini' || (!a.programWsKind && /미니|mini|교구/i.test(a.programTitle || ''));
+    return mini && a.completed && acceptedOnlineKeys(a.course || a.session || '').includes(enr.courseKey);
+  });
+  if (!hasMini) return;
+  for (const l of offline){
+    await setDoc(doc(db, 'enrollments', enrollId, 'progress', l.id), {
+      done: true, doneAt: serverTimestamp(), checkedBy: 'miniWorkshop', lastAt: serverTimestamp()
+    }, { merge: true });
+    progress[l.id] = { ...(progress[l.id] || {}), done: true };
+  }
+  toast('미니 워크샵 수료가 확인되어 교구 실습 차시가 출석 처리되었습니다.');
+}
 
 /* ---------- 판정 ---------- */
 function isDone(l){
