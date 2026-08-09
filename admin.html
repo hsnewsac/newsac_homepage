@@ -100,20 +100,46 @@
 
       <div class="admin-box">
         <h3>📊 신청 현황 대시보드</h3>
-        <p class="box-desc">전체 접수 흐름을 한눈에 확인합니다. 숫자는 실시간으로 갱신됩니다.</p>
+        <p class="box-desc">전체 접수 흐름과 운영 지표를 한눈에 확인합니다. 숫자는 실시간으로 갱신됩니다.</p>
         <div class="dash-cards">
-          <div class="dash-card a1"><div class="num" id="d-total">0</div><div class="lbl">총 신청 건수</div></div>
-          <div class="dash-card a2"><div class="num" id="d-today">0</div><div class="lbl">오늘 신청</div></div>
-          <div class="dash-card a3"><div class="num" id="d-open">0</div><div class="lbl">접수중 프로그램</div></div>
-          <div class="dash-card a4"><div class="num" id="d-fill">0%</div><div class="lbl">평균 충원율</div></div>
-          <div class="dash-card a5"><div class="num" id="d-done">0</div><div class="lbl">수료 처리 완료</div></div>
-          <div class="dash-card a6"><div class="num" id="d-member">0</div><div class="lbl">강사 / 전체 회원</div></div>
+          <div class="dash-card"><span class="gic gc-blue on"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 13h4l1.5 3h6l1.5-3h4"/><path d="M5 5h14l2.5 8v5a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 18v-5z"/></svg></span><div class="dc-tx"><div class="num" id="d-total">0</div><div class="lbl">총 신청 건수</div><div class="sub" id="d-totalSub"></div></div></div>
+          <div class="dash-card"><span class="gic gc-amber on"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.2l3.2 2"/></svg></span><div class="dc-tx"><div class="num" id="d-wait">0</div><div class="lbl">승인 대기</div><div class="sub" id="d-waitSub"></div></div></div>
+          <div class="dash-card"><span class="gic gc-green on"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V9.5L12 4l8 5.5V20"/><path d="M2.5 20h19"/><path d="M10 20v-4.5h4V20"/></svg></span><div class="dc-tx"><div class="num" id="d-open">0</div><div class="lbl">접수중 프로그램</div><div class="sub" id="d-openSub"></div></div></div>
+          <div class="dash-card"><span class="gic gc-teal on"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17a8 8 0 1 1 16 0"/><path d="M12 17l4.2-4.6"/><circle cx="12" cy="17" r="1.3"/></svg></span><div class="dc-tx"><div class="num" id="d-fill">0</div><div class="lbl">평균 충원율</div><div class="sub" id="d-fillSub"></div></div></div>
+          <div class="dash-card"><span class="gic gc-pink on"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 9.5 12 5l9.5 4.5L12 14z"/><path d="M6.5 11.8V16c0 1.8 11 1.8 11 0v-4.2"/><path d="M21 10v4.5"/></svg></span><div class="dc-tx"><div class="num" id="d-done">0</div><div class="lbl">수료 완료</div><div class="sub" id="d-doneSub"></div></div></div>
+          <div class="dash-card"><span class="gic gc-purple on"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10M7 21h10"/><path d="M7 3c0 4 5 5.4 5 9s-5 5-5 9"/><path d="M17 3c0 4-5 5.4-5 9s5 5 5 9"/></svg></span><div class="dc-tx"><div class="num" id="d-pending">0</div><div class="lbl">이수증 대기</div><div class="sub" id="d-pendingSub"></div></div></div>
+          <div class="dash-card"><span class="gic gc-teal on"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="11.5" rx="1.6"/><path d="M9.5 20h5M12 16v4"/></svg></span><div class="dc-tx"><div class="num" id="d-enroll">0</div><div class="lbl">온라인 수강</div><div class="sub" id="d-enrollSub"></div></div></div>
+          <div class="dash-card"><span class="gic gc-blue on"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c0-3 2.5-4.8 5.5-4.8s5.5 1.8 5.5 4.8"/><circle cx="16.8" cy="9.5" r="2.6"/><path d="M16.5 14.4c2.6.3 4.5 2 4.5 4.6"/></svg></span><div class="dc-tx"><div class="num" id="d-member">0</div><div class="lbl">강사 / 전체 회원</div><div class="sub" id="d-memberSub"></div></div></div>
         </div>
         <div class="dash-grid">
-          <div class="dash-chart"><h4>프로그램별 신청 / 정원</h4><div class="chart-box"><canvas id="chartPrograms"></canvas></div></div>
+          <div class="dash-chart wide">
+            <h4>프로그램별 신청 / 정원
+              <span class="dc-chips" id="progChips">
+                <button class="dc-chip on" data-cat="">전체</button>
+                <button class="dc-chip" data-cat="camp">집합형 캠프</button>
+                <button class="dc-chip" data-cat="workshop">강사 워크샵</button>
+                <button class="dc-chip" data-cat="online">온라인 워크샵</button>
+                <button class="dc-chip" data-cat="recruit">강사 모집</button>
+              </span>
+            </h4>
+            <div class="chart-box"><canvas id="chartPrograms"></canvas></div>
+          </div>
+          <div class="dash-chart wide">
+            <h4>신청 추이
+              <span class="dc-chips" id="trendChips">
+                <button class="dc-chip on" data-days="14">14일</button>
+                <button class="dc-chip" data-days="30">30일</button>
+                <button class="dc-chip" data-days="90">90일</button>
+              </span>
+            </h4>
+            <div class="chart-box"><canvas id="chartDaily"></canvas></div>
+          </div>
           <div class="dash-chart"><h4>강좌별 신청 분포</h4><div class="chart-box"><canvas id="chartCourses"></canvas></div></div>
+          <div class="dash-chart"><h4>진행 상태 분포</h4><div class="chart-box"><canvas id="chartStatus"></canvas></div></div>
           <div class="dash-chart"><h4>소속기관 유형 분포</h4><div class="chart-box"><canvas id="chartOrgTypes"></canvas></div></div>
-          <div class="dash-chart"><h4>최근 14일 신청 추이</h4><div class="chart-box"><canvas id="chartDaily"></canvas></div></div>
+          <div class="dash-chart"><h4>온라인 워크샵 과목별 수강</h4><div class="chart-box"><canvas id="chartOnline"></canvas></div></div>
+          <div class="dash-chart"><h4>요일별 신청 분포</h4><div class="chart-box"><canvas id="chartWeekday"></canvas></div></div>
+          <div class="dash-chart"><h4>소속기관 TOP 8</h4><div class="chart-box"><canvas id="chartOrgTop"></canvas></div></div>
         </div>
       </div>
     </div>

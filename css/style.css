@@ -1407,7 +1407,7 @@ a:hover > .gic svg, a.active > .gic svg,
 /* 카드·박스류 공통 유리 처리 */
 .open-card,.open-empty,.ol-banner,.on-card,.ol-step,
 .ws-oc,.ws-tri article,.ws-topic,.ws-q,.ws-faq details,
-.login-card,.auth-aside,.admin-box,.dash-card,
+.login-card,.auth-aside,.admin-box,.dash-card,.dash-chart,
 .cr-card,.status-card,.mng-row,.wi-results{
   background:var(--glass-bg-strong);
   backdrop-filter:var(--glass-blur);
@@ -1442,7 +1442,7 @@ a:hover > .gic svg, a.active > .gic svg,
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
   .open-card,.open-empty,.ol-banner,.on-card,.ol-step,
   .ws-oc,.ws-tri article,.ws-topic,.ws-q,.ws-faq details,
-  .login-card,.auth-aside,.admin-box,.dash-card,
+  .login-card,.auth-aside,.admin-box,.dash-card,.dash-chart,
   .cr-card,.status-card,.mng-row,.wi-results,.modal{
     background:rgba(255,255,255,.94);
   }
@@ -1530,6 +1530,43 @@ a:hover > .gic svg, a.active > .gic svg,
 .admin-tabs .gic{width:24px;height:24px;margin-right:6px;}
 .admin-tabs .gic svg{width:13px;height:13px;}
 .admin-tabs .gic .gbg{inset:2px;border-radius:7px;}
+
+/* ----- v30: 관리자 신청 현황 대시보드 ----- */
+#tab-dash .dash-cards{grid-template-columns:repeat(4,1fr);gap:12px;}
+#tab-dash .dash-card{
+  display:flex;align-items:center;gap:12px;padding:15px 16px;border-radius:16px;
+  transition:transform .18s ease, box-shadow .18s ease;}
+#tab-dash .dash-card::before{display:none;}
+#tab-dash .dash-card:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(23,34,27,.13);}
+#tab-dash .dash-card:hover .gic .gbg{transform:translate(5px,-5px) rotate(24deg) scale(1.07);}
+#tab-dash .dash-card:hover .gic svg{animation:gicWiggle .55s ease;}
+#tab-dash .dc-tx{min-width:0;}
+#tab-dash .dash-card .num{font-size:1.42rem;letter-spacing:-.02em;}
+#tab-dash .dash-card .lbl{font-size:.78rem;margin-top:0;}
+#tab-dash .dash-card .sub{font-size:.71rem;font-weight:700;color:#8A968E;margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#tab-dash .dash-card .sub b{font-weight:800;}
+#tab-dash .dash-card .sub .up{color:var(--leaf);}
+#tab-dash .dash-card .sub .warn{color:#B98B00;}
+
+.dash-chart{border-radius:18px;padding:18px 20px;}
+.dash-chart h4{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+.dash-chart.wide{grid-column:1/-1;}
+.dash-chart.wide .chart-box{height:250px;}
+.dc-chips{display:flex;gap:5px;margin-left:auto;flex-wrap:wrap;}
+.dc-chip{padding:5px 12px;border-radius:999px;font-size:.75rem;font-weight:700;color:#6A776F;
+  background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.7);cursor:pointer;
+  transition:color .16s ease, background .16s ease, transform .16s ease;}
+.dc-chip:hover{color:var(--navy);transform:translateY(-1px);}
+.dc-chip.on{background:linear-gradient(135deg, rgba(42,84,128,.94), rgba(27,58,92,.94));color:#fff;
+  border-color:rgba(255,255,255,.5);box-shadow:0 4px 12px rgba(27,58,92,.24);}
+@media (max-width:900px){
+  #tab-dash .dash-cards{grid-template-columns:1fr 1fr;}
+}
+@media (prefers-reduced-motion:reduce){
+  #tab-dash .dash-card:hover{transform:none;}
+  #tab-dash .dash-card:hover .gic svg{animation:none;}
+}
 
 /* 인쇄물(이수증·서명부)은 유리 효과 없이 종이 그대로 */
 @media print{
