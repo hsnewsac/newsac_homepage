@@ -1263,8 +1263,10 @@ header{
 @media (max-width:1140px){ header{margin-left:16px;margin-right:16px;} }
 .header-inner{padding:0 14px 0 18px;}
 
-/* 메뉴 항목 — 호버 시 배경 없이 글자가 살짝 커지며 초록으로 강조 */
+/* 메뉴 항목 — 호버 시 배경 없이 글자가 살짝 커지며 초록으로 강조
+   아이콘·텍스트는 플렉스 수직 중앙 정렬 */
 nav a, nav button.navlink{
+  display:inline-flex;align-items:center;
   background:none;border-radius:999px;
   transition:color .16s ease, transform .16s ease;
 }
@@ -1277,7 +1279,7 @@ nav a.active{color:var(--leaf);background:none;position:relative;}
    프로스트 유리 타일(gtile) 뒤에서 컬러 레이어(gbg)가
    바운스로 튀어나오는 아이콘 컴포넌트 */
 .gic{position:relative;display:inline-flex;align-items:center;justify-content:center;
-  width:27px;height:27px;flex:none;margin-right:7px;vertical-align:-7px;}
+  width:27px;height:27px;flex:none;margin-right:7px;vertical-align:middle;}
 .gic .gbg{position:absolute;inset:3px;border-radius:8px;
   background:radial-gradient(circle at 30% 30%, var(--gc,#5FC97E), var(--gc2,#1E7F4F));
   opacity:0;transform:none;transform-origin:100% 100%;
@@ -1301,6 +1303,10 @@ a:hover > .gic .gtile, a.active > .gic .gtile,
 a:hover > .gic svg, a.active > .gic svg,
 .nav-sub a:hover .gic svg, .nav-sub a.active .gic svg{
   stroke:#fff;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25));}
+/* 탭 버튼(.atab) 안에서도 동일한 호버·활성 팝 */
+.atab:hover .gic .gbg, .atab.active .gic .gbg{opacity:1;transform:translate(4px,-4px) rotate(14deg);}
+.atab:hover .gic .gtile, .atab.active .gic .gtile{background:color-mix(in srgb, var(--gc) 42%, rgba(255,255,255,.5));}
+.atab:hover .gic svg, .atab.active .gic svg{stroke:#fff;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25));}
 /* 항상 컬러가 켜진 변형 (대시보드 등) */
 .gic.on .gbg{opacity:1;transform:translate(4px,-4px) rotate(14deg);}
 .gic.on .gtile{background:color-mix(in srgb, var(--gc) 45%, rgba(255,255,255,.45));}
@@ -1493,6 +1499,27 @@ a:hover > .gic svg, a.active > .gic svg,
   .vd-panel{animation:none;opacity:1;transform:none;}
   .vd-track i::after{animation:none;}
 }
+
+/* ----- v29: 마이페이지 탭 — 글래스 필 스타일 ----- */
+.my-tabs{border-bottom:none;padding-bottom:4px;}
+.my-tabs .atab{
+  background:rgba(255,255,255,.5);
+  backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid rgba(255,255,255,.65);
+  box-shadow:0 4px 14px rgba(23,34,27,.07);
+  transition:transform .18s ease, box-shadow .18s ease, color .18s ease, background .18s ease;
+}
+.my-tabs .atab:hover{color:var(--leaf);border-color:rgba(255,255,255,.8);
+  transform:translateY(-2px);box-shadow:0 8px 20px rgba(30,127,79,.14);}
+.my-tabs .atab.active{
+  background:linear-gradient(135deg, rgba(46,155,98,.92), rgba(30,127,79,.92));
+  border-color:rgba(255,255,255,.55);color:#fff;
+  box-shadow:0 8px 22px rgba(30,127,79,.28);
+}
+.my-tabs .atab.active .tab-badge{background:rgba(255,255,255,.28);color:#fff;}
+.my-tabs .gic{width:24px;height:24px;margin-right:6px;}
+.my-tabs .gic svg{width:13px;height:13px;}
+.my-tabs .gic .gbg{inset:2px;border-radius:7px;}
 
 /* 인쇄물(이수증·서명부)은 유리 효과 없이 종이 그대로 */
 @media print{
