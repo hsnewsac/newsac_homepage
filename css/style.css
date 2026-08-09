@@ -1211,3 +1211,95 @@ nav a.active{background:var(--sprout-soft);color:var(--leaf);}
 .mg-summary b.ok{color:var(--leaf);}
 .admin-table tr.mg-skip{opacity:.62;}
 .admin-table tr.mg-skip td{background:#FCFCFB;}
+
+/* =========================================================
+   v25: 글래스모피즘(리퀴드 글래스) 디자인 레이어
+   주요 표면(헤더·카드·배너·모달)에 반투명 유리 효과를 입히고,
+   유리가 비쳐 보이도록 은은한 브랜드 그라데이션 배경을 깝니다.
+   이 섹션만 제거하면 이전 디자인으로 되돌아갑니다.
+========================================================= */
+:root{
+  --glass-bg: rgba(255,255,255,.44);
+  --glass-bg-strong: rgba(255,255,255,.62);
+  --glass-blur: blur(19px) saturate(144%);
+  --glass-border: 1px solid rgba(255,255,255,.65);
+  --glass-shadow: 0 8px 32px rgba(0,0,0,.12);
+}
+
+/* 배경 그라데이션 (고정, 스크롤과 무관) */
+body::before{
+  content:'';position:fixed;inset:-8%;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(640px 480px at 10% -4%, rgba(95,201,126,.24), transparent 62%),
+    radial-gradient(700px 520px at 92% 6%, rgba(245,197,66,.17), transparent 62%),
+    radial-gradient(800px 620px at 46% 108%, rgba(27,58,92,.13), transparent 60%);
+}
+
+/* 헤더 — 스크롤 시 내용이 유리 뒤로 비칩니다 */
+header{
+  background:rgba(255,255,255,.34);
+  backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);
+  border-bottom:1px solid rgba(255,255,255,.55);
+  box-shadow:0 4px 24px rgba(23,34,27,.06);
+}
+@media (max-width:840px){
+  nav{
+    background:rgba(255,255,255,.72);
+    backdrop-filter:var(--glass-blur);
+    -webkit-backdrop-filter:var(--glass-blur);
+    border-bottom:1px solid rgba(255,255,255,.6);
+  }
+}
+
+/* 카드·박스류 공통 유리 처리 */
+.open-card,.open-empty,.ol-banner,.on-card,.ol-step,
+.ws-oc,.ws-tri article,.ws-topic,.ws-q,.ws-faq details,
+.login-card,.auth-aside,.admin-box,.dash-card,
+.cr-card,.status-card,.mng-row,.wi-results{
+  background:var(--glass-bg-strong);
+  backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);
+  border:var(--glass-border);
+  box-shadow:var(--glass-shadow);
+}
+/* 큰 표면은 모서리를 더 둥글게 */
+.open-card,.ol-banner,.on-card,.admin-box,.login-card,.auth-aside{border-radius:20px;}
+.ol-banner{background:var(--glass-bg);}
+
+/* 모달 — 가장 진한 유리 + 배경 블러 */
+.modal-back{
+  backdrop-filter:blur(7px);
+  -webkit-backdrop-filter:blur(7px);
+  background:rgba(23,34,27,.35);
+}
+.modal{
+  background:rgba(255,255,255,.78);
+  backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);
+  border:var(--glass-border);
+  border-radius:24px;
+  box-shadow:0 20px 60px rgba(0,0,0,.22);
+}
+
+/* 유리 위 요소들의 투명 배경 보정 */
+.dash-card{background:var(--glass-bg);}
+.seat-bar,.att-consent{background:rgba(255,255,255,.5);}
+
+/* backdrop-filter 미지원 브라우저 — 불투명 흰색으로 대체 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
+  .open-card,.open-empty,.ol-banner,.on-card,.ol-step,
+  .ws-oc,.ws-tri article,.ws-topic,.ws-q,.ws-faq details,
+  .login-card,.auth-aside,.admin-box,.dash-card,
+  .cr-card,.status-card,.mng-row,.wi-results,.modal{
+    background:rgba(255,255,255,.94);
+  }
+  header{background:rgba(248,251,247,.96);}
+}
+
+/* 인쇄물(이수증·서명부)은 유리 효과 없이 종이 그대로 */
+@media print{
+  body::before{display:none !important;}
+  *{backdrop-filter:none !important;-webkit-backdrop-filter:none !important;}
+  .att-page,.cert-sheet,.att-consent{background:#fff !important;box-shadow:none !important;}
+}
