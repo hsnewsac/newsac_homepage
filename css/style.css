@@ -1276,17 +1276,55 @@ nav a.active::after{
 }
 .menu-btn{border-radius:999px;}
 
-/* 메뉴 아이콘 — 호버 시 통통 튀는 모션 */
-.nav-ic{display:inline-block;margin-right:5px;font-size:.92em;line-height:1;}
-nav a:hover > .nav-ic, .nav-sub a:hover .nav-ic{animation:navIcBounce .5s ease;}
-@keyframes navIcBounce{
-  0%{transform:translateY(0) rotate(0);}
-  35%{transform:translateY(-4px) rotate(-10deg) scale(1.15);}
-  70%{transform:translateY(1px) rotate(7deg);}
-  100%{transform:translateY(0) rotate(0);}
+/* ----- v28: 글래스 모션 아이콘 (사이트 공용) -----
+   프로스트 유리 타일(gtile) 뒤에서 컬러 레이어(gbg)가
+   바운스로 튀어나오는 아이콘 컴포넌트 */
+.gic{position:relative;display:inline-flex;align-items:center;justify-content:center;
+  width:27px;height:27px;flex:none;margin-right:7px;vertical-align:-7px;}
+.gic .gbg{position:absolute;inset:3px;border-radius:8px;
+  background:radial-gradient(circle at 30% 30%, var(--gc,#5FC97E), var(--gc2,#1E7F4F));
+  opacity:0;transform:none;transform-origin:100% 100%;
+  transition:transform .35s cubic-bezier(0.38,-0.12,0.15,1.65), opacity .22s ease;}
+.gic .gtile{position:absolute;inset:0;border-radius:9px;z-index:1;
+  background:rgba(255,255,255,.42);
+  backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+  border:1px solid rgba(255,255,255,.6);
+  box-shadow:0 3px 8px rgba(23,34,27,.09);
+  transition:background .2s ease;}
+.gic svg{position:relative;z-index:2;width:15px;height:15px;
+  stroke:#5A6862;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+  transition:stroke .2s ease, filter .2s ease;}
+/* 호버·현재 페이지: 컬러 레이어가 뒤로 튀어나오고 글리프가 흰색으로 */
+a:hover > .gic .gbg, a.active > .gic .gbg,
+.nav-sub a:hover .gic .gbg, .nav-sub a.active .gic .gbg{
+  opacity:1;transform:translate(4px,-4px) rotate(14deg);}
+a:hover > .gic .gtile, a.active > .gic .gtile,
+.nav-sub a:hover .gic .gtile, .nav-sub a.active .gic .gtile{
+  background:color-mix(in srgb, var(--gc) 42%, rgba(255,255,255,.5));}
+a:hover > .gic svg, a.active > .gic svg,
+.nav-sub a:hover .gic svg, .nav-sub a.active .gic svg{
+  stroke:#fff;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25));}
+/* 항상 컬러가 켜진 변형 (대시보드 등) */
+.gic.on .gbg{opacity:1;transform:translate(4px,-4px) rotate(14deg);}
+.gic.on .gtile{background:color-mix(in srgb, var(--gc) 45%, rgba(255,255,255,.45));}
+.gic.on svg{stroke:#fff;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25));}
+/* 큰 사이즈 변형 */
+.gic.lg{width:44px;height:44px;margin-right:0;}
+.gic.lg .gbg{inset:5px;border-radius:13px;}
+.gic.lg .gtile{border-radius:14px;}
+.gic.lg svg{width:23px;height:23px;}
+/* 색상 팔레트 */
+.gc-green{--gc:#5FC97E;--gc2:#1E7F4F;}
+.gc-amber{--gc:#F5C542;--gc2:#D98E1B;}
+.gc-blue{--gc:#6FA8DC;--gc2:#35608D;}
+.gc-purple{--gc:#AE7BFB;--gc2:#7B4FD8;}
+.gc-pink{--gc:#F9599F;--gc2:#D63C7F;}
+.gc-teal{--gc:#57C7C0;--gc2:#2A8F88;}
+@supports not (background: color-mix(in srgb, red 50%, blue)){
+  a:hover > .gic .gtile, a.active > .gic .gtile, .gic.on .gtile{background:rgba(255,255,255,.35);}
 }
 @media (prefers-reduced-motion:reduce){
-  nav a:hover > .nav-ic, .nav-sub a:hover .nav-ic{animation:none;}
+  .gic .gbg{transition:opacity .22s ease;}
 }
 
 /* 하위 메뉴 — 부모에 마우스를 올리면 아래로 플로팅되는 유리 카드 */
@@ -1389,43 +1427,35 @@ nav a:hover > .nav-ic, .nav-sub a:hover .nav-ic{animation:navIcBounce .5s ease;}
   header{background:rgba(248,251,247,.96);}
 }
 
-/* ----- v27: 방문객 대시보드 (홈) ----- */
-.vdash{padding-top:14px;}
-.vdash .section{padding-top:34px;padding-bottom:38px;}
-.vdash-head{text-align:center;max-width:720px;margin:0 auto 28px;}
-.vdash-head .tag{color:var(--leaf);font-weight:800;font-size:.85rem;letter-spacing:.08em;}
-.vdash-head h1{font-size:clamp(1.7rem,4vw,2.4rem);font-weight:800;letter-spacing:-.02em;margin-top:8px;word-break:keep-all;}
+/* ----- v27.1: 방문객 대시보드 (홈) — 콤팩트 단일 패널 ----- */
+.vdash .section{padding-top:30px;padding-bottom:26px;}
+.vdash-head{text-align:center;margin:0 auto 16px;}
+.vdash-head .tag{color:var(--leaf);font-weight:800;font-size:.78rem;letter-spacing:.1em;}
+.vdash-head h1{font-size:clamp(1.35rem,3vw,1.85rem);font-weight:800;letter-spacing:-.02em;margin-top:6px;word-break:keep-all;}
 .vdash-head h1 em{font-style:normal;color:var(--leaf);}
-.vdash-head p{margin-top:10px;color:#4A5850;font-size:.98rem;line-height:1.75;word-break:keep-all;}
-.vdash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;
-  max-width:1000px;margin:0 auto 16px;}
-.vd-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:24px 12px 20px;
+
+.vd-panel{max-width:980px;margin:0 auto;padding:22px 30px 20px;
   background:var(--glass-bg-strong);
   backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
-  border:var(--glass-border);border-radius:20px;box-shadow:var(--glass-shadow);
-  opacity:0;transform:translateY(16px);animation:vdIn .6s ease forwards;
-  transition:transform .2s ease, box-shadow .2s ease;}
-.vd-card:hover{transform:translateY(-4px);box-shadow:0 14px 40px rgba(30,127,79,.16);}
-.vd-card:nth-child(1){animation-delay:.05s}
-.vd-card:nth-child(2){animation-delay:.13s}
-.vd-card:nth-child(3){animation-delay:.21s}
-.vd-card:nth-child(4){animation-delay:.29s}
-.vd-card:nth-child(5){animation-delay:.37s}
+  border:var(--glass-border);border-radius:24px;box-shadow:var(--glass-shadow);
+  opacity:0;transform:translateY(14px);animation:vdIn .6s ease .1s forwards;}
 @keyframes vdIn{to{opacity:1;transform:none;}}
-.vd-ic{font-size:1.7rem;}
-.vd-num{font-size:1.8rem;font-weight:800;color:var(--leaf);letter-spacing:-.02em;line-height:1.1;}
-.vd-lbl{font-size:.83rem;font-weight:700;color:#4A5850;}
-.vd-goal{max-width:1000px;margin:0 auto;padding:22px 28px;
-  background:var(--glass-bg);
-  backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
-  border:var(--glass-border);border-radius:20px;box-shadow:var(--glass-shadow);
-  opacity:0;transform:translateY(16px);animation:vdIn .6s ease .48s forwards;}
-.vd-goal-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;
-  font-size:.98rem;font-weight:700;color:#28352E;word-break:keep-all;}
-.vd-goal-head b{color:var(--leaf);}
-.vd-pct{font-size:1.5rem;font-weight:800;color:var(--leaf) !important;letter-spacing:-.02em;}
-.vd-track{height:15px;border-radius:99px;background:rgba(255,255,255,.6);
-  border:1px solid rgba(255,255,255,.75);overflow:hidden;margin-top:12px;}
+
+.vd-stats{display:flex;align-items:center;}
+.vd-stat{flex:1;display:flex;align-items:center;justify-content:center;gap:11px;min-width:0;}
+.vd-stat + .vd-stat{border-left:1px solid rgba(23,34,27,.09);}
+.vd-ic{font-size:1.45rem;flex:none;filter:drop-shadow(0 2px 4px rgba(23,34,27,.12));}
+.vd-num{display:block;font-size:1.5rem;font-weight:800;letter-spacing:-.02em;line-height:1.15;
+  background:linear-gradient(120deg,#1E7F4F,#2E9B62 55%,#5FC97E);
+  -webkit-background-clip:text;background-clip:text;color:transparent;}
+.vd-lbl{display:block;font-size:.73rem;font-weight:700;color:#6A776F;margin-top:1px;letter-spacing:-.01em;}
+
+.vd-goal-row{display:flex;align-items:center;gap:16px;margin-top:16px;padding-top:15px;
+  border-top:1px dashed rgba(23,34,27,.13);}
+.vd-goal-label{flex:none;font-size:.85rem;font-weight:700;color:#3A4842;word-break:keep-all;}
+.vd-goal-label b{color:var(--leaf);}
+.vd-goal-label #vd-goalSub{color:#6A776F;font-weight:600;}
+.vd-track{flex:1;height:9px;border-radius:99px;background:rgba(23,34,27,.08);overflow:hidden;}
 .vd-track i{display:block;height:100%;width:0;border-radius:99px;position:relative;overflow:hidden;
   background:linear-gradient(90deg,var(--sprout),var(--leaf));
   transition:width 1.6s cubic-bezier(.22,.8,.3,1);}
@@ -1433,9 +1463,19 @@ nav a:hover > .nav-ic, .nav-sub a:hover .nav-ic{animation:navIcBounce .5s ease;}
   background:linear-gradient(110deg,transparent 25%,rgba(255,255,255,.55) 50%,transparent 75%);
   animation:vdShimmer 2.6s infinite;}
 @keyframes vdShimmer{from{transform:translateX(-100%);}to{transform:translateX(100%);}}
-.vd-goal-sub{margin-top:10px;font-size:.86rem;color:#5A6862;}
+.vd-pct{flex:none;font-size:1.15rem;font-weight:800;color:var(--leaf);letter-spacing:-.02em;}
+
+@media (max-width:760px){
+  .vd-panel{padding:18px 20px 16px;}
+  .vd-stats{display:grid;grid-template-columns:repeat(3,1fr);row-gap:14px;}
+  .vd-stat{justify-content:flex-start;gap:9px;}
+  .vd-stat + .vd-stat{border-left:none;}
+  .vd-num{font-size:1.3rem;}
+  .vd-goal-row{flex-wrap:wrap;gap:10px;}
+  .vd-goal-label{width:100%;}
+}
 @media (prefers-reduced-motion:reduce){
-  .vd-card,.vd-goal{animation:none;opacity:1;transform:none;}
+  .vd-panel{animation:none;opacity:1;transform:none;}
   .vd-track i::after{animation:none;}
 }
 
