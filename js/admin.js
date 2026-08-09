@@ -3076,6 +3076,11 @@ function openTask(eid, lessonId){
     <dl class="detail-dl">
       ${pr.taskAt ? `<dt>제출 일시</dt><dd>${esc(tsText(pr.taskAt))}</dd>` : ''}
       ${pr.taskUrl ? `<dt>제출 링크</dt><dd><a href="${esc(pr.taskUrl)}" target="_blank" rel="noopener">${esc(pr.taskUrl)}</a></dd>` : ''}
+      ${Array.isArray(pr.taskFiles) && pr.taskFiles.length
+        ? `<dt>첨부 파일</dt><dd><div class="tf-list">${pr.taskFiles.map(f => {
+            const kb = f.size ? (f.size > 1048576 ? (f.size/1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(f.size/1024)) + 'KB') : '';
+            return `<a class="tf-item" href="${esc(f.url)}" target="_blank" rel="noopener">📎 ${esc(f.name)}${kb ? ` <span>${kb}</span>` : ''}</a>`;
+          }).join('')}</div></dd>` : ''}
       ${pr.taskText ? `<dt>작성 내용</dt><dd>${esc(pr.taskText).replace(/\n/g, '<br>')}</dd>` : ''}
       ${!pr.taskAt ? '<dt>상태</dt><dd><span class="cell-sub">아직 제출하지 않았습니다.</span></dd>' : ''}
       ${pr.taskReview ? `<dt>검토 메모</dt><dd>${esc(pr.taskReview)}</dd>` : ''}
@@ -3124,7 +3129,9 @@ function downloadProgressCSV(){
       }),
       ...clLessons.filter(l => l.hasTask).map(l => {
         const pr = pg[l.id] || {};
-        return pr.taskAt ? (pr.taskUrl || pr.taskText || '제출').toString().slice(0, 200) : '미제출';
+        if (!pr.taskAt) return '미제출';
+        const nf = Array.isArray(pr.taskFiles) ? pr.taskFiles.length : 0;
+        return ((pr.taskUrl || pr.taskText || '제출') + (nf ? ` (첨부 ${nf})` : '')).toString().slice(0, 200);
       }),
       progRate(e.id), e.completed ? '수료' : '']);
   });

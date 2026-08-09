@@ -256,6 +256,61 @@ export const TIMESLOTS = ['오전 (09~12시)', '오후 (13~17시)', '저녁 (18~
 
 /* ---------- 헤더/푸터 주입 ---------- */
 /* =========================================================
+   v32: 간단 마크다운 → HTML
+   수강 안내·과제 안내처럼 관리자가 직접 쓰는 글에 서식을 허용합니다.
+   HTML을 먼저 이스케이프하므로 태그 삽입(XSS)은 불가능합니다.
+   지원: # 제목, **굵게**, *기울임*, `코드`, ~~취소선~~,
+        - / 1. 목록, > 인용, --- 구분선, [링크](url), 자동 링크, 줄바꿈
+========================================================= */
+export function mdToHtml(src){
+  if (!src) return '';
+  const esc0 = String(src).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const inline = s => s
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+    .replace(/~~([^~]+)~~/g, '<del>$1</del>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    /* 이미 링크로 감싸지지 않은 맨 URL 자동 연결 */
+    .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g,
+      '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+
+  const out = [];
+  let list = null;                       // 'ul' | 'ol'
+  const closeList = () => { if (list){ out.push(`</${list}>`); list = null; } };
+
+  esc0.split(/\r?\n/).forEach(raw => {
+    const line = raw.trimEnd();
+    if (!line.trim()){ closeList(); return; }
+    let m;
+    if (/^\s*(---|\*\*\*|___)\s*$/.test(line)){ closeList(); out.push('<hr>'); return; }
+    if ((m = line.match(/^(#{1,4})\s+(.*)$/))){
+      closeList();
+      const lv = Math.min(6, m[1].length + 2);   // # → h3
+      out.push(`<h${lv}>${inline(m[2])}</h${lv}>`);
+      return;
+    }
+    /* HTML을 먼저 이스케이프하므로 인용은 '&gt;' 형태로 들어옵니다 */
+    if ((m = line.match(/^\s*(?:&gt;|>)\s?(.*)$/))){
+      closeList(); out.push(`<blockquote>${inline(m[1])}</blockquote>`); return;
+    }
+    if ((m = line.match(/^\s*[-*+]\s+(.*)$/))){
+      if (list !== 'ul'){ closeList(); out.push('<ul>'); list = 'ul'; }
+      out.push(`<li>${inline(m[1])}</li>`); return;
+    }
+    if ((m = line.match(/^\s*\d+[.)]\s+(.*)$/))){
+      if (list !== 'ol'){ closeList(); out.push('<ol>'); list = 'ol'; }
+      out.push(`<li>${inline(m[1])}</li>`); return;
+    }
+    closeList();
+    out.push(`<p>${inline(line)}</p>`);
+  });
+  closeList();
+  return out.join('');
+}
+
+/* =========================================================
    v28: 글래스 모션 아이콘 — 프로스트 유리 타일 뒤에서
    컬러 레이어가 튀어나오는 아이콘 컴포넌트 (사이트 공용)
 ========================================================= */
