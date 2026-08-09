@@ -62,6 +62,42 @@
 
     <!-- ================= 대시보드 ================= -->
     <div class="tab-panel on" id="tab-dash">
+      <!-- v27: 홈 방문객 대시보드 수치 입력 -->
+      <div class="admin-box">
+        <h3>🏠 홈 방문객 대시보드 수치</h3>
+        <p class="box-desc">홈 화면 상단 성과 대시보드에 표시되는 숫자입니다.
+          저장하면 즉시 홈페이지에 반영됩니다. (강사 워크샵 건수를 0으로 두면 등록된 워크샵 프로그램 수가 자동 표시됩니다)</p>
+        <form id="vdashForm">
+          <div class="form-2col">
+            <div class="form-row">
+              <label for="vd-students">함께한 학생 수</label>
+              <input id="vd-students" type="number" min="0" value="0">
+            </div>
+            <div class="form-row">
+              <label for="vd-instructors">함께한 강사 수</label>
+              <input id="vd-instructors" type="number" min="0" value="0">
+            </div>
+            <div class="form-row">
+              <label for="vd-visit">방문형 프로그램 (건)</label>
+              <input id="vd-visit" type="number" min="0" value="0">
+            </div>
+            <div class="form-row">
+              <label for="vd-group">집합형 프로그램 (건)</label>
+              <input id="vd-group" type="number" min="0" value="0">
+            </div>
+            <div class="form-row">
+              <label for="vd-workshops">강사 워크샵 (건)</label>
+              <input id="vd-workshops" type="number" min="0" value="0">
+            </div>
+            <div class="form-row">
+              <label for="vd-goal">목표 학생 수</label>
+              <input id="vd-goal" type="number" min="1" value="4800">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-navy btn-sm" id="vdashSaveBtn">저장 — 홈에 바로 반영</button>
+        </form>
+      </div>
+
       <div class="admin-box">
         <h3>📊 신청 현황 대시보드</h3>
         <p class="box-desc">전체 접수 흐름을 한눈에 확인합니다. 숫자는 실시간으로 갱신됩니다.</p>
