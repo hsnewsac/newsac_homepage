@@ -1056,6 +1056,15 @@ nav a.active{background:var(--sprout-soft);color:var(--leaf);}
   border:1px dashed var(--line);border-radius:var(--radius);font-size:.9rem;line-height:1.9;color:#6A776F;}
 .cr-card .cc-cancel{align-self:flex-end;}
 
+/* ----- v20.1: 미니 워크샵 온라인 이수 안내 ----- */
+.mng-row{display:flex;align-items:center;gap:14px;padding:13px 16px;
+  border:1px solid var(--line);border-radius:11px;background:var(--paper);}
+.mng-row + .mng-row{margin-top:8px;}
+.mng-tx{flex:1;display:flex;flex-direction:column;gap:3px;font-size:.88rem;color:#3A4842;line-height:1.65;word-break:keep-all;}
+.mng-app{font-size:.76rem;font-weight:700;color:#6A776F;}
+.mng-row .btn{flex:none;text-decoration:none;}
+@media (max-width:560px){ .mng-row{flex-direction:column;align-items:stretch;} }
+
 /* ----- v15: 서명부 인쇄 (관리자 · 신청자 탭) ----- */
 #attSheet{display:none;}
 #attSheet.on{display:block;position:fixed;inset:0;z-index:1000;background:#E8EEE9;overflow:auto;padding:26px 18px;}

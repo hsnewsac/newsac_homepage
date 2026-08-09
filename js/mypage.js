@@ -17,6 +17,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
 import {
   initLayout, esc, fbError, toast, tsText, tsNum,
+  courseByKey, guessCourseKey,
   ORG_TYPES, SPECIALTIES, REGIONS, CAREER_LEVELS,
   ROLES, ROLE_ORDER, roleOf, GRADES, INTERESTS, STAFF_DUTIES,
   STATUS, STATUS_ORDER, statusOf, statusChip, statusSet, checkIsAdmin
@@ -417,7 +418,7 @@ async function paintClassroom(){
       .sort((a, b) => tsNum(b.createdAt) - tsNum(a.createdAt));
   } catch (e) { console.warn('수강 내역 조회 오류:', e); }
 
-  if (!enrolls.length){ showEmpty(); return; }
+  if (!enrolls.length){ showEmpty(); paintMiniGuide(enrolls, []); return; }
 
   const cards = [];
   for (const e of enrolls){
@@ -443,7 +444,7 @@ async function paintClassroom(){
     } catch (err) { console.warn('강의실 조회 오류:', err); }
   }
 
-  if (!cards.length){ showEmpty(); return; }
+  if (!cards.length){ showEmpty(); paintMiniGuide(enrolls, []); return; }
   box.style.display = 'block';
   grid.innerHTML = cards.map(c => `
     <div class="cr-card">
@@ -464,6 +465,52 @@ async function paintClassroom(){
         ? `<a class="btn btn-navy btn-sm" href="cert.html?id=${c.e.id}" target="_blank" rel="noopener">🎓 이수증 발급</a>`
         : `<button class="mini-btn danger cc-cancel" onclick="cancelEnroll('${c.e.id}', '${esc(c.e.courseName || '')}')">수강 취소</button>`}
     </div>`).join('');
+
+  paintMiniGuide(enrolls, cards);
+}
+
+/* =========================================================
+   v20.1: 미니(교구 사용법) 워크샵 → 온라인 이수 안내
+   이수증 발급 대기 중인 미니 신청 건마다 지금 해야 할 일을 보여줍니다.
+========================================================= */
+function paintMiniGuide(enrolls, cards){
+  const box = $('miniGuideBox'), list = $('miniGuideList');
+  if (!box) return;
+  const isMini = a => a.programWsKind === 'mini'
+    || (!a.programWsKind && /미니|mini|교구/i.test(a.programTitle || ''));
+  const pend = myApps.filter(a => isMini(a) && !a.certNo);
+  if (!pend.length){ box.style.display = 'none'; return; }
+
+  list.innerHTML = pend.map(a => {
+    const key = guessCourseKey(a.course || a.session);
+    const c = key ? courseByKey(key) : null;
+    const cname = c ? c.name : (a.course || '대응 온라인 과목');
+    const enr = key ? enrolls.find(e => e.courseKey === key) : null;
+    const card = enr ? cards.find(x => x.e.id === enr.id) : null;
+    let state, action = '';
+    if (!key){
+      state = '대응 온라인 과목을 확인할 수 없습니다. 사업단으로 문의해주세요.';
+    } else if (!enr){
+      state = `<b>${esc(cname)}</b> 온라인 워크샵 수강 신청이 필요합니다.`;
+      action = `<a class="btn btn-navy btn-sm" href="online.html">수강 신청하기 →</a>`;
+    } else if (enr.completed || (card && !card.empty && card.rate >= 100)){
+      state = `<b>${esc(cname)}</b> 온라인 이수 완료 ✅ 사업단 확인 후 이수증이 발급됩니다.`;
+    } else if (card && card.empty){
+      state = `<b>${esc(cname)}</b> 수강 신청 완료 — 차시가 준비되면 안내드립니다.`;
+    } else {
+      const rate = card ? card.rate : 0;
+      state = `<b>${esc(cname)}</b> 수강 중 — 필수 차시 진도 <b>${rate}%</b>. 100%가 되면 이수증 발급 대상이 됩니다.`;
+      action = `<a class="btn btn-navy btn-sm" href="classroom.html?enroll=${enr.id}">이어서 학습 →</a>`;
+    }
+    return `<div class="mng-row">
+      <div class="mng-tx">
+        <span class="mng-app">${esc(a.programTitle || '')} · ${esc(a.course || a.session || '')}${a.completed ? ' · 미니 수료' : ''}</span>
+        <span>${state}</span>
+      </div>
+      ${action}
+    </div>`;
+  }).join('');
+  box.style.display = 'block';
 }
 
 /* v15: 온라인 워크샵 수강 취소 (수료 전만 가능) */

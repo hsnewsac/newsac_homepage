@@ -17,7 +17,7 @@ import {
 import {
   initLayout, esc, ddayInfo, notYetOpen, todayStr, catClass, fbError,
   KIND, ORG_TYPES, SPECIALTIES, REGIONS, CAREER_LEVELS,
-  COURSES_2026, courseByKey, WORKSHOP_TARGET, qualificationHTML,
+  COURSES_2026, courseByKey, guessCourseKey, WORKSHOP_TARGET, qualificationHTML,
   SCHOOL_LEVELS, CAMP_MODES, RECRUIT_ROLES, RECRUIT_FOR, WORKSHOP_MODES, fmtPeriodKo,
   STATUS, STATUS_ORDER, statusOf, statusChip, APPROVE_STATUS, statusSet, isRecruit,
   ROLES, ROLE_ORDER, roleOf,
@@ -2733,36 +2733,6 @@ function refreshMigratePrograms(){
   sel.innerHTML = '<option value="">프로그램을 선택하세요</option>' +
     list.map(p => `<option value="${p.id}">${esc(p.title)}${p.period ? ` · ${esc(p.period)}` : ''}</option>`).join('');
   if (list.some(p => p.id === cur)) sel.value = cur;
-}
-
-/** 강좌명 → 7종 과목 키 자동 매칭 */
-function guessCourseKey(courseName){
-  const t = String(courseName || '').trim();
-  if (!t) return '';
-  const exact = COURSES_2026.find(c => c.name === t);
-  if (exact) return exact.key;
-  /* '온라인 워크샵' 신청 강좌명 형식: AI문학코딩(초등), AI과학코딩(중등)*오프라인필수 등 */
-  const m = t.match(/^(AI\S*코딩)\s*\(([^)]+)\)/);
-  if (m){
-    const subject = m[1], lv = m[2];
-    const lvOk = c =>
-      lv.includes('특수') ? c.level.includes('특수')
-      : lv.includes('중')  ? c.level.includes('중학교')
-      : lv.includes('고')  ? c.level.includes('고등학교')
-      : c.level.includes('초등');
-    const hit = COURSES_2026.find(c => c.name.startsWith(subject) && lvOk(c));
-    if (hit) return hit.key;
-  }
-  /* 이름이 조금 달라도 핵심 어구로 추정 */
-  const norm = v => v.replace(/[\s:·・]/g, '');
-  const n = norm(t);
-  const loose = COURSES_2026.find(c => norm(c.name).includes(n) || n.includes(norm(c.name)));
-  if (loose) return loose.key;
-  const bySub = COURSES_2026.find(c => {
-    const sub = norm(c.name.split(':')[1] || '');
-    return sub && (n.includes(sub) || sub.includes(n));
-  });
-  return bySub ? bySub.key : '';
 }
 
 async function scanMigrate(){

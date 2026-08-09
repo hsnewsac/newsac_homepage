@@ -44,6 +44,37 @@ export const COURSES_2026 = [
 /** 과목 키로 조회 */
 export function courseByKey(k){ return COURSES_2026.find(c => c.key === k) || null; }
 
+/** v20.1: 강좌명 → 7종 과목 키 매칭 (이관·미니 워크샵 온라인 연동 공용)
+    정식 과목명, 'AI과학코딩(초등)'·'*오프라인필수' 접미 형식 모두 인식합니다. */
+export function guessCourseKey(courseName){
+  const t = String(courseName || '').trim();
+  if (!t) return '';
+  const exact = COURSES_2026.find(c => c.name === t);
+  if (exact) return exact.key;
+  /* 'AI문학코딩(초등)' 형식: 과목 접두 + 괄호 안 학교급 */
+  const m = t.match(/^(AI\S*코딩)\s*\(([^)]+)\)/);
+  if (m){
+    const subject = m[1], lv = m[2];
+    const lvOk = c =>
+      lv.includes('특수') ? c.level.includes('특수')
+      : lv.includes('중')  ? c.level.includes('중학교')
+      : lv.includes('고')  ? c.level.includes('고등학교')
+      : c.level.includes('초등');
+    const hit = COURSES_2026.find(c => c.name.startsWith(subject) && lvOk(c));
+    if (hit) return hit.key;
+  }
+  /* 이름이 조금 달라도 핵심 어구로 추정 */
+  const norm = v => v.replace(/[\s:·・]/g, '');
+  const n = norm(t);
+  const loose = COURSES_2026.find(c => norm(c.name).includes(n) || n.includes(norm(c.name)));
+  if (loose) return loose.key;
+  const bySub = COURSES_2026.find(c => {
+    const sub = norm(c.name.split(':')[1] || '');
+    return sub && (n.includes(sub) || sub.includes(n));
+  });
+  return bySub ? bySub.key : '';
+}
+
 /* ---------- v11: 강사 워크샵 지원 자격 ---------- */
 export const WORKSHOP_TARGET = '강사를 희망하고 있는 교원, 프리랜서 등';
 export const WORKSHOP_QUALIFICATION = {
