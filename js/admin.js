@@ -17,7 +17,8 @@ import {
 import {
   initLayout, esc, ddayInfo, notYetOpen, todayStr, catClass, fbError,
   KIND, ORG_TYPES, SPECIALTIES, REGIONS, CAREER_LEVELS,
-  COURSES_2026, courseByKey, guessCourseKey, WORKSHOP_TARGET, qualificationHTML,
+  COURSES_2026, courseByKey, guessCourseKey, acceptedOnlineKeys, acceptedOnlineLabel,
+  WORKSHOP_TARGET, qualificationHTML,
   SCHOOL_LEVELS, CAMP_MODES, RECRUIT_ROLES, RECRUIT_FOR, WORKSHOP_MODES, fmtPeriodKo,
   STATUS, STATUS_ORDER, statusOf, statusChip, APPROVE_STATUS, statusSet, isRecruit,
   ROLES, ROLE_ORDER, roleOf,
@@ -807,46 +808,54 @@ function isMiniApp(a){
   return /미니|mini|교구/i.test(`${progTitle(a)} ${a.programTitle || ''}`);
 }
 
-/** 대응 온라인 워크샵 이수 여부: 수료 처리됐거나 필수 차시 진도 100%면 충족 */
+/** 대응 온라인 워크샵 이수 여부: 인정 과목 묶음 중 하나라도
+    수료 처리됐거나 필수 차시 진도 100%면 충족
+    (음악코딩은 기본·특수가 같은 교구를 쓰므로 두 과목 중 어느 쪽이든 인정) */
 async function onlineDoneFor(a){
-  const key = guessCourseKey(a.course || a.session);
-  const c = key ? courseByKey(key) : null;
-  const label = c ? `${c.name.split(':')[0]} · ${c.level}` : (a.course || '-');
-  if (!key) return { ok: false, why: '대응 온라인 과목을 찾지 못함 — 강좌명 확인 필요', label };
+  const keys = acceptedOnlineKeys(a.course || a.session);
+  const label = acceptedOnlineLabel(keys) || (a.course || '-');
+  if (!keys.length) return { ok: false, why: '대응 온라인 과목을 찾지 못함 — 강좌명 확인 필요', label };
 
-  let enr = null;
+  let enrs = [];
   try {
     const by = a.uid
       ? query(collection(db, 'enrollments'), where('uid', '==', a.uid))
       : query(collection(db, 'enrollments'), where('email', '==', a.email || '-'));
     const snap = await getDocs(by);
-    enr = snap.docs.map(d => ({ id: d.id, ...d.data() })).find(e => e.courseKey === key) || null;
+    enrs = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(e => keys.includes(e.courseKey));
   } catch (e){ return { ok: false, why: `온라인 수강 정보 조회 실패(${label})`, label }; }
 
-  if (!enr) return { ok: false, why: `온라인 워크샵 [${label}] 미신청`, label };
-  if (enr.completed) return { ok: true, label };
+  if (!enrs.length) return { ok: false, why: `온라인 워크샵 [${label}] 미신청`, label };
+  if (enrs.some(e => e.completed)) return { ok: true, label };
 
-  try {
-    const ls = await getDocs(collection(db, 'onlineCourses', key, 'lessons'));
-    const lessons = ls.docs.map(d => ({ id: d.id, ...d.data() }));
-    const req = lessons.filter(l => l.required !== false);
-    if (!req.length) return { ok: false, why: `온라인 워크샵 [${label}] 차시 미등록`, label };
-    const pr = await getDocs(collection(db, 'enrollments', enr.id, 'progress'));
-    const prog = Object.fromEntries(pr.docs.map(d => [d.id, d.data()]));
-    const done = l => {
-      const q = prog[l.id];
-      if (!q) return false;
-      if (l.mode === 'offline') return !!q.done;
-      if (q.done) return true;
-      return !!l.durationSec && (q.watchedSec || 0) >= l.durationSec * 0.9;
-    };
-    const doneN = req.filter(done).length;
-    return doneN >= req.length
-      ? { ok: true, label }
-      : { ok: false, why: `온라인 워크샵 [${label}] 진도 ${doneN}/${req.length}차시`, label };
-  } catch (e){
-    return { ok: false, why: `온라인 워크샵 [${label}] 진도 확인 실패`, label };
+  /* 수강 중인 과목들의 진도를 확인해 하나라도 100%면 충족, 아니면 최고 진도를 보고 */
+  let best = null;
+  for (const enr of enrs){
+    try {
+      const ls = await getDocs(collection(db, 'onlineCourses', enr.courseKey, 'lessons'));
+      const lessons = ls.docs.map(d => ({ id: d.id, ...d.data() }));
+      const req = lessons.filter(l => l.required !== false);
+      if (!req.length) continue;
+      const pr = await getDocs(collection(db, 'enrollments', enr.id, 'progress'));
+      const prog = Object.fromEntries(pr.docs.map(d => [d.id, d.data()]));
+      const done = l => {
+        const q = prog[l.id];
+        if (!q) return false;
+        if (l.mode === 'offline') return !!q.done;
+        if (q.done) return true;
+        return !!l.durationSec && (q.watchedSec || 0) >= l.durationSec * 0.9;
+      };
+      const doneN = req.filter(done).length;
+      if (doneN >= req.length) return { ok: true, label };
+      const cname = courseByKey(enr.courseKey)?.name.split(':')[0] || enr.courseKey;
+      if (!best || doneN / req.length > best.rate){
+        best = { rate: doneN / req.length, text: `온라인 워크샵 [${cname}] 진도 ${doneN}/${req.length}차시` };
+      }
+    } catch (e){ /* 개별 과목 확인 실패는 다음 과목으로 */ }
   }
+  return best
+    ? { ok: false, why: best.text, label }
+    : { ok: false, why: `온라인 워크샵 [${label}] 차시 미등록 또는 진도 확인 실패`, label };
 }
 
 async function completeApp(id){

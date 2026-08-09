@@ -5,7 +5,7 @@
 ========================================================= */
 import { db } from './firebase-init.js';
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
-import { initLayout, esc, fbError, guessCourseKey, courseByKey } from './common.js';
+import { initLayout, esc, fbError, acceptedOnlineKeys, acceptedOnlineLabel } from './common.js';
 
 initLayout('');
 const $ = id => document.getElementById(id);
@@ -45,9 +45,8 @@ async function load(){
        발급 대기 상태에서는 온라인 이수 절차를 함께 안내합니다. */
     if (kind === 'app' && !a.certNo
         && (a.programWsKind === 'mini' || /미니|mini|교구/i.test(a.programTitle || ''))){
-      const key = guessCourseKey(a.course || a.session);
-      const c = key ? courseByKey(key) : null;
-      const cname = c ? c.name : '신청 강좌에 해당하는 과목';
+      const keys = acceptedOnlineKeys(a.course || a.session);
+      const cname = acceptedOnlineLabel(keys) || '신청 강좌에 해당하는 과목';
       showError('이수증 발급 대기 중입니다', '');
       $('certErrorMsg').innerHTML = `
         미니(교구 사용법) 워크샵은 <b>온라인 워크샵까지 이수해야</b> 이수증이 발급됩니다.<br>

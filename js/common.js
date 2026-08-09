@@ -75,6 +75,28 @@ export function guessCourseKey(courseName){
   return bySub ? bySub.key : '';
 }
 
+/** v22: 미니 워크샵 ↔ 온라인 과목 연동 시 '이수로 인정되는' 과목 키 목록.
+    음악코딩은 기본·특수가 같은 교구(허밍블럭스)를 사용하므로
+    두 과목 중 어느 것을 이수해도 인정하도록 묶습니다. */
+export function acceptedOnlineKeys(courseName){
+  const key = guessCourseKey(courseName);
+  if (!key) return [];
+  const c = courseByKey(key);
+  if (c && c.name.startsWith('AI음악코딩')) return ['mus-elem', 'sp-mus'];
+  return [key];
+}
+
+/** 인정 과목 묶음의 표시용 이름 (예: 'AI음악코딩 (기본·특수 중 1과목)') */
+export function acceptedOnlineLabel(keys){
+  if (!keys.length) return '';
+  if (keys.length === 1){
+    const c = courseByKey(keys[0]);
+    return c ? c.name : keys[0];
+  }
+  const prefix = (courseByKey(keys[0])?.name || '').split(':')[0] || '해당 과목';
+  return `${prefix} (기본·특수 중 1과목)`;
+}
+
 /* ---------- v11: 강사 워크샵 지원 자격 ---------- */
 export const WORKSHOP_TARGET = '강사를 희망하고 있는 교원, 프리랜서 등';
 export const WORKSHOP_QUALIFICATION = {
