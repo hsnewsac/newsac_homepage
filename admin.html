@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=41">
+<link rel="stylesheet" href="css/style.css?v=42">
 </head>
 <body>
 
@@ -301,8 +301,8 @@
               </div>
             </div>
             <div class="form-row">
-              <label for="p-capacity">모집 정원 <span class="req">*</span></label>
-              <input id="p-capacity" type="number" min="1" placeholder="예) 90" required>
+              <label for="p-capacity">모집 정원 <span class="hint">(과목별 정원 합계)</span></label>
+              <input id="p-capacity" type="number" min="1" placeholder="아래 과목별 정원에서 자동 계산" readonly>
             </div>
             <div class="form-row">
               <label for="p-applied">기존 신청 인원 (선택)</label>
@@ -325,6 +325,15 @@
             </div>
             <input id="p-courseExtra" type="text" class="course-extra"
               placeholder="목록에 없는 강좌가 있으면 쉼표(,)로 구분해 입력 — 선택 사항">
+          </div>
+
+          <!-- v42: 과목별 운영 시간 · 정원 -->
+          <div class="form-row" id="p-cmRow">
+            <label>과목별 운영 시간 · 정원 <span class="req">*</span>
+              <span class="hint">— 과목마다 정원을 따로 관리합니다. 시간대가 다른 과목을 함께 신청해도 서로의 정원을 깎지 않습니다.</span>
+            </label>
+            <div class="cmeta" id="p-courseMeta"></div>
+            <p class="form-note" id="p-cmEmpty">위에서 개설 강좌를 선택하면 과목별 입력란이 나타납니다.</p>
           </div>
           <label class="form-check">
             <input type="checkbox" id="p-loginonly">

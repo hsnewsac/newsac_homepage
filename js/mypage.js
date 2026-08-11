@@ -20,7 +20,8 @@ import {
   courseByKey, acceptedOnlineKeys, acceptedOnlineLabel,
   ORG_TYPES, SPECIALTIES, REGIONS, CAREER_LEVELS,
   ROLES, ROLE_ORDER, roleOf, GRADES, INTERESTS, STAFF_DUTIES,
-  STATUS, STATUS_ORDER, statusOf, statusChip, statusSet, checkIsAdmin
+  STATUS, STATUS_ORDER, statusOf, statusChip, statusSet, checkIsAdmin,
+  appliedPatch
 } from './common.js';
 
 initLayout('mypage');
@@ -681,7 +682,8 @@ async function cancelMyApp(id){
   try {
     await deleteDoc(doc(db, 'applications', id));
     if (a.programId){
-      await updateDoc(doc(db, 'programs', a.programId), { applied: increment(-1) }).catch(()=>{});
+      await updateDoc(doc(db, 'programs', a.programId),
+        appliedPatch(increment, a.course, -1)).catch(()=>{});
     }
     toast('신청을 취소했습니다.');
     await loadMyApps();

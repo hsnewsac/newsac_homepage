@@ -22,7 +22,8 @@ import {
   SCHOOL_LEVELS, CAMP_MODES, RECRUIT_ROLES, RECRUIT_FOR, WORKSHOP_MODES, fmtPeriodKo,
   STATUS, STATUS_ORDER, statusOf, statusChip, APPROVE_STATUS, statusSet, isRecruit,
   ROLES, ROLE_ORDER, roleOf,
-  tsText, tsNum, toast, openModal, closeModal, bindModalEvents, checkIsAdmin, mdToHtml
+  tsText, tsNum, toast, openModal, closeModal, bindModalEvents, checkIsAdmin, mdToHtml,
+  courseCountKey, appliedPatch, courseInfoOf, courseStat, courseTimeText
 } from './common.js';
 import { sendCertificateEmail, certEmailEnabled } from './email-config.js';
 
@@ -153,6 +154,66 @@ function updateCourseCount(prefix){
   const el = $(`${prefix}-courseCount`);
   el.textContent = `${n}개 선택`;
   el.classList.toggle('on', n > 0);
+  if (prefix === 'p') renderCourseMeta();
+}
+
+/* ---------- v42: 과목별 운영 시간 · 정원 ----------
+   개설 강좌 선택이 바뀔 때마다 입력란을 다시 그리되,
+   이미 입력한 값은 과목명 기준으로 유지합니다. */
+let cmDraft = {};        // { 과목명: {start, end, cap} }
+
+function currentCourseNames(){
+  const extra = $('p-courseExtra').value.split(',').map(v => v.trim()).filter(Boolean);
+  return [...pickedCourses('p'), ...extra];
+}
+function collectCourseMeta(){
+  document.querySelectorAll('#p-courseMeta [data-cm]').forEach(row => {
+    const n = row.dataset.cm;
+    cmDraft[n] = {
+      start: row.querySelector('.cm-start').value,
+      end:   row.querySelector('.cm-end').value,
+      cap:   row.querySelector('.cm-cap').value
+    };
+  });
+}
+function renderCourseMeta(){
+  const box = $('p-courseMeta');
+  if (!box) return;
+  collectCourseMeta();                       // 다시 그리기 전에 입력값 보존
+  const names = currentCourseNames();
+  $('p-cmEmpty').style.display = names.length ? 'none' : '';
+  box.innerHTML = names.map(n => {
+    const d = cmDraft[n] || {};
+    return `<div class="cm-row" data-cm="${esc(n)}">
+      <span class="cm-name" title="${esc(n)}">${esc(n)}</span>
+      <span class="cm-time">
+        <input type="time" class="cm-start" step="300" value="${esc(d.start || '')}" aria-label="${esc(n)} 시작 시각">
+        <em>~</em>
+        <input type="time" class="cm-end" step="300" value="${esc(d.end || '')}" aria-label="${esc(n)} 종료 시각">
+      </span>
+      <span class="cm-capbox">
+        <input type="number" class="cm-cap" min="1" value="${esc(d.cap || '')}" placeholder="정원" aria-label="${esc(n)} 정원">
+        <em>명</em>
+      </span>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('input').forEach(i => i.addEventListener('input', () => {
+    collectCourseMeta(); sumCourseCap();
+  }));
+  sumCourseCap();
+}
+function sumCourseCap(){
+  const names = currentCourseNames();
+  const total = names.reduce((s, n) => s + (Number((cmDraft[n] || {}).cap) || 0), 0);
+  $('p-capacity').value = total || '';
+}
+/** 저장용 courseInfo 배열 (courses와 같은 순서) */
+function buildCourseInfo(names){
+  collectCourseMeta();
+  return names.map(n => {
+    const d = cmDraft[n] || {};
+    return { name: n, start: d.start || '', end: d.end || '', cap: Number(d.cap) || 0 };
+  });
 }
 function pickAllCourses(prefix, on){
   document.querySelectorAll(`input[data-course="${prefix}"]`).forEach(c => { c.checked = on; });
@@ -165,6 +226,7 @@ function setPickedLevels(list){
   const set = new Set(list || []);
   document.querySelectorAll('input[data-level="r"]').forEach(c => { c.checked = set.has(c.value); });
 }
+$('p-courseExtra').addEventListener('input', renderCourseMeta);
 Object.assign(window, { pickAllCourses, updateCourseCount });
 
 $('cd-region').innerHTML = '<option value="">전체</option>' +
@@ -303,14 +365,31 @@ $('programForm').addEventListener('submit', async e => {
     place: $('p-place').value.trim(),
     content: $('p-content').value.trim(),
     deadline: $('p-deadline').value,
-    capacity: Number($('p-capacity').value),
     loginOnly: $('p-loginonly').checked,
     courses: [...pickedCourses('p'), ...extra]
   };
   if (!data.courses.length){ alert('개설 강좌를 1개 이상 선택해주세요.'); return; }
+  /* v42: 과목별 운영 시간·정원 — 정원 합계를 모집 정원으로 씁니다 */
+  data.courseInfo = buildCourseInfo(data.courses);
+  const noCap = data.courseInfo.filter(c => !(c.cap > 0)).map(c => c.name);
+  if (noCap.length){
+    alert(`과목별 정원을 입력해주세요.\n미입력: ${noCap.join(', ')}`);
+    return;
+  }
+  const noTime = data.courseInfo.filter(c => !c.start || !c.end).map(c => c.name);
+  if (noTime.length && !confirm(`운영 시간이 비어 있는 과목이 있습니다.\n${noTime.join(', ')}\n\n그대로 저장할까요?`)) return;
+  const badTime = data.courseInfo.find(c => c.start && c.end && c.start > c.end);
+  if (badTime){ alert(`[${badTime.name}] 종료 시각이 시작 시각보다 빠릅니다.`); return; }
+  data.capacity = data.courseInfo.reduce((s, c) => s + c.cap, 0);
   try {
     if (idVal){
       const before = programs.find(x => x.id === idVal) || {};
+      /* 새로 추가된 과목은 카운터를 0으로 만들어 둡니다 (기존 과목 수치는 유지) */
+      const prevCounts = before.courseApplied || {};
+      data.courseInfo.forEach(c => {
+        const k = courseCountKey(c.name);
+        if (k && prevCounts[k] === undefined) data['courseApplied.' + k] = 0;
+      });
       await updateDoc(doc(db, 'programs', idVal), data);
       toast('프로그램을 수정했습니다.');
       await syncApplications(idVal, before, data);
@@ -403,6 +482,17 @@ function editProgram(id){
   $('p-capacity').value = p.capacity;
   $('p-loginonly').checked = !!p.loginOnly;
   setPickedCourses('p', Array.isArray(p.courses) ? p.courses : []);
+  /* v42: 과목별 운영 시간·정원 불러오기 (없던 프로그램은 정원을 균등 배분해 채웁니다) */
+  cmDraft = {};
+  courseInfoOf(p).forEach(c => {
+    cmDraft[c.name] = { start: c.start, end: c.end, cap: c.cap || '' };
+  });
+  $('p-courseExtra').value = (p.courses || [])
+    .filter(v => !COURSES_2026.some(c => c.name === v)).join(', ');
+  renderCourseMeta();
+  if (!Array.isArray(p.courseInfo) || !p.courseInfo.length){
+    toast('과목별 정원이 없어 전체 정원을 균등하게 나눠 채웠습니다. 확인 후 저장해주세요.', 'warn');
+  }
   /* 구버전 데이터: startDate/endDate 없이 period 문자열만 있는 경우 안내 */
   if (!p.startDate && p.period) toast(`이전 형식의 운영 기간(${p.period})입니다. 날짜를 다시 선택해주세요.`, 'warn');
   $('p-applied').value = p.applied || 0;
@@ -418,7 +508,9 @@ function resetProgramForm(){
   $('p-applied').value = 0;
   $('p-applied').disabled = false;
   $('p-target').value = WORKSHOP_TARGET;   // 기본 대상 문구 복원
+  cmDraft = {};
   setPickedCourses('p', []);
+  renderCourseMeta();
   $('p-courseExtra').value = '';
   $('pFormTitle').textContent = '📌 새 강사 워크샵 등록';
   $('pFormSubmit').textContent = '워크샵 등록';
@@ -455,6 +547,19 @@ function byWorkshopDate(list){
   });
 }
 
+/** v42: 과목별 신청/정원 요약 칩 */
+function courseSeatChips(p){
+  const list = courseInfoOf(p);
+  if (!list.length || !list.some(c => Number(c.cap) > 0)) return '';
+  return `<span class="pc-seats">${list.map(c => {
+    const st = courseStat(p, c);
+    const t = courseTimeText(c);
+    const cls = st.full ? 'full' : (st.remain <= 3 ? 'soon' : '');
+    return `<span class="${cls}" title="${esc(c.name)}${t ? ' · ' + esc(t) : ''}">${
+      esc(c.name.length > 12 ? c.name.slice(0, 12) + '…' : c.name)} ${st.applied}/${st.cap}</span>`;
+  }).join('')}</span>`;
+}
+
 function progRow(p){
   const dd = ddayInfo(p);
   const closed = !p.open || dd.closed;
@@ -468,7 +573,8 @@ function progRow(p){
         title="${mini ? '미니 — 교구 사용법 워크샵, 온라인 워크샵 병행 이수 필요' : '정규 — 당일 참여로 수료'}">${mini ? '미니' : '정규'}</span></td>`}
       <td class="c-name"><b>${esc(p.title)}</b>${p.loginOnly ? ' <span class="lock-i" title="로그인 회원만 신청 가능">🔐</span>' : ''}${(p.period || p.place) ? `<br><span class="cell-sub">${esc([p.period, p.place].filter(Boolean).join(' · '))}</span>` : ''}</td>
       <td data-l="${recruit ? '지원 마감' : '접수 마감'}"><span class="v">${esc(p.deadline)}${p.deadlineTime ? ` ${esc(p.deadlineTime)}` : ''}${p.openDate ? `<br><span class="cell-sub">시작 ${esc(p.openDate)}${p.openTime ? ` ${esc(p.openTime)}` : ''}</span>` : ''}</span></td>
-      <td data-l="${recruit ? '지원/모집' : '신청/정원'}"><span class="v">${p.applied || 0} / ${p.capacity}</span></td>
+      <td data-l="${recruit ? '지원/모집' : '신청/정원'}"><span class="v">${p.applied || 0} / ${p.capacity}${
+        recruit ? '' : courseSeatChips(p)}</span></td>
       <td data-l="상태"><span class="v"><span class="chip ${closed ? 'close' : 'open'}">${closed ? '마감' : (notYet ? '접수예정' : '접수중')}</span></span></td>
       <td class="c-swipe"><div class="sw-btns">
         <button class="sw-btn edit" onclick="editProgram('${p.id}')"><i>✎</i><span>수정</span></button>
@@ -1158,7 +1264,8 @@ async function deleteApplicant(id){
   try {
     await deleteDoc(doc(db, 'applications', id));
     if (a.programId){
-      await updateDoc(doc(db, 'programs', a.programId), { applied: increment(-1) }).catch(()=>{});
+      await updateDoc(doc(db, 'programs', a.programId),
+        appliedPatch(increment, a.course, -1)).catch(()=>{});
     }
     toast('신청 내역을 삭제했습니다.');
   } catch (err) { alert(fbError(err)); }
@@ -1285,7 +1392,8 @@ $('walkInForm').addEventListener('submit', async e => {
       createdAt: serverTimestamp(),
       statusAt: serverTimestamp()
     });
-    await updateDoc(doc(db, 'programs', p.id), { applied: increment(1) }).catch(() => {});
+    await updateDoc(doc(db, 'programs', p.id),
+      appliedPatch(increment, $('wi-course').value, 1)).catch(() => {});
 
     /* v23: 미니 워크샵 현장 접수가 회원과 연결된 경우 온라인 수강도 자동 등록 */
     const wiUid = $('wi-uid').value;

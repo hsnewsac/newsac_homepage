@@ -510,6 +510,62 @@ export function todayStr(){
   const t = new Date();
   return t.getFullYear() + '.' + String(t.getMonth()+1).padStart(2,'0') + '.' + String(t.getDate()).padStart(2,'0');
 }
+/* =========================================================
+   v42: 과목(강좌)별 운영 시간 · 정원
+   한 사람이 시간대가 다른 여러 과목을 신청해도 전체 정원이 함께 깎여
+   조기 마감되던 문제를 해결하기 위해, 과목마다 정원을 따로 둡니다.
+   - programs.courseInfo : [{ name, start, end, cap }] (courses와 같은 순서)
+   - programs.courseApplied : { <과목키>: 신청수 }
+   과목키는 Firestore 맵 키로 쓸 수 없는 문자를 걸러 만듭니다.
+========================================================= */
+export function courseCountKey(name){
+  const s = String(name || '').trim().replace(/[.\/\[\]*~`$#\s]+/g, '_').slice(0, 80);
+  return s ? 'c_' + s : '';
+}
+/** 신청/취소 시 프로그램 문서에 반영할 카운터 patch를 만듭니다.
+    increment는 호출부에서 넘겨받아 common.js가 firestore를 직접 import하지 않게 합니다. */
+export function appliedPatch(increment, courseName, delta){
+  const patch = { applied: increment(delta) };
+  const k = courseCountKey(courseName);
+  if (k) patch['courseApplied.' + k] = increment(delta);
+  return patch;
+}
+/** 과목 목록을 [{name, start, end, cap}] 형태로 정규화합니다.
+    courseInfo가 없는 예전 프로그램은 전체 정원을 과목 수로 나눠 채웁니다. */
+export function courseInfoOf(p){
+  const names = Array.isArray(p && p.courses) ? p.courses : [];
+  const info = Array.isArray(p && p.courseInfo) ? p.courseInfo : [];
+  const byName = new Map(info.filter(x => x && x.name).map(x => [x.name, x]));
+  const evenCap = names.length ? Math.ceil((Number(p.capacity) || 0) / names.length) : 0;
+  return names.map(n => {
+    const m = byName.get(n) || {};
+    return {
+      name: n,
+      start: m.start || '',
+      end: m.end || '',
+      cap: Number(m.cap) > 0 ? Number(m.cap) : evenCap
+    };
+  });
+}
+/** 과목 하나의 신청 현황 */
+export function courseStat(p, c){
+  const cap = Number(c.cap) || 0;
+  const applied = Number(((p && p.courseApplied) || {})[courseCountKey(c.name)]) || 0;
+  return { cap, applied, remain: Math.max(0, cap - applied), full: cap > 0 && applied >= cap };
+}
+/** 과목 운영 시간 표기 (09:00~12:00) */
+export function courseTimeText(c){
+  if (!c) return '';
+  if (c.start && c.end) return `${c.start}~${c.end}`;
+  return c.start || c.end || '';
+}
+/** 모든 과목이 찼는지 — 과목 정원이 하나도 없으면 전체 정원으로 판단합니다 */
+export function allCoursesFull(p){
+  const list = courseInfoOf(p);
+  if (!list.length || !list.some(c => Number(c.cap) > 0)) return null;   // 판단 불가
+  return list.every(c => courseStat(p, c).full);
+}
+
 /* v41: 공지 본문 — 새 글은 마크다운 원문(md:true)을 저장하고 볼 때 변환합니다.
    md 표시가 없는 예전 글은 이미 HTML로 저장되어 있으므로 그대로 씁니다. */
 export function noticeBodyHTML(n){

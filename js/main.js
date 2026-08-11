@@ -13,7 +13,8 @@ import {
   initLayout, esc, ddayInfo, notYetOpen, programEnded, noticeIsNew, catClass, fbError,
   KIND, ORG_TYPES, openModal, closeModal, bindModalEvents, toast,
   ROLES, roleOf, qualificationHTML, RECRUIT_FOR,
-  guessCourseKey, acceptedOnlineKeys, courseByKey
+  guessCourseKey, acceptedOnlineKeys, courseByKey,
+  courseInfoOf, courseStat, courseTimeText, allCoursesFull, appliedPatch
 } from './common.js';
 import { sendApplicationEmail, emailEnabled } from './email-config.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
@@ -29,6 +30,10 @@ document.getElementById('a-orgtype').innerHTML =
 const $ = id => document.getElementById(id);
 let programs = [];
 let currentUser = null, userProfile = null;
+let endedOpen = false;        // 종료된 워크샵 펼침 상태 (렌더보다 먼저 선언)
+/* v27 방문객 대시보드 상태 — 로그인 콜백이 먼저 실행돼도 안전하도록 위쪽에 둡니다 */
+const VDASH_DEFAULTS = { students: 0, instructors: 0, visit: 0, group: 0, workshops: 0, goal: 4800 };
+let vdashStats = null, vdashPainted = false;
 
 onAuthStateChanged(auth, async user => {
   currentUser = user;
@@ -45,8 +50,6 @@ onAuthStateChanged(auth, async user => {
 /* ---------- v27: 방문객 대시보드 ----------
    수치는 stats/public 문서에서 읽습니다 (관리자 대시보드에서 입력).
    강사 워크샵 건수는 미입력 시 등록된 워크샵 프로그램 수로 대체합니다. */
-const VDASH_DEFAULTS = { students: 0, instructors: 0, visit: 0, group: 0, workshops: 0, goal: 4800 };
-let vdashStats = null, vdashPainted = false;
 
 function countUp(el, to, dur = 1400){
   if (!el) return;
@@ -99,7 +102,12 @@ function cardHTML(p){
      접수 마감은 마감일 경과 또는 관리자의 접수 중지로만 처리합니다. */
   /* v33: 운영 기간이 지난 프로그램은 무조건 마감으로 처리합니다 */
   const ended = programEnded(p);
-  const closed = ended || !p.open || dd.closed || (!isRecruit && remain <= 0);
+  /* v42: 과목별 정원이 있으면 전 과목이 찬 경우에만 마감합니다.
+     (시간대가 다른 과목을 함께 신청해도 서로의 정원을 깎지 않습니다) */
+  const perCourse = courseInfoOf(p);
+  const byCourse = allCoursesFull(p);
+  const seatFull = byCourse === null ? remain <= 0 : byCourse;
+  const closed = ended || !p.open || dd.closed || (!isRecruit && seatFull);
   /* v19: 접수 시작(날짜+시각) 전이면 '접수 예정'으로 표시하고 신청을 막습니다 */
   const notYet = !closed && notYetOpen(p);
   const pct = Math.min(100, Math.round(applied / p.capacity * 100));
@@ -111,8 +119,9 @@ function cardHTML(p){
     ? `운영 종료 · 최종 <strong>${applied}명</strong> ${isRecruit ? '지원' : '신청'}`
     : isRecruit
     ? `모집 <strong>${p.capacity}명</strong> · 현재 <strong>${applied}명</strong> 지원 · 서류 검토 후 선발`
-    : (remain <= 0 ? '정원 마감'
-        : (remain <= 10 ? `잔여 <strong>${remain}석</strong> · 마감 임박` : '회차별 선착순 마감'));
+    : (seatFull ? '전 과목 정원 마감'
+        : (byCourse !== null ? '과목별 선착순 마감' 
+          : (remain <= 10 ? `잔여 <strong>${remain}석</strong> · 마감 임박` : '회차별 선착순 마감')));
 
   let action;
   if (ended){
@@ -168,6 +177,18 @@ function cardHTML(p){
         ${isRecruit ? '지원 현황' : '신청 현황'} <strong>${applied} / ${p.capacity}명</strong> · ${seatText}
         <div class="seat-track"><div class="seat-fill" style="width:${pct}%"></div></div>
       </div>
+      ${(!isRecruit && byCourse !== null) ? `<ul class="cseat">
+        ${perCourse.map(c => {
+          const st = courseStat(p, c);
+          const t = courseTimeText(c);
+          return `<li class="${st.full ? 'full' : (st.remain <= 3 ? 'soon' : '')}">
+            <span class="cs-name">${esc(c.name)}</span>
+            ${t ? `<span class="cs-time">${esc(t)}</span>` : ''}
+            <span class="cs-num">${st.full ? '마감' : `잔여 ${st.remain}석`}
+              <em>${st.applied}/${st.cap}</em></span>
+          </li>`;
+        }).join('')}
+      </ul>` : ''}
       ${wrongRole ? `<p class="card-note">현재 <b>${ROLES[roleOf(userProfile)].label}</b> 회원으로 로그인되어 있습니다.
         <a href="mypage.html">마이페이지</a>에서 회원 유형을 <b>강사</b>로 변경하면 지원할 수 있습니다.</p>` : ''}
       <div class="open-actions">
@@ -208,8 +229,6 @@ function byEndDesc(list){
     return ea === eb ? 0 : (ea > eb ? -1 : 1);
   });
 }
-
-let endedOpen = false;
 
 function renderPrograms(){
   const all     = programs.filter(p => p.type !== 'recruit' && !isOnlineWs(p));
@@ -341,8 +360,27 @@ function openApply(programId){
   } else {
     sel.style.display = 'none'; sel.required = false; sel.innerHTML = '';
     checks.style.display = ''; courseNote.style.display = '';
-    checks.innerHTML = courses.map((c, i) =>
-      `<label class="chk"><input type="checkbox" name="ac" value="${esc(c)}" id="ac${i}"><span>${esc(c)}</span></label>`).join('');
+    /* v42: 과목별 운영 시간과 잔여 정원을 함께 보여주고, 찬 과목은 고를 수 없게 합니다 */
+    const info = courseInfoOf(p);
+    const hasCap = info.some(c => Number(c.cap) > 0);
+    checks.innerHTML = courses.map((c, i) => {
+      const ci = info.find(x => x.name === c) || { name: c };
+      const st = courseStat(p, ci);
+      const t = courseTimeText(ci);
+      const cls = hasCap ? (st.full ? 'full' : (st.remain <= 3 ? 'soon' : '')) : '';
+      return `<label class="chk cchk ${cls}">
+        <input type="checkbox" name="ac" value="${esc(c)}" id="ac${i}"${st.full && hasCap ? ' disabled' : ''}>
+        <span class="cc-main">
+          <b>${esc(c)}</b>
+          ${t ? `<em class="cc-time">🕘 ${esc(t)}</em>` : ''}
+        </span>
+        ${hasCap ? `<span class="cc-seat">${st.full ? '마감'
+          : `잔여 <b>${st.remain}</b>석`}<i>${st.applied}/${st.cap}</i></span>` : ''}
+      </label>`;
+    }).join('');
+    courseNote.innerHTML = hasCap
+      ? '과목마다 <b>정원이 따로</b> 관리됩니다. 시간이 겹치지 않으면 여러 과목을 함께 신청하셔도 다른 과목의 잔여 좌석이 줄지 않습니다.'
+      : '시간이 겹치지 않으면 여러 강좌를 함께 신청할 수 있습니다. 선택한 강좌 수만큼 신청이 각각 접수되며, 강좌별로 따로 취소할 수 있습니다.';
   }
 
   if (isRecruit){
@@ -416,6 +454,21 @@ $('applyForm').addEventListener('submit', async e => {
     $('applyError').style.display = 'block';
     return;
   }
+  /* v42: 접수 직전 과목 정원을 다시 확인합니다 (다른 사람이 먼저 접수한 경우) */
+  if (!isRecruitSubmit && p){
+    const info = courseInfoOf(p);
+    const full = chosenCourses.filter(name => {
+      const ci = info.find(x => x.name === name);
+      return ci && courseStat(p, ci).full;
+    });
+    if (full.length){
+      $('applyError').textContent =
+        `방금 정원이 찼습니다: ${full.join(', ')}\n다른 과목을 선택해주세요.`;
+      $('applyError').style.display = 'block';
+      openApply(programId);
+      return;
+    }
+  }
 
   const btn = $('applySubmitBtn');
   btn.disabled = true; btn.textContent = '접수 중…';
@@ -448,7 +501,9 @@ $('applyForm').addEventListener('submit', async e => {
     for (const course of chosenCourses){
       const ref = await addDoc(collection(db, 'applications'), { ...appData, course });
       ids.push(ref.id);
-      await updateDoc(doc(db, 'programs', programId), { applied: increment(1) }).catch(() => {});
+      /* v42: 전체 인원과 과목별 인원을 함께 반영합니다 */
+      await updateDoc(doc(db, 'programs', programId),
+        appliedPatch(increment, course, 1)).catch(() => {});
     }
     const courseText = chosenCourses.join(' · ');
 

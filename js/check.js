@@ -6,7 +6,7 @@ import { db } from './firebase-init.js';
 import {
   doc, getDoc, deleteDoc, updateDoc, increment
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
-import { initLayout, esc, fbError, statusOf } from './common.js';
+import { initLayout, esc, fbError, statusOf, appliedPatch } from './common.js';
 
 initLayout('check');
 
@@ -93,7 +93,8 @@ async function cancelApplication(){
   try {
     await deleteDoc(doc(db, 'applications', currentApp.id));
     if (currentApp.programId){
-      await updateDoc(doc(db, 'programs', currentApp.programId), { applied: increment(-1) }).catch(()=>{});
+      await updateDoc(doc(db, 'programs', currentApp.programId),
+        appliedPatch(increment, currentApp.course, -1)).catch(()=>{});
     }
     $('checkResult').style.display = 'none';
     $('cancelDone').style.display = 'block';

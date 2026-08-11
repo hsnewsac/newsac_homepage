@@ -3,7 +3,7 @@
    ※ 캐시 주의: 각 HTML의 <link href="css/style.css?v=NN">에
      버전 번호가 붙어 있습니다. 이 파일을 고칠 때는
      모든 HTML의 ?v= 값을 함께 올려야 브라우저가 새 파일을 받습니다.
-     (현재 v=41)
+     (현재 v=42)
 ========================================================= */
 :root{
   --leaf:#1E7F4F;
@@ -1849,3 +1849,77 @@ body.sw-nosel, body.sw-nosel *{user-select:none;-webkit-user-select:none;}
 .np-empty{color:#A8B2AC;font-size:.86rem;}
 /* 공지 상세 본문 — 마크다운 서식 적용 */
 .nd-body.md{font-size:.94rem;color:#3E4B44;}
+
+/* ==========================================================
+   v42 — 과목별 운영 시간 · 정원
+   ========================================================== */
+/* 관리자 입력란 */
+.cmeta{display:flex;flex-direction:column;gap:7px;}
+.cm-row{
+  display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;
+  padding:9px 12px;border:1px solid var(--line);border-radius:11px;background:var(--paper);
+}
+.cm-name{
+  font-size:.87rem;font-weight:700;color:#28352E;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.cm-time{display:inline-flex;align-items:center;gap:5px;}
+.cm-time input{width:112px;padding:6px 8px;font-size:.83rem;}
+.cm-time em, .cm-capbox em{font-style:normal;font-size:.8rem;color:#8A968E;}
+.cm-capbox{display:inline-flex;align-items:center;gap:5px;}
+.cm-capbox input{width:76px;padding:6px 8px;font-size:.83rem;text-align:right;}
+@media (max-width:700px){
+  .cm-row{grid-template-columns:1fr;gap:7px;}
+  .cm-name{white-space:normal;}
+  .cm-time input{flex:1;width:auto;}
+  .cm-capbox input{flex:1;width:auto;text-align:left;}
+}
+
+/* 홈 카드의 과목별 잔여 현황 */
+.cseat{display:flex;flex-direction:column;gap:5px;margin-top:10px;}
+.cseat li{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 11px;border-radius:9px;
+  background:var(--paper);border:1px solid var(--line);
+  font-size:.8rem;color:#4A5850;
+}
+.cseat .cs-name{font-weight:700;color:#28352E;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cseat .cs-time{flex:none;font-size:.75rem;color:#7A867F;}
+.cseat .cs-num{margin-left:auto;flex:none;font-weight:800;color:var(--leaf);white-space:nowrap;}
+.cseat .cs-num em{font-style:normal;font-weight:700;color:#9AA79E;margin-left:5px;font-size:.74rem;}
+.cseat li.soon{background:#FFF8E8;border-color:#F0DFB8;}
+.cseat li.soon .cs-num{color:#8A5A12;}
+.cseat li.full{background:#F4F5F3;border-color:#E2E6E0;color:#8A968E;}
+.cseat li.full .cs-name{color:#8A968E;}
+.cseat li.full .cs-num{color:#9AA79E;}
+
+/* 신청 모달의 과목 선택 */
+.chk.cchk{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border:1.5px solid var(--line);border-radius:11px;background:#fff;
+}
+.chk.cchk:hover{border-color:var(--sprout,#8ECFA6);}
+.chk.cchk .cc-main{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.chk.cchk .cc-main b{font-size:.88rem;font-weight:700;color:#28352E;}
+.chk.cchk .cc-time{font-style:normal;font-size:.76rem;color:#6A776F;}
+.chk.cchk .cc-seat{
+  margin-left:auto;flex:none;text-align:right;
+  font-size:.78rem;font-weight:800;color:var(--leaf);white-space:nowrap;
+}
+.chk.cchk .cc-seat i{display:block;font-style:normal;font-weight:700;
+  font-size:.72rem;color:#9AA79E;margin-top:1px;}
+.chk.cchk.soon{border-color:#F0DFB8;background:#FFFCF5;}
+.chk.cchk.soon .cc-seat{color:#8A5A12;}
+.chk.cchk.full{background:#F4F5F3;border-color:#E2E6E0;opacity:.7;cursor:not-allowed;}
+.chk.cchk.full .cc-seat{color:#9AA79E;}
+.chk.cchk:has(input:checked){border-color:var(--leaf);background:#F1FAF4;}
+
+/* 관리자 목록의 과목별 현황 */
+.pc-seats{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
+.pc-seats span{
+  padding:2px 7px;border-radius:6px;font-size:.71rem;font-weight:700;
+  background:var(--sprout-soft);color:var(--leaf);white-space:nowrap;
+}
+.pc-seats span.full{background:#F4F5F3;color:#8A968E;}
+.pc-seats span.soon{background:#FFF3DD;color:#8A5A12;}
