@@ -6,7 +6,8 @@ import { db } from './firebase-init.js';
 import {
   collection, updateDoc, doc, onSnapshot, query, orderBy, increment
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
-import { initLayout, esc, noticeIsNew, catClass, fbError } from './common.js';
+import { initLayout, esc, noticeIsNew, catClass, fbError,
+         noticeBodyHTML, noticeBodyText } from './common.js';
 
 initLayout('notice');
 
@@ -26,7 +27,7 @@ function filteredNotices(){
   const q = noticeQuery.toLowerCase();
   return base.filter(n =>
     n.title.toLowerCase().includes(q) ||
-    String(n.body).replace(/<[^>]*>/g, ' ').toLowerCase().includes(q)
+    noticeBodyText(n).toLowerCase().includes(q)
   );
 }
 
@@ -94,7 +95,7 @@ function openNotice(id){
           <span>조회 ${shownViews}</span>
         </div>
       </div>
-      <div class="nd-body">${n.body}</div>
+      <div class="nd-body md">${noticeBodyHTML(n)}</div>
       <div class="nd-nav">
         <div><span class="lbl">▲ 다음글</span>${next ? `<a href="javascript:openNotice('${next.id}')">${esc(next.title)}</a>` : '<span class="none">다음 글이 없습니다.</span>'}</div>
         <div><span class="lbl">▼ 이전글</span>${prev ? `<a href="javascript:openNotice('${prev.id}')">${esc(prev.title)}</a>` : '<span class="none">이전 글이 없습니다.</span>'}</div>

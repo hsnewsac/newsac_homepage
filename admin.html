@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=40">
+<link rel="stylesheet" href="css/style.css?v=41">
 </head>
 <body>
 
@@ -188,8 +188,35 @@
             </div>
           </div>
           <div class="form-row">
-            <label for="n-body">내용 <span class="req">*</span></label>
-            <textarea id="n-body" rows="4" placeholder="공지 내용을 입력하세요 (줄바꿈이 그대로 반영됩니다)" required></textarea>
+            <label for="n-body">내용 <span class="req">*</span>
+              <span class="hint">(마크다운 사용 가능)</span></label>
+            <textarea id="n-body" rows="8" required
+              placeholder="공지 내용을 입력하세요. 줄바꿈은 그대로 반영되고, 아래 마크다운 표기를 쓸 수 있습니다.
+
+## 소제목
+**굵게** *기울임* ~~취소선~~
+- 목록 항목
+1. 번호 목록
+> 인용문
+[링크 이름](https://example.com)
+---"></textarea>
+            <div class="md-help">
+              <b>마크다운 표기</b>
+              <span><code>## 소제목</code></span>
+              <span><code>**굵게**</code></span>
+              <span><code>*기울임*</code></span>
+              <span><code>- 목록</code></span>
+              <span><code>1. 번호</code></span>
+              <span><code>&gt; 인용</code></span>
+              <span><code>[이름](주소)</code></span>
+              <span><code>---</code> 구분선</span>
+              <button type="button" class="mini-btn" id="nPreviewBtn"
+                onclick="toggleNoticePreview()">미리보기</button>
+            </div>
+            <div class="np-wrap" id="nPreviewWrap" hidden>
+              <span class="np-label">미리보기</span>
+              <div class="md" id="nPreview"></div>
+            </div>
           </div>
           <label class="form-check">
             <input type="checkbox" id="n-pinned">

@@ -270,8 +270,13 @@ export function mdToHtml(src){
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
     .replace(/~~([^~]+)~~/g, '<del>$1</del>')
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-      '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    /* v41: 외부 주소뿐 아니라 사이트 안 페이지(online.html, #anchor 등)도 링크로 만듭니다.
+       javascript: 같은 위험한 주소는 링크로 만들지 않고 원문 그대로 둡니다. */
+    .replace(/\[([^\]]+)\]\(([^\s)]+)\)/g, (m0, txt, url) => {
+      if (!/^(https?:\/\/|mailto:|tel:|#|\/|[\w.\-]+\.html)/i.test(url)) return m0;
+      const ext = /^https?:\/\//i.test(url);
+      return `<a href="${url}"${ext ? ' target="_blank" rel="noopener"' : ''}>${txt}</a>`;
+    })
     /* 이미 링크로 감싸지지 않은 맨 URL 자동 연결 */
     .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g,
       '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
@@ -504,6 +509,18 @@ export function programEnded(p){
 export function todayStr(){
   const t = new Date();
   return t.getFullYear() + '.' + String(t.getMonth()+1).padStart(2,'0') + '.' + String(t.getDate()).padStart(2,'0');
+}
+/* v41: 공지 본문 — 새 글은 마크다운 원문(md:true)을 저장하고 볼 때 변환합니다.
+   md 표시가 없는 예전 글은 이미 HTML로 저장되어 있으므로 그대로 씁니다. */
+export function noticeBodyHTML(n){
+  if (!n) return '';
+  return n.md ? mdToHtml(n.body || '') : String(n.body || '');
+}
+/* 검색·미리보기용 순수 텍스트 */
+export function noticeBodyText(n){
+  const src = String((n && n.body) || '');
+  return (n && n.md ? src : src.replace(/<[^>]*>/g, ' '))
+    .replace(/\s+/g, ' ').trim();
 }
 export function noticeIsNew(dateStr){
   const d = new Date(String(dateStr).replace(/\./g, '-') + 'T00:00:00');
