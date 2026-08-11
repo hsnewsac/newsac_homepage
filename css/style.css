@@ -3,7 +3,7 @@
    ※ 캐시 주의: 각 HTML의 <link href="css/style.css?v=NN">에
      버전 번호가 붙어 있습니다. 이 파일을 고칠 때는
      모든 HTML의 ?v= 값을 함께 올려야 브라우저가 새 파일을 받습니다.
-     (현재 v=40)
+     (현재 v=41)
 ========================================================= */
 :root{
   --leaf:#1E7F4F;
@@ -1822,3 +1822,30 @@ body.sw-nosel, body.sw-nosel *{user-select:none;-webkit-user-select:none;}
   .swipe-table td[data-l] .v{min-width:0;line-height:1.6;}
   .swipe-table td:last-of-type[data-l]{padding-bottom:12px;}
 }
+
+/* ==========================================================
+   v41 — 공지사항 마크다운 작성 (표기 안내 + 미리보기)
+   ========================================================== */
+.md-help{
+  display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px;
+  font-size:.76rem;color:#7A867F;
+}
+.md-help b{font-weight:800;color:#5A6862;margin-right:2px;}
+.md-help span{
+  padding:3px 8px;border-radius:6px;
+  background:var(--paper);border:1px solid var(--line);white-space:nowrap;
+}
+.md-help code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.74rem;color:#3E4B44;}
+.md-help .mini-btn{margin-left:auto;}
+.np-wrap{
+  position:relative;margin-top:12px;padding:16px 16px 14px;
+  border:1px dashed var(--line);border-radius:12px;background:var(--paper);
+}
+.np-wrap[hidden]{display:none;}
+.np-label{
+  position:absolute;top:-9px;left:14px;padding:0 7px;
+  background:var(--paper);font-size:.72rem;font-weight:800;color:#8A968E;
+}
+.np-empty{color:#A8B2AC;font-size:.86rem;}
+/* 공지 상세 본문 — 마크다운 서식 적용 */
+.nd-body.md{font-size:.94rem;color:#3E4B44;}

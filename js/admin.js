@@ -22,7 +22,7 @@ import {
   SCHOOL_LEVELS, CAMP_MODES, RECRUIT_ROLES, RECRUIT_FOR, WORKSHOP_MODES, fmtPeriodKo,
   STATUS, STATUS_ORDER, statusOf, statusChip, APPROVE_STATUS, statusSet, isRecruit,
   ROLES, ROLE_ORDER, roleOf,
-  tsText, tsNum, toast, openModal, closeModal, bindModalEvents, checkIsAdmin
+  tsText, tsNum, toast, openModal, closeModal, bindModalEvents, checkIsAdmin, mdToHtml
 } from './common.js';
 import { sendCertificateEmail, certEmailEnabled } from './email-config.js';
 
@@ -567,15 +567,16 @@ Object.assign(window, { editProgram, resetProgramForm, deleteProgram, toggleOpen
 /* ==================== 공지 ==================== */
 $('noticeForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const bodyHtml = '<p>' + esc($('n-body').value.trim())
-    .replace(/\n{2,}/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
+  /* v41: 마크다운 원문을 그대로 저장하고 볼 때 변환합니다 (md:true 표시) */
+  const bodySrc = $('n-body').value.trim();
   const idVal = $('n-id').value;
   try {
     if (idVal){
       await updateDoc(doc(db, 'notices', idVal), {
         cat: $('n-cat').value,
         title: $('n-title').value.trim(),
-        body: bodyHtml,
+        body: bodySrc,
+        md: true,
         pinned: $('n-pinned').checked
       });
       toast('공지를 수정했습니다.');
@@ -587,7 +588,8 @@ $('noticeForm').addEventListener('submit', async e => {
         date: todayStr(),
         views: 0,
         pinned: $('n-pinned').checked,
-        body: bodyHtml,
+        body: bodySrc,
+        md: true,
         createdAt: serverTimestamp()
       });
       toast('공지를 등록했습니다.');
@@ -602,11 +604,15 @@ function editNotice(id){
   $('n-id').value = n.id;
   $('n-cat').value = n.cat;
   $('n-title').value = n.title;
-  $('n-body').value = String(n.body || '')
-    .replace(/<\/p><p>/g, '\n\n').replace(/<br\s*\/?>/g, '\n')
-    .replace(/<[^>]*>/g, '')
-    .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
-    .replace(/&quot;/g,'"').replace(/&#39;/g,"'").trim();
+  /* 예전 글은 HTML로 저장되어 있으므로 편집할 수 있게 텍스트로 되돌립니다 */
+  $('n-body').value = n.md
+    ? String(n.body || '')
+    : String(n.body || '')
+        .replace(/<\/p><p>/g, '\n\n').replace(/<br\s*\/?>/g, '\n')
+        .replace(/<[^>]*>/g, '')
+        .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+        .replace(/&quot;/g,'"').replace(/&#39;/g,"'").trim();
+  paintNoticePreview();
   $('n-pinned').checked = !!n.pinned;
   $('nFormTitle').textContent = '✏️ 공지 수정 — ' + n.title;
   $('nFormSubmit').textContent = '수정 저장';
@@ -617,7 +623,27 @@ function resetNoticeForm(){
   $('n-id').value = '';
   $('nFormTitle').textContent = '📢 공지사항 작성';
   $('nFormSubmit').textContent = '공지 등록';
+  paintNoticePreview();
 }
+
+/* v41: 작성 중인 마크다운을 실제 표시되는 모습으로 미리 보여줍니다 */
+function paintNoticePreview(){
+  const box = $('nPreview');
+  if (!box) return;
+  const src = $('n-body').value.trim();
+  box.innerHTML = src
+    ? mdToHtml(src)
+    : '<p class="np-empty">내용을 입력하면 실제 표시되는 모습이 여기에 나타납니다.</p>';
+}
+$('n-body').addEventListener('input', paintNoticePreview);
+function toggleNoticePreview(){
+  const wrap = $('nPreviewWrap');
+  const on = wrap.hasAttribute('hidden');
+  wrap.toggleAttribute('hidden', !on);
+  $('nPreviewBtn').textContent = on ? '미리보기 닫기' : '미리보기';
+  if (on) paintNoticePreview();
+}
+Object.assign(window, { toggleNoticePreview });
 async function togglePin(id){
   const n = notices.find(x => x.id === id);
   if (!n) return;
