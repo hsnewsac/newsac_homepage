@@ -461,18 +461,22 @@ function progRow(p){
   const notYet = !closed && notYetOpen(p);
   const mini = p.type === 'workshop' && (p.wsKind === 'mini' || (!p.wsKind && /미니|mini|교구/i.test(p.title || '')));
   const recruit = p.type === 'recruit';
+  /* v36: 구분 칸은 정규/미니 한 가지만 보여줍니다 — 이 표는 모두 강사 워크샵이라
+     유형 칩이 중복이었습니다. 회원 전용 표시는 워크샵명 옆으로 옮겼습니다. */
   return `<tr>
-      ${recruit ? '' : `<td><span class="chip ${p.type}">${KIND[p.type] || ''}</span>
-        ${mini ? '<span class="chip minik" title="온라인 워크샵 병행 이수 필요">미니</span>' : ''}
-        ${p.loginOnly ? '<span class="chip lock" title="로그인 회원만 신청 가능">🔐</span>' : ''}</td>`}
-      <td><b>${esc(p.title)}</b>${(p.period || p.place) ? `<br><span class="cell-sub">${esc([p.period, p.place].filter(Boolean).join(' · '))}</span>` : ''}</td>
-      <td>${esc(p.deadline)}${p.deadlineTime ? ` ${esc(p.deadlineTime)}` : ''}${p.openDate ? `<br><span class="cell-sub">시작 ${esc(p.openDate)}${p.openTime ? ` ${esc(p.openTime)}` : ''}</span>` : ''}</td>
-      <td>${p.applied || 0} / ${p.capacity}</td>
-      <td><span class="chip ${closed ? 'close' : 'open'}">${closed ? '마감' : (notYet ? '접수예정' : '접수중')}</span></td>
-      <td><div class="t-actions">
-        <button class="mini-btn" onclick="editProgram('${p.id}')">수정</button>
-        <button class="mini-btn" onclick="toggleOpen('${p.id}')">${p.open ? '마감처리' : '접수재개'}</button>
-        <button class="mini-btn danger" onclick="deleteProgram('${p.id}')">삭제</button>
+      ${recruit ? '' : `<td class="c-kind"><span class="wskind ${mini ? 'mini' : 'reg'}"
+        title="${mini ? '미니 — 교구 사용법 워크샵, 온라인 워크샵 병행 이수 필요' : '정규 — 당일 참여로 수료'}">${mini ? '미니' : '정규'}</span></td>`}
+      <td class="c-name"><b>${esc(p.title)}</b>${p.loginOnly ? ' <span class="lock-i" title="로그인 회원만 신청 가능">🔐</span>' : ''}${(p.period || p.place) ? `<br><span class="cell-sub">${esc([p.period, p.place].filter(Boolean).join(' · '))}</span>` : ''}</td>
+      <td data-l="${recruit ? '지원 마감' : '접수 마감'}"><span class="v">${esc(p.deadline)}${p.deadlineTime ? ` ${esc(p.deadlineTime)}` : ''}${p.openDate ? `<br><span class="cell-sub">시작 ${esc(p.openDate)}${p.openTime ? ` ${esc(p.openTime)}` : ''}</span>` : ''}</span></td>
+      <td data-l="${recruit ? '지원/모집' : '신청/정원'}"><span class="v">${p.applied || 0} / ${p.capacity}</span></td>
+      <td data-l="상태"><span class="v"><span class="chip ${closed ? 'close' : 'open'}">${closed ? '마감' : (notYet ? '접수예정' : '접수중')}</span></span></td>
+      <td class="c-swipe"><div class="swipe-cell">
+        <span class="sw-hint" aria-hidden="true">밀기</span>
+        <div class="sw-btns">
+          <button class="sw-btn edit" onclick="editProgram('${p.id}')">수정</button>
+          <button class="sw-btn ${p.open ? 'warn' : 'ok'}" onclick="toggleOpen('${p.id}')">${p.open ? '마감처리' : '접수재개'}</button>
+          <button class="sw-btn danger" onclick="deleteProgram('${p.id}')">삭제</button>
+        </div>
       </div></td>
     </tr>`;
 }
