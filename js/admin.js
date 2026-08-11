@@ -407,21 +407,32 @@ async function toggleOpen(id){
   try { await updateDoc(doc(db, 'programs', id), { open: !p.open }); }
   catch (err) { alert(fbError(err)); }
 }
-function renderAdminTable(){
-  const tb = $('programTableBody');
-  if (!programs.length){
-    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#6A776F;">등록된 프로그램이 없습니다. 위에서 새 프로그램을 등록하세요.</td></tr>';
-    return;
-  }
-  tb.innerHTML = programs.map(p => {
-    const dd = ddayInfo(p);
-    const closed = !p.open || dd.closed;
-    const notYet = !closed && notYetOpen(p);
-    const mini = p.type === 'workshop' && (p.wsKind === 'mini' || (!p.wsKind && /미니|mini|교구/i.test(p.title || '')));
-    return `<tr>
-      <td><span class="chip ${p.type}">${KIND[p.type] || ''}</span>
+/* v34: 워크샵 목록은 운영일 순 — 예정된 워크샵이 위(가까운 순),
+   지난 워크샵은 아래(최근 순). 강사 모집 공고는 [강사 배정] 탭에서 관리합니다. */
+function byWorkshopDate(list){
+  const today = (d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)(new Date());
+  const key = p => p.startDate || p.deadline || '';
+  return [...list].sort((a, b) => {
+    const ka = key(a), kb = key(b);
+    if (!ka && !kb) return 0;
+    if (!ka) return 1;
+    if (!kb) return -1;
+    const pa = ka < today ? 1 : 0, pb = kb < today ? 1 : 0;   // 지난 건은 뒤로
+    if (pa !== pb) return pa - pb;
+    return pa === 0 ? ka.localeCompare(kb) : kb.localeCompare(ka);
+  });
+}
+
+function progRow(p){
+  const dd = ddayInfo(p);
+  const closed = !p.open || dd.closed;
+  const notYet = !closed && notYetOpen(p);
+  const mini = p.type === 'workshop' && (p.wsKind === 'mini' || (!p.wsKind && /미니|mini|교구/i.test(p.title || '')));
+  const recruit = p.type === 'recruit';
+  return `<tr>
+      ${recruit ? '' : `<td><span class="chip ${p.type}">${KIND[p.type] || ''}</span>
         ${mini ? '<span class="chip minik" title="온라인 워크샵 병행 이수 필요">미니</span>' : ''}
-        ${p.loginOnly ? '<span class="chip lock" title="로그인 회원만 신청 가능">🔐</span>' : ''}</td>
+        ${p.loginOnly ? '<span class="chip lock" title="로그인 회원만 신청 가능">🔐</span>' : ''}</td>`}
       <td><b>${esc(p.title)}</b>${(p.period || p.place) ? `<br><span class="cell-sub">${esc([p.period, p.place].filter(Boolean).join(' · '))}</span>` : ''}</td>
       <td>${esc(p.deadline)}${p.deadlineTime ? ` ${esc(p.deadlineTime)}` : ''}${p.openDate ? `<br><span class="cell-sub">시작 ${esc(p.openDate)}${p.openTime ? ` ${esc(p.openTime)}` : ''}</span>` : ''}</td>
       <td>${p.applied || 0} / ${p.capacity}</td>
@@ -432,8 +443,32 @@ function renderAdminTable(){
         <button class="mini-btn danger" onclick="deleteProgram('${p.id}')">삭제</button>
       </div></td>
     </tr>`;
-  }).join('');
 }
+
+function renderAdminTable(){
+  /* 워크샵·연수 목록 (강사 워크샵 탭) */
+  const tb = $('programTableBody');
+  const list = byWorkshopDate(programs.filter(p => p.type !== 'recruit'));
+  tb.innerHTML = list.length
+    ? list.map(progRow).join('')
+    : '<tr><td colspan="6" style="text-align:center;color:#6A776F;">등록된 워크샵이 없습니다. 위에서 새 워크샵을 등록하세요.</td></tr>';
+  $('badgeProgram').textContent = list.length;
+
+  renderRecruitTable();
+}
+
+/** v34: 모집 공고 목록 (강사 배정 탭) */
+function renderRecruitTable(){
+  const tb = $('recruitTableBody');
+  if (!tb) return;
+  const list = byWorkshopDate(programs.filter(p => p.type === 'recruit'));
+  tb.innerHTML = list.length
+    ? list.map(progRow).join('')
+    : '<tr><td colspan="5" style="text-align:center;color:#6A776F;">등록된 모집 공고가 없습니다. 위에서 새 공고를 등록하세요.</td></tr>';
+  const badge = $('badgeRecruit');
+  if (badge) badge.textContent = list.length;
+}
+
 Object.assign(window, { editProgram, resetProgramForm, deleteProgram, toggleOpen });
 
 /* ==================== 공지 ==================== */
@@ -2597,7 +2632,6 @@ onSnapshot(
     renderDashboard();
     refreshAssignPrograms();
     if ($('mg-panel') && $('mg-panel').style.display !== 'none') refreshMigratePrograms();
-    $('badgeProgram').textContent = programs.length;
     buildProgramFilter();          // v33: 프로그램 정보 갱신 시 필터 라벨도 최신화
     if ($('tab-assign').classList.contains('on')) renderAssign();
   },
