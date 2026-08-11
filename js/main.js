@@ -10,7 +10,7 @@ import {
   increment, serverTimestamp, getDoc as fsGetDoc, doc as fsDoc
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 import {
-  initLayout, esc, ddayInfo, notYetOpen, noticeIsNew, catClass, fbError,
+  initLayout, esc, ddayInfo, notYetOpen, programEnded, noticeIsNew, catClass, fbError,
   KIND, ORG_TYPES, openModal, closeModal, bindModalEvents, toast,
   ROLES, roleOf, qualificationHTML, RECRUIT_FOR,
   guessCourseKey, acceptedOnlineKeys, courseByKey
@@ -97,7 +97,9 @@ function cardHTML(p){
   const isRecruit = p.type === 'recruit';
   /* v17: 모집 공고는 정원이 차도 자동 마감하지 않습니다 — 서류 검토 후 선발 방식.
      접수 마감은 마감일 경과 또는 관리자의 접수 중지로만 처리합니다. */
-  const closed = !p.open || dd.closed || (!isRecruit && remain <= 0);
+  /* v33: 운영 기간이 지난 프로그램은 무조건 마감으로 처리합니다 */
+  const ended = programEnded(p);
+  const closed = ended || !p.open || dd.closed || (!isRecruit && remain <= 0);
   /* v19: 접수 시작(날짜+시각) 전이면 '접수 예정'으로 표시하고 신청을 막습니다 */
   const notYet = !closed && notYetOpen(p);
   const pct = Math.min(100, Math.round(applied / p.capacity * 100));
@@ -105,13 +107,17 @@ function cardHTML(p){
   const wrongRole = isRecruit && currentUser && roleOf(userProfile) !== 'instructor';
   const btnClass = p.type === 'camp' ? 'btn-primary' : 'btn-navy';
 
-  const seatText = isRecruit
+  const seatText = ended
+    ? `운영 종료 · 최종 <strong>${applied}명</strong> ${isRecruit ? '지원' : '신청'}`
+    : isRecruit
     ? `모집 <strong>${p.capacity}명</strong> · 현재 <strong>${applied}명</strong> 지원 · 서류 검토 후 선발`
     : (remain <= 0 ? '정원 마감'
         : (remain <= 10 ? `잔여 <strong>${remain}석</strong> · 마감 임박` : '회차별 선착순 마감'));
 
   let action;
-  if (closed){
+  if (ended){
+    action = `<button class="btn ${btnClass}" disabled>${isRecruit ? '종료된 공고입니다' : '운영이 종료되었습니다'}</button>`;
+  } else if (closed){
     action = `<button class="btn ${btnClass}" disabled>${isRecruit ? '모집이 마감되었습니다' : '접수가 마감되었습니다'}</button>`;
   } else if (notYet){
     const [, m, d] = p.openDate.split('-');
@@ -125,13 +131,15 @@ function cardHTML(p){
   }
 
   return `
-    <div class="open-card ${p.type !== 'camp' ? 'workshop' : ''} ${isRecruit ? 'recruit' : ''} ${closed ? 'closed' : ''}">
+    <div class="open-card ${p.type !== 'camp' ? 'workshop' : ''} ${isRecruit ? 'recruit' : ''} ${closed ? 'closed' : ''} ${ended ? 'ended' : ''}">
       <div class="open-top">
-        ${closed
+        ${ended
+          ? `<span class="status done">운영종료</span>`
+          : (closed
           ? `<span class="status end">${isRecruit ? '모집마감' : '접수마감'}</span>`
           : (notYet
             ? `<span class="status soon">${isRecruit ? '모집 예정' : '접수 예정'}</span>`
-            : `<span class="status live">${isRecruit ? '모집중' : '접수중'}</span><span class="dday ${dd.urgent ? '' : 'calm'}">${esc(dd.text)}</span>`)}
+            : `<span class="status live">${isRecruit ? '모집중' : '접수중'}</span><span class="dday ${dd.urgent ? '' : 'calm'}">${esc(dd.text)}</span>`))}
         <span class="kind-label">${KIND[p.type] || ''}${p.type === 'workshop' && (p.wsKind === 'mini' || /미니|mini|교구/i.test(p.title || '')) ? ' · 미니(교구)' : ''}</span>
         ${p.loginOnly ? '<span class="kind-label lock">🔐 회원 전용</span>' : ''}
       </div>
@@ -193,14 +201,36 @@ function byDeadline(list){
    홈 프로그램 카드에서는 제외합니다 (홈에는 전용 배너로 안내). */
 const isOnlineWs = p => p.type === 'workshop' && /온라인/.test(p.title || '');
 
+/* v33: 종료된 워크샵은 최근에 끝난 순으로 보여줍니다 */
+function byEndDesc(list){
+  return [...list].sort((a, b) => {
+    const ea = a.endDate || a.startDate || '', eb = b.endDate || b.startDate || '';
+    return ea === eb ? 0 : (ea > eb ? -1 : 1);
+  });
+}
+
+let endedOpen = false;
+
 function renderPrograms(){
-  const edu     = byDeadline(programs.filter(p => p.type !== 'recruit' && !isOnlineWs(p)));
-  const recruit = byDeadline(programs.filter(p => p.type === 'recruit'));
+  const all     = programs.filter(p => p.type !== 'recruit' && !isOnlineWs(p));
+  const edu     = byDeadline(all.filter(p => !programEnded(p)));
+  const done    = byEndDesc(all.filter(programEnded));
+  const recruit = byDeadline(programs.filter(p => p.type === 'recruit' && !programEnded(p)));
 
   const grid = $('programGrid');
   grid.innerHTML = edu.length
     ? edu.map(cardHTML).join('')
-    : '<div class="open-empty">현재 접수 중인 프로그램이 없습니다.<br>새로운 연수 일정은 공지사항을 통해 안내드립니다.</div>';
+    : `<div class="open-empty">현재 접수 중인 프로그램이 없습니다.<br>새로운 연수 일정은 공지사항을 통해 안내드립니다.${
+        done.length ? '<br><br>지난 워크샵은 아래 <b>종료된 워크샵 보기</b>에서 확인할 수 있습니다.' : ''}</div>`;
+
+  /* 종료된 워크샵 — 기본은 접힌 상태 */
+  const wrap = $('endedWrap');
+  if (wrap){
+    wrap.style.display = done.length ? '' : 'none';
+    $('endedCount').textContent = done.length;
+    $('endedGrid').innerHTML = done.map(cardHTML).join('');
+    paintEndedToggle();
+  }
 
   /* 대시보드의 워크샵 건수를 프로그램 수로 보정 (수기 입력이 없을 때) */
   if (vdashStats && !vdashStats.workshops && $('vd-workshops') && vdashPainted){
@@ -215,6 +245,22 @@ function renderPrograms(){
     rSec.style.display = 'none';
   }
 }
+
+function paintEndedToggle(){
+  const btn = $('endedToggle'), gridEl = $('endedGrid'), note = $('endedNote');
+  if (!btn) return;
+  btn.setAttribute('aria-expanded', endedOpen ? 'true' : 'false');
+  btn.classList.toggle('open', endedOpen);
+  btn.querySelector('.et-txt').textContent = endedOpen ? '종료된 워크샵 접기' : '종료된 워크샵 보기';
+  gridEl.hidden = !endedOpen;
+  note.style.display = endedOpen ? '' : 'none';
+}
+
+document.getElementById('endedToggle')?.addEventListener('click', () => {
+  endedOpen = !endedOpen;
+  paintEndedToggle();
+  if (endedOpen) $('endedGrid').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
 
 onSnapshot(
   query(collection(db, 'programs'), orderBy('createdAt', 'desc')),
@@ -249,6 +295,10 @@ function paintAuthNote(){
 function openApply(programId){
   const p = programs.find(x => x.id === programId);
   if (!p) return;
+  if (programEnded(p)){
+    alert('운영 기간이 종료된 프로그램입니다.');
+    return;
+  }
   if (notYetOpen(p)){
     alert('아직 접수 시작 전입니다. 접수가 열리면 신청할 수 있습니다.');
     return;

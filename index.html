@@ -55,6 +55,18 @@
     <div class="open-grid" id="programGrid">
       <div class="open-empty">프로그램을 불러오는 중입니다…</div>
     </div>
+
+    <!-- v33: 운영이 끝난 워크샵은 접어두고 필요할 때만 펼쳐 봅니다 -->
+    <div class="ended-wrap" id="endedWrap" style="display:none;">
+      <button type="button" class="ended-toggle" id="endedToggle" aria-expanded="false" aria-controls="endedGrid">
+        <span class="et-ico" aria-hidden="true">🗂</span>
+        <span class="et-txt">종료된 워크샵 보기</span>
+        <span class="et-count" id="endedCount">0</span>
+        <span class="et-arrow" aria-hidden="true">▾</span>
+      </button>
+      <p class="ended-note" id="endedNote" style="display:none;">운영 기간이 지난 프로그램입니다. 신청은 마감되었으며 기록 확인용으로만 표시됩니다.</p>
+      <div class="open-grid ended-grid" id="endedGrid" hidden></div>
+    </div>
   </div>
 </section>
 

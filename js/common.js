@@ -491,6 +491,16 @@ export function notYetOpen(p){
   if (!p || !p.openDate) return false;
   return new Date() < new Date(p.openDate + 'T' + (p.openTime || '00:00') + ':00');
 }
+/* v33: 운영 기간이 지난 프로그램 판별
+   운영 종료일(endDate, 없으면 startDate)이 오늘보다 이전이면 '종료'로 봅니다.
+   종료 시각(endTime)이 있으면 그 시각까지는 진행 중으로 유지합니다.
+   날짜 정보가 없는 구버전 데이터는 종료로 판단하지 않습니다. */
+export function programEnded(p){
+  if (!p) return false;
+  const end = p.endDate || p.startDate;
+  if (!end) return false;
+  return new Date() > new Date(end + 'T' + (p.endTime || '23:59') + ':59');
+}
 export function todayStr(){
   const t = new Date();
   return t.getFullYear() + '.' + String(t.getMonth()+1).padStart(2,'0') + '.' + String(t.getDate()).padStart(2,'0');
