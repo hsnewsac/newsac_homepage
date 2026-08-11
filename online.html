@@ -29,18 +29,34 @@
   /* 수강 절차 순서도 */
   .ol-flow{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:920px;margin:0 auto 36px;}
   .ol-step{position:relative;background:#fff;border:1.5px solid var(--line);border-radius:14px;
-    padding:20px 16px 18px;text-align:center;}
+    padding:20px 16px 18px;text-align:center;cursor:default;
+    transition:transform .22s ease, box-shadow .22s ease, border-color .2s ease;}
   .ol-step.done{border-color:var(--sprout,#8ECFA6);background:#FBFEFC;}
   .ol-step .no{position:absolute;top:-13px;left:50%;transform:translateX(-50%);
     display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;
     border-radius:50%;background:var(--leaf);color:#fff;font-size:.8rem;font-weight:800;
-    box-shadow:0 2px 6px rgba(30,127,79,.28);}
+    box-shadow:0 2px 6px rgba(30,127,79,.28);
+    transition:transform .22s cubic-bezier(0.38,-0.12,0.15,1.65), box-shadow .22s ease;}
   .ol-step .gic{margin:6px 0 10px;}
+  /* 단계 카드에 마우스를 올리면 아이콘이 팝 + 흔들리며 반응합니다
+     (gicWiggle 키프레임은 css/style.css의 대시보드 아이콘과 공유) */
+  .ol-step:hover{transform:translateY(-4px);border-color:var(--sprout,#8ECFA6);
+    box-shadow:0 14px 34px rgba(23,34,27,.13);}
+  .ol-step:hover .no{transform:translateX(-50%) scale(1.14);
+    box-shadow:0 5px 14px rgba(30,127,79,.4);}
+  .ol-step:hover .gic .gbg{transform:translate(5px,-5px) rotate(24deg) scale(1.07);}
+  .ol-step:hover .gic svg{animation:gicWiggle .55s ease;}
+  .ol-step:not(:last-child):hover::after{transform:translateY(-50%) translateX(3px);}
   .ol-step h4{font-size:.94rem;font-weight:800;color:#28352E;letter-spacing:-.01em;word-break:keep-all;}
   .ol-step p{margin-top:6px;font-size:.79rem;line-height:1.6;color:#6A776F;word-break:keep-all;}
   .ol-step p a{color:var(--leaf);font-weight:700;text-decoration:underline;}
   .ol-step:not(:last-child)::after{content:'▸';position:absolute;right:-14px;top:50%;
-    transform:translateY(-50%);color:var(--sprout,#8ECFA6);font-size:1.3rem;font-weight:800;z-index:1;}
+    transform:translateY(-50%);color:var(--sprout,#8ECFA6);font-size:1.3rem;font-weight:800;z-index:1;
+    transition:transform .22s ease;}
+  @media (prefers-reduced-motion:reduce){
+    .ol-step:hover{transform:none;}
+    .ol-step:hover .gic svg{animation:none;}
+  }
   @media (max-width:760px){
     .ol-flow{grid-template-columns:1fr 1fr;gap:12px;row-gap:22px;}
     .ol-step:nth-child(2)::after{display:none;}
@@ -49,6 +65,8 @@
     .ol-flow{grid-template-columns:1fr;row-gap:22px;}
     .ol-step:not(:last-child)::after{content:'▾';right:auto;left:50%;top:auto;bottom:-20px;
       transform:translateX(-50%);}
+    /* 세로 배치에서는 화살표가 아래를 향하므로 호버 이동 방향도 맞춥니다 */
+    .ol-step:not(:last-child):hover::after{transform:translateX(-50%) translateY(3px);}
     .ol-step:nth-child(2)::after{display:block;}
   }
 
