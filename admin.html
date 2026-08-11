@@ -956,6 +956,12 @@
         <label for="wi-memo">메모 <span class="hint">(선택)</span></label>
         <input id="wi-memo" type="text" placeholder="예) 8/18 현장 접수 · 서명부 21번">
       </div>
+      <label class="form-check">
+        <input type="checkbox" id="wi-done">
+        <span>🎓 등록과 동시에 <b>수료 처리</b> — 이미 참석·이수를 마친 분을 사후 등록할 때 사용합니다.
+          <br><span class="cell-sub">정규 워크샵은 이수증 발급번호까지 바로 채번되고,
+          미니(교구 사용법)는 참석 인정만 기록됩니다(온라인 이수 확인 후 발급).</span></span>
+      </label>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button type="submit" class="btn btn-navy btn-sm" id="wiSaveBtn" style="flex:1;">등록</button>
         <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('walkInModal')">취소</button>
