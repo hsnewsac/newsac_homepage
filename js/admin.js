@@ -422,7 +422,7 @@ function renderAdminTable(){
       <td><span class="chip ${p.type}">${KIND[p.type] || ''}</span>
         ${mini ? '<span class="chip minik" title="온라인 워크샵 병행 이수 필요">미니</span>' : ''}
         ${p.loginOnly ? '<span class="chip lock" title="로그인 회원만 신청 가능">🔐</span>' : ''}</td>
-      <td><b>${esc(p.title)}</b></td>
+      <td><b>${esc(p.title)}</b>${(p.period || p.place) ? `<br><span class="cell-sub">${esc([p.period, p.place].filter(Boolean).join(' · '))}</span>` : ''}</td>
       <td>${esc(p.deadline)}${p.deadlineTime ? ` ${esc(p.deadlineTime)}` : ''}${p.openDate ? `<br><span class="cell-sub">시작 ${esc(p.openDate)}${p.openTime ? ` ${esc(p.openTime)}` : ''}</span>` : ''}</td>
       <td>${p.applied || 0} / ${p.capacity}</td>
       <td><span class="chip ${closed ? 'close' : 'open'}">${closed ? '마감' : (notYet ? '접수예정' : '접수중')}</span></td>
@@ -552,9 +552,46 @@ function refreshFilterOptions(){
       values.map(v => `<option${v === cur ? ' selected' : ''}>${esc(v)}</option>`).join('');
     if (values.includes(cur)) sel.value = cur;
   };
-  keep($('f-program'), [...new Set(applications.map(a => progTitle(a)).filter(Boolean))]);
+  /* v33: 이름이 같은 워크샵이 겹치지 않도록 프로그램 ID 기준으로 구분합니다.
+     라벨에 운영기간·장소를 함께 표기하고, 신청 건수도 보여줍니다. */
+  buildProgramFilter();
   keep($('f-course'),  [...new Set(applications.map(a => a.course || a.session).filter(Boolean))]);
   keep($('f-orgtype'), [...new Set([...ORG_TYPES, ...applications.map(a => a.orgType).filter(Boolean)])]);
+}
+
+/** 신청 문서 → 프로그램 필터 키 (프로그램이 삭제된 옛 신청은 이름으로 묶음) */
+function progFilterKey(a){
+  return a.programId ? `id:${a.programId}` : `title:${progTitle(a)}`;
+}
+
+function buildProgramFilter(){
+  const sel = $('f-program');
+  const cur = sel.value;
+  const count = {};
+  applications.forEach(a => {
+    const k = progFilterKey(a);
+    count[k] = (count[k] || 0) + 1;
+  });
+
+  const opts = Object.keys(count).map(k => {
+    if (k.startsWith('id:')){
+      const p = programs.find(x => x.id === k.slice(3));
+      if (p){
+        const sub = [p.period, p.place].filter(Boolean).join(' · ');
+        return { key: k, title: p.title,
+          label: `${p.title}${sub ? ` — ${sub}` : ''} (${count[k]}건)` };
+      }
+      const a = applications.find(x => progFilterKey(x) === k) || {};
+      return { key: k, title: a.programTitle || '(삭제된 프로그램)',
+        label: `${a.programTitle || '(삭제된 프로그램)'} — 삭제된 프로그램 (${count[k]}건)` };
+    }
+    const t = k.slice(6) || '(프로그램 미지정)';
+    return { key: k, title: t, label: `${t} — 연결 안 됨 (${count[k]}건)` };
+  }).sort((x, y) => x.label.localeCompare(y.label, 'ko'));
+
+  sel.innerHTML = '<option value="">전체</option>' +
+    opts.map(o => `<option value="${esc(o.key)}">${esc(o.label)}</option>`).join('');
+  if (opts.some(o => o.key === cur)) sel.value = cur;
 }
 
 ['f-program','f-course','f-orgtype','f-status','f-astatus','f-member'].forEach(id => {
@@ -614,7 +651,7 @@ function filteredApps(){
   const fa = $('f-astatus').value;
 
   let list = applications.filter(a => {
-    if (fp && progTitle(a) !== fp) return false;
+    if (fp && progFilterKey(a) !== fp) return false;
     if (fc && (a.course || a.session) !== fc) return false;
     if (fo && a.orgType !== fo) return false;
     if (fs === 'done' && !a.completed) return false;
@@ -694,6 +731,7 @@ function renderApplicants(){
       <div class="ai-prog">${esc(progTitle(a)) || '-'}${a.programType === 'recruit' ? '<span class="chip recruit">모집</span>' : ''}${isMiniApp(a) ? '<span class="chip minik" title="온라인 워크샵 병행 이수 필요">미니</span>' : ''}</div>
       <div class="ai-sub">
         <span class="ai-when">🗓 ${progPeriod(a) ? esc(progPeriod(a)) : '일정 미등록'}</span>
+        ${progPlace(a) ? `<span class="ai-where">📍 ${esc(progPlace(a))}</span>` : ''}
         <span class="ai-got">접수 ${esc(tsText(a.createdAt))}</span>
       </div>
     </td>
@@ -2560,6 +2598,7 @@ onSnapshot(
     refreshAssignPrograms();
     if ($('mg-panel') && $('mg-panel').style.display !== 'none') refreshMigratePrograms();
     $('badgeProgram').textContent = programs.length;
+    buildProgramFilter();          // v33: 프로그램 정보 갱신 시 필터 라벨도 최신화
     if ($('tab-assign').classList.contains('on')) renderAssign();
   },
   err => console.error('programs 구독 오류:', err)
