@@ -3,7 +3,7 @@
    ※ 캐시 주의: 각 HTML의 <link href="css/style.css?v=NN">에
      버전 번호가 붙어 있습니다. 이 파일을 고칠 때는
      모든 HTML의 ?v= 값을 함께 올려야 브라우저가 새 파일을 받습니다.
-     (현재 v=38)
+     (현재 v=39)
 ========================================================= */
 :root{
   --leaf:#1E7F4F;
@@ -1748,57 +1748,32 @@ a:hover > .gic svg, a.active > .gic svg,
 .sw-btn.ok{background:var(--sprout-soft);color:var(--leaf);border-color:#BFE6CC;}
 .sw-btn.danger{background:#FBE9E4;color:var(--red);border-color:#EDC9C2;}
 
-/* ----- 목록 카드 + 스와이프 관리 (모든 화면 폭) -----
-   카드를 왼쪽으로 끌면 오른쪽에서 색깔 버튼이 따라 나옵니다.
-   터치는 브라우저 기본 스크롤, 마우스는 admin.js의 드래그 핸들러가 처리합니다. */
-.swipe-table, .swipe-table tbody{display:block;width:auto;}
-.swipe-table thead{display:none;}
-.swipe-table tr{
-  position:relative;display:flex;flex-wrap:wrap;align-items:flex-start;
-  margin-bottom:10px;padding:0;
-  border:1px solid var(--line);border-radius:14px;background:#fff;
-  box-shadow:0 2px 8px rgba(23,34,27,.05);
-  overflow-x:auto;overflow-y:hidden;
-  scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
-  scrollbar-width:none;-ms-overflow-style:none;
-  cursor:grab;user-select:none;
-  transition:box-shadow .18s ease,border-color .18s ease;
-}
-.swipe-table tr:hover{border-color:#CFDAD3;box-shadow:0 6px 18px rgba(23,34,27,.09);}
+/* ----- 목록 스와이프 관리 -----
+   넓은 화면: 기존 표 그대로 두고, 행을 끌면 [관리] 칸 자리로
+   색깔 버튼 패널이 들어옵니다 (다른 칸을 가리지 않습니다).
+   좁은 화면: 표가 들어가지 않으므로 카드로 쌓고 같은 방식으로 동작합니다.
+   드래그 처리는 js/admin.js의 initDragSwipe()가 담당합니다. */
+.swipe-table th.c-actH{width:224px;}
+.swipe-table tr{position:relative;touch-action:pan-y;cursor:grab;}
 .swipe-table tr.dragging{cursor:grabbing;}
-.swipe-table tr::-webkit-scrollbar{display:none;}
-.swipe-table td{display:block;border:none;padding:3px 14px;}
-.swipe-table td.c-name{
-  flex:0 0 100%;scroll-snap-align:start;
-  padding:14px 66px 4px 16px;font-size:.95rem;
-}
-.swipe-table td.c-name b{font-size:.97rem;}
-/* 밀 수 있다는 표시 — 내용과 함께 스크롤되어 사라집니다 */
+body.sw-nosel, body.sw-nosel *{user-select:none;-webkit-user-select:none;}
 .swipe-table tr::after{
-  content:'‹';position:absolute;right:9px;top:16px;
-  font-size:1.15rem;font-weight:800;color:#C3CCC6;pointer-events:none;
+  content:'‹ 끌어서 관리';position:absolute;right:18px;top:50%;
+  transform:translateY(-50%);white-space:nowrap;pointer-events:none;
+  font-size:.76rem;font-weight:700;color:#B8C3BC;
 }
-.swipe-table td.c-kind{position:absolute;top:14px;right:27px;padding:0;z-index:1;}
-/* 라벨을 붙여 표 머리글 없이도 어떤 값인지 알 수 있게 합니다 */
-.swipe-table td[data-l]{
-  display:flex;align-items:flex-start;gap:8px;
-  font-size:.84rem;color:#3E4B44;padding:4px 16px;
-}
-.swipe-table td[data-l]::before{
-  content:attr(data-l);flex:0 0 62px;
-  font-size:.74rem;font-weight:800;color:#8A968E;line-height:1.6;
-}
-.swipe-table td[data-l] .v{min-width:0;line-height:1.6;}
-
-/* 관리 버튼 — 카드 오른쪽 바깥에 붙여두고 끌어서 꺼냅니다 */
 .swipe-table td.c-swipe{
-  position:absolute;top:0;bottom:0;left:100%;
-  padding:0;margin:0;scroll-snap-align:end;
+  position:absolute;top:0;bottom:0;right:0;padding:0;margin:0;
+  display:flex;overflow:hidden;z-index:2;
+  transform:translateX(calc(100% - var(--sw,0px)));
+}
+.swipe-table tr:not(.dragging) td.c-swipe{
+  transition:transform .26s cubic-bezier(.2,.8,.2,1);
 }
 .swipe-table td.c-swipe .sw-btns{height:100%;gap:0;}
 .swipe-table td.c-swipe .sw-btn{
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  width:70px;height:100%;padding:0;border:none;border-radius:0;
+  width:74px;height:100%;padding:0;border:none;border-radius:0;
   color:#fff;font-size:.75rem;font-weight:800;cursor:pointer;
 }
 .swipe-table td.c-swipe .sw-btn i{font-size:1.05rem;}
@@ -1808,14 +1783,36 @@ a:hover > .gic svg, a.active > .gic svg,
 .swipe-table td.c-swipe .sw-btn.danger{background:#E24B3F;}
 .swipe-table td.c-swipe .sw-btn:hover{filter:brightness(1.08);}
 .swipe-table td.c-swipe .sw-btn:active{filter:brightness(.9);}
+/* 넓은 화면에서는 카드 전용 라벨을 쓰지 않습니다 */
+.swipe-table td[data-l]::before{content:none;}
 
-@media (min-width:821px){
-  /* 넓은 화면 — 항목을 한 줄에 나란히 놓아 밀도를 유지합니다 */
-  .swipe-table td.c-name{padding:16px 78px 8px 18px;font-size:1rem;}
-  .swipe-table td[data-l]{flex:0 0 auto;min-width:210px;padding:6px 18px 14px;}
-  .swipe-table td[data-l]::before{flex:0 0 auto;}
-}
 @media (max-width:820px){
-  .swipe-table td[data-l]{flex:0 0 100%;}
+  /* 좁은 화면 — 표를 카드로 쌓고, 카드를 끌면 버튼이 나옵니다 */
+  .swipe-table, .swipe-table tbody{display:block;width:auto;}
+  .swipe-table thead{display:none;}
+  .swipe-table tr{
+    display:block;margin-bottom:10px;padding:0;overflow:hidden;
+    border:1px solid var(--line);border-radius:14px;background:#fff;
+    box-shadow:0 2px 8px rgba(23,34,27,.05);
+  }
+  .swipe-table tr::after{content:'‹';right:10px;top:18px;transform:none;font-size:1.15rem;}
+  .swipe-table td{display:block;border:none;padding:3px 14px;}
+  /* 카드는 내용도 함께 밀려 iOS 목록처럼 움직입니다 */
+  .swipe-table td:not(.c-swipe){transform:translateX(calc(-1 * var(--sw,0px)));}
+  .swipe-table tr:not(.dragging) td:not(.c-swipe){
+    transition:transform .26s cubic-bezier(.2,.8,.2,1);
+  }
+  .swipe-table td.c-name{padding:14px 66px 4px 16px;font-size:.95rem;}
+  .swipe-table td.c-name b{font-size:.96rem;}
+  .swipe-table td.c-kind{position:absolute;top:14px;right:27px;padding:0;z-index:1;}
+  .swipe-table td[data-l]{
+    display:flex;align-items:flex-start;gap:8px;
+    font-size:.84rem;color:#3E4B44;padding:4px 16px;
+  }
+  .swipe-table td[data-l]::before{
+    content:attr(data-l);flex:0 0 62px;
+    font-size:.74rem;font-weight:800;color:#8A968E;line-height:1.6;
+  }
+  .swipe-table td[data-l] .v{min-width:0;line-height:1.6;}
   .swipe-table td:last-of-type[data-l]{padding-bottom:12px;}
 }
