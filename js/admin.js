@@ -602,10 +602,18 @@ function progFilterKey(a){
 function buildProgramFilter(){
   const sel = $('f-program');
   const cur = sel.value;
+
+  /* v35: 신청자가 아직 0명인 워크샵도 선택할 수 있도록
+     '등록된 모든 프로그램'과 '신청 이력이 있는 항목'을 합쳐 옵션을 만듭니다.
+     (사후에 수료자를 직접 추가할 때 해당 회차를 골라야 하기 때문) */
   const count = {};
   applications.forEach(a => {
     const k = progFilterKey(a);
     count[k] = (count[k] || 0) + 1;
+  });
+  programs.forEach(p => {
+    const k = `id:${p.id}`;
+    if (!(k in count)) count[k] = 0;
   });
 
   const opts = Object.keys(count).map(k => {
@@ -613,16 +621,22 @@ function buildProgramFilter(){
       const p = programs.find(x => x.id === k.slice(3));
       if (p){
         const sub = [p.period, p.place].filter(Boolean).join(' · ');
-        return { key: k, title: p.title,
+        return { key: k, sort: p.startDate || p.deadline || '', n: count[k],
           label: `${p.title}${sub ? ` — ${sub}` : ''} (${count[k]}건)` };
       }
       const a = applications.find(x => progFilterKey(x) === k) || {};
-      return { key: k, title: a.programTitle || '(삭제된 프로그램)',
-        label: `${a.programTitle || '(삭제된 프로그램)'} — 삭제된 프로그램 (${count[k]}건)` };
+      const t = a.programTitle || '(삭제된 프로그램)';
+      return { key: k, sort: '', n: count[k], label: `${t} — 삭제된 프로그램 (${count[k]}건)` };
     }
     const t = k.slice(6) || '(프로그램 미지정)';
-    return { key: k, title: t, label: `${t} — 연결 안 됨 (${count[k]}건)` };
-  }).sort((x, y) => x.label.localeCompare(y.label, 'ko'));
+    return { key: k, sort: '', n: count[k], label: `${t} — 연결 안 됨 (${count[k]}건)` };
+  }).sort((x, y) => {
+    /* 최근 운영일이 위로 (날짜 없는 항목은 맨 뒤) */
+    if (!x.sort && !y.sort) return x.label.localeCompare(y.label, 'ko');
+    if (!x.sort) return 1;
+    if (!y.sort) return -1;
+    return y.sort.localeCompare(x.sort);
+  });
 
   sel.innerHTML = '<option value="">전체</option>' +
     opts.map(o => `<option value="${esc(o.key)}">${esc(o.label)}</option>`).join('');
@@ -1036,7 +1050,7 @@ async function deleteApplicant(id){
    등록 즉시 승인완료 상태가 되어 명단·서명부·수료 처리에 포함됩니다. */
 function openWalkIn(){
   const sel = $('wi-program');
-  const list = programs.filter(p => p.type !== 'recruit');
+  const list = byWorkshopDate(programs.filter(p => p.type !== 'recruit'));
   if (!list.length){ alert('등록된 워크샵 프로그램이 없습니다. 프로그램 탭에서 먼저 등록해주세요.'); return; }
   $('walkInForm').reset();
   $('wiError').style.display = 'none';
@@ -1131,7 +1145,7 @@ $('walkInForm').addEventListener('submit', async e => {
   const btn = $('wiSaveBtn');
   btn.disabled = true; btn.textContent = '등록 중…';
   try {
-    await addDoc(collection(db, 'applications'), {
+    const ref = await addDoc(collection(db, 'applications'), {
       programId: p.id,
       programTitle: p.title,
       programType: p.type,
@@ -1179,7 +1193,21 @@ $('walkInForm').addEventListener('submit', async e => {
         }
       } catch (e){ /* 연동 실패해도 접수 등록은 유지 */ }
     }
-    toast(`현장 접수를 등록했습니다 — ${$('wi-name').value.trim()}`);
+    /* v35: 사후 등록 — 등록과 동시에 수료 처리 */
+    if ($('wi-done').checked){
+      const isMiniP2 = p.wsKind === 'mini' || (!p.wsKind && /미니|mini|교구/i.test(p.title || ''));
+      if (isMiniP2){
+        await updateDoc(doc(db, 'applications', ref.id), {
+          completed: true, completedAt: serverTimestamp()
+        });
+        toast('현장 접수 + 미니 수료(참석 인정) 처리했습니다. 이수증은 온라인 이수 확인 후 발급하세요.');
+      } else {
+        const certNo = await issueCert(ref.id);
+        toast(`현장 접수 + 수료 처리 완료 · ${certNo}`);
+      }
+    } else {
+      toast(`현장 접수를 등록했습니다 — ${$('wi-name').value.trim()}`);
+    }
     closeModal('walkInModal');
   } catch (e2){
     err.textContent = fbError(e2); err.style.display = 'block';
