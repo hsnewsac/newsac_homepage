@@ -505,50 +505,60 @@ function renderRecruitTable(){
   if (badgeSub) badgeSub.textContent = list.length;
 }
 
-/* v38: 마우스로 카드를 끌어 관리 버튼을 여는 드래그 스와이프.
-   터치는 브라우저 기본 스크롤(관성·스냅)을 그대로 쓰고,
-   마우스·펜만 여기서 처리합니다. 이벤트 위임이라 새로 그린 행에도 적용됩니다. */
+/* v39: 행(또는 카드)을 끌어 관리 버튼을 여는 스와이프.
+   마우스·터치·펜을 모두 포인터 이벤트 하나로 처리하고, 열린 정도는
+   행의 --sw 변수로 CSS에 전달합니다. 세로 스크롤은 touch-action:pan-y로
+   브라우저에 남겨두어 모바일에서 페이지 스크롤이 막히지 않습니다. */
 function initDragSwipe(){
+  let row = null, panel = null, w = 0, startX = 0, startY = 0, startSw = 0, axis = '';
+
+  const setSw = v => row.style.setProperty('--sw', Math.max(0, Math.min(w, v)) + 'px');
+  const close = r => { r.style.setProperty('--sw', '0px'); r.dataset.open = ''; };
+
   document.addEventListener('pointerdown', e => {
-    if (e.pointerType === 'touch' || e.button !== 0) return;
-    const row = e.target.closest('.swipe-table tr');
-    if (!row) return;
-    if (e.target.closest('button, a, input, select, textarea, label')) return;
-
-    const startX = e.clientX, startLeft = row.scrollLeft;
-    const max = row.scrollWidth - row.clientWidth;
-    if (max <= 0) return;
-    let moved = false;
-    row.style.scrollSnapType = 'none';
-    row.classList.add('dragging');
-
-    const move = ev => {
-      const dx = ev.clientX - startX;
-      if (Math.abs(dx) > 3) moved = true;
-      row.scrollLeft = Math.max(0, Math.min(max, startLeft - dx));
-    };
-    const up = ev => {
-      document.removeEventListener('pointermove', move);
-      document.removeEventListener('pointerup', up);
-      row.classList.remove('dragging');
-      row.style.scrollSnapType = '';
-      /* 놓았을 때 절반을 넘겼으면 끝까지 열고, 아니면 닫습니다 */
-      const dx = ev.clientX - startX;
-      const openIt = moved ? (row.scrollLeft > max * 0.35) : startLeft > 0 ? false : (dx < -40);
-      row.scrollTo({ left: openIt ? max : 0, behavior: 'smooth' });
-    };
-    document.addEventListener('pointermove', move);
-    document.addEventListener('pointerup', up);
-    e.preventDefault();   // 드래그 중 텍스트 선택 방지
-  });
-
-  /* 다른 카드를 열면 열려 있던 카드는 닫습니다 */
-  document.addEventListener('pointerdown', e => {
-    const row = e.target.closest('.swipe-table tr');
-    document.querySelectorAll('.swipe-table tr').forEach(r => {
-      if (r !== row && r.scrollLeft > 0) r.scrollTo({ left: 0, behavior: 'smooth' });
+    if (e.button !== 0) return;
+    const r = e.target.closest('.swipe-table tr');
+    /* 다른 행이 열려 있으면 닫습니다 */
+    document.querySelectorAll('.swipe-table tr[data-open="1"]').forEach(x => {
+      if (x !== r) close(x);
     });
+    if (!r) return;
+    if (e.target.closest('button, a, input, select, textarea, label')) return;
+    const p = r.querySelector('.c-swipe');
+    if (!p) return;
+    row = r; panel = p; w = p.offsetWidth;
+    startX = e.clientX; startY = e.clientY; axis = '';
+    startSw = parseFloat(getComputedStyle(r).getPropertyValue('--sw')) || 0;
   });
+
+  document.addEventListener('pointermove', e => {
+    if (!row) return;
+    const dx = e.clientX - startX, dy = e.clientY - startY;
+    if (!axis){
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      if (axis === 'x'){
+        row.classList.add('dragging');
+        document.body.classList.add('sw-nosel');   // 끄는 동안 텍스트 선택 방지
+        window.getSelection && window.getSelection().removeAllRanges();
+      } else { row = null; return; }       // 세로 스크롤은 브라우저에 넘깁니다
+    }
+    setSw(startSw - dx);
+    e.preventDefault();
+  }, { passive: false });
+
+  const finish = () => {
+    if (!row) return;
+    const cur = parseFloat(getComputedStyle(row).getPropertyValue('--sw')) || 0;
+    row.classList.remove('dragging');
+    document.body.classList.remove('sw-nosel');
+    /* 3분의 1을 넘겨 끌었으면 끝까지 열고, 아니면 닫습니다 */
+    if (cur > w / 3){ row.style.setProperty('--sw', w + 'px'); row.dataset.open = '1'; }
+    else close(row);
+    row = null; panel = null;
+  };
+  document.addEventListener('pointerup', finish);
+  document.addEventListener('pointercancel', finish);
 }
 initDragSwipe();
 
