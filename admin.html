@@ -55,9 +55,31 @@
         <button class="atab active" data-tab="dash" onclick="switchTab('dash')"><span class="gic gc-blue"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V4"/><path d="M4 20h16"/><rect x="7.5" y="12" width="3" height="5" rx=".8"/><rect x="12.5" y="8.5" width="3" height="8.5" rx=".8"/><rect x="17.5" y="5.5" width="3" height="11.5" rx=".8"/></svg></span><span class="at-label">대시보드</span></button>
         <button class="atab" data-tab="notice" onclick="switchTab('notice')"><span class="gic gc-amber"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4h3l10 5V5L6 10H3z"/><path d="M19 9.5a4 4 0 0 1 0 5"/></svg></span><span class="at-label">공지사항</span> <span class="tab-badge" id="badgeNotice">0</span></button>
         <button class="atab" data-tab="member" onclick="switchTab('member')"><span class="gic gc-blue"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c0-3 2.5-4.8 5.5-4.8s5.5 1.8 5.5 4.8"/><circle cx="16.8" cy="9.5" r="2.6"/><path d="M16.5 14.4c2.6.3 4.5 2 4.5 4.6"/></svg></span><span class="at-label">회원 관리</span> <span class="tab-badge" id="badgeMember">0</span></button>
-        <button class="atab" data-tab="workshop" onclick="switchTab('workshop')"><span class="gic gc-green"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 9.5 12 5l9.5 4.5L12 14z"/><path d="M6.5 11.8V16c0 1.8 11 1.8 11 0v-4.2"/><path d="M21 10v4.5"/></svg></span><span class="at-label">강사 워크샵</span> <span class="tab-badge" id="badgeApply">0</span></button>
-        <button class="atab" data-tab="online" onclick="switchTab('online')"><span class="gic gc-teal"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="11.5" rx="1.6"/><path d="M9.5 20h5M12 16v4"/></svg></span><span class="at-label">온라인 워크샵</span> <span class="tab-badge" id="badgeClass">0</span></button>
-        <button class="atab" data-tab="assign" onclick="switchTab('assign')"><span class="gic gc-pink"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.2"/><circle cx="12" cy="12" r="1"/></svg></span><span class="at-label">강사 배정</span> <span class="tab-badge" id="badgeAssign">0</span></button>
+        <!-- v35: 기능이 많은 탭은 하위 메뉴로 나눠 봅니다 -->
+        <div class="atab-group" data-group="workshop">
+          <button class="atab" data-tab="workshop" onclick="switchTab('workshop')"><span class="gic gc-green"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 9.5 12 5l9.5 4.5L12 14z"/><path d="M6.5 11.8V16c0 1.8 11 1.8 11 0v-4.2"/><path d="M21 10v4.5"/></svg></span><span class="at-label">강사 워크샵</span> <span class="tab-badge" id="badgeApply">0</span></button>
+          <div class="atab-subs" data-for="workshop">
+            <button class="asub" data-sub="reg" onclick="switchTab('workshop','reg')">워크샵 등록</button>
+            <button class="asub" data-sub="list" onclick="switchTab('workshop','list')">워크샵 관리 <span class="tab-badge" id="badgeProgramSub">0</span></button>
+            <button class="asub" data-sub="apply" onclick="switchTab('workshop','apply')">신청자 명단</button>
+          </div>
+        </div>
+        <div class="atab-group" data-group="online">
+          <button class="atab" data-tab="online" onclick="switchTab('online')"><span class="gic gc-teal"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="11.5" rx="1.6"/><path d="M9.5 20h5M12 16v4"/></svg></span><span class="at-label">온라인 워크샵</span> <span class="tab-badge" id="badgeClass">0</span></button>
+          <div class="atab-subs" data-for="online">
+            <button class="asub" data-sub="course" onclick="switchTab('online','course')">과목 · 차시 관리</button>
+            <button class="asub" data-sub="progress" onclick="switchTab('online','progress')">수강생 현황</button>
+            <button class="asub" data-sub="migrate" onclick="switchTab('online','migrate')">데이터 이관</button>
+          </div>
+        </div>
+        <div class="atab-group" data-group="assign">
+          <button class="atab" data-tab="assign" onclick="switchTab('assign')"><span class="gic gc-pink"><i class="gbg"></i><i class="gtile"></i><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.2"/><circle cx="12" cy="12" r="1"/></svg></span><span class="at-label">강사 배정</span> <span class="tab-badge" id="badgeAssign">0</span></button>
+          <div class="atab-subs" data-for="assign">
+            <button class="asub" data-sub="reg" onclick="switchTab('assign','reg')">공고 등록</button>
+            <button class="asub" data-sub="list" onclick="switchTab('assign','list')">공고 관리 <span class="tab-badge" id="badgeRecruitSub">0</span></button>
+            <button class="asub" data-sub="applicant" onclick="switchTab('assign','applicant')">지원자 · 후보</button>
+          </div>
+        </div>
       </div>
       <div class="admin-main">
     <!-- ================= 대시보드 ================= -->
@@ -190,7 +212,7 @@
         <!-- ================= 강사 워크샵 (프로그램 + 신청자) ================= -->
     <div class="tab-panel" id="tab-workshop">
 
-      <div class="admin-box">
+      <div class="admin-box" data-sub="reg">
         <h3 id="pFormTitle">📌 새 강사 워크샵 등록</h3>
         <p class="box-desc">강사 워크샵을 등록합니다. 등록 즉시 홈 화면에 노출됩니다.
           접수 시작일을 지정하면 그 전까지 홈 카드에 <b>접수 예정</b>으로 표시됩니다.
@@ -288,7 +310,7 @@
         </form>
       </div>
 
-      <div class="admin-box">
+      <div class="admin-box" data-sub="list">
         <h3>📋 등록된 워크샵 <span class="tab-badge" id="badgeProgram">0</span></h3>
         <p class="box-desc">운영일이 가까운 순으로 정렬됩니다 — <b>예정된 워크샵이 위</b>, 지난 워크샵은 아래에 최근 순으로 표시됩니다.
           강사 모집 공고는 <b>[🎯 강사 배정]</b> 탭에서 관리합니다.</p>
@@ -303,7 +325,7 @@
       </div>
     
 
-      <div class="admin-box">
+      <div class="admin-box" data-sub="apply">
         <h3>👥 신청자 명단 · 승인 · 수료 관리</h3>
         <p class="box-desc">강사 워크샵 <b>신청 승인</b>과 수료 처리를 여기서 합니다.
           필터·검색으로 대상을 좁힌 뒤 체크박스로 선택해 일괄 처리할 수 있습니다.
@@ -405,7 +427,7 @@
 <!-- ================= 강사 배정 ================= -->
     <div class="tab-panel" id="tab-assign">
 
-      <div class="admin-box">
+      <div class="admin-box" data-sub="applicant">
         <h3>🎯 강사 모집 공고 선택</h3>
         <p class="box-desc">유형이 <b>강사 모집</b>인 공고만 표시됩니다. 공고를 고르면 지원자 관리와 후보 검색이 열립니다.</p>
         <div class="filter-bar">
@@ -413,13 +435,13 @@
             <label for="as-program">모집 공고</label>
             <select id="as-program"><option value="">공고를 선택하세요</option></select>
           </div>
-          <button class="btn btn-outline btn-sm" onclick="toggleRecruitForm()" id="rToggleBtn">＋ 새 모집 공고 등록</button>
+          <button class="btn btn-outline btn-sm" onclick="switchTab('assign','reg')" id="rToggleBtn">＋ 새 모집 공고 등록</button>
         </div>
         <div id="as-summary" class="assign-summary"></div>
       </div>
 
       <!-- ===== 모집 공고 등록/수정 (v10: 프로그램 탭에서 이관) ===== -->
-      <div class="admin-box" id="recruitBox" style="display:none;">
+      <div class="admin-box" id="recruitBox" data-sub="reg">
         <h3 id="rFormTitle">📣 새 강사 모집 공고 등록</h3>
         <p class="box-desc">강사 모집 공고를 등록합니다. 맨 위 <b>모집 목적</b>을 고르면
           그에 맞는 항목만 표시됩니다 — <b>학교 캠프 강사</b>는 운영 형태·대상 학교급까지,
@@ -528,7 +550,7 @@
         </form>
       </div>
 
-      <div class="admin-box">
+      <div class="admin-box" data-sub="list">
         <h3>📋 등록된 모집 공고 <span class="tab-badge" id="badgeRecruit">0</span></h3>
         <p class="box-desc">강사 모집 공고 목록입니다. 워크샵·연수는 <b>[🎓 강사 워크샵]</b> 탭에서 관리합니다.</p>
         <div class="table-scroll">
@@ -541,7 +563,7 @@
         </div>
       </div>
 
-      <div class="admin-box" id="as-applicantBox" style="display:none;">
+      <div class="admin-box" id="as-applicantBox" data-sub="applicant" style="display:none;">
         <h3>📥 지원자 관리 <span class="pf-state" id="as-count"></span></h3>
         <div class="stage-bar" id="as-stages"></div>
         <div class="table-scroll">
@@ -556,7 +578,7 @@
         <p class="form-note">※ [배정] 버튼으로 학교·차수·시수·기간을 입력하면 강사 마이페이지의 <b>강의활동 이력</b>에 자동으로 누적됩니다.</p>
       </div>
 
-      <div class="admin-box" id="as-candidateBox" style="display:none;">
+      <div class="admin-box" id="as-candidateBox" data-sub="applicant" style="display:none;">
         <h3>🔎 강사 후보 검색 <span class="pf-state" id="as-candCount"></span></h3>
         <p class="form-note" style="margin-bottom:14px;">
           가입 강사 회원 중 조건에 맞는 후보를 찾아 이 공고의 <b>검토 대상</b>으로 바로 등록할 수 있습니다.
@@ -597,7 +619,7 @@
     <!-- ==================== 온라인 강의실 ==================== -->
     <div class="tab-panel" id="tab-online">
 
-      <div class="admin-box">
+      <div class="admin-box" data-sub="course progress">
         <h3>📚 상시 온라인 워크샵</h3>
         <p class="box-desc">날짜가 정해진 오프라인 워크샵과 달리 <b>과목별로 상시 개설</b>됩니다.
           아래에서 과목을 고르고 차시를 등록하면, 수강생이 워크샵 안내 페이지에서
@@ -607,7 +629,7 @@
       </div>
 
       <!-- 과목 공개 설정 -->
-      <div class="admin-box" id="cl-courseBox" style="display:none;">
+      <div class="admin-box" id="cl-courseBox" data-sub="course" style="display:none;">
         <h3>⚙️ 과목 설정</h3>
         <form id="courseForm">
           <div class="form-error" id="courseError"></div>
@@ -629,7 +651,7 @@
       </div>
 
       <!-- 차시 관리 -->
-      <div class="admin-box" id="cl-lessonBox" style="display:none;">
+      <div class="admin-box" id="cl-lessonBox" data-sub="course" style="display:none;">
         <h3>🎬 차시 구성 <span class="pf-state" id="cl-lessonCount"></span>
           <span class="box-actions">
             <button class="btn btn-outline btn-sm" onclick="toggleLessonForm()" id="cl-addBtn">＋ 차시 추가</button>
@@ -728,7 +750,7 @@
       </div>
 
       <!-- 기존 신청 데이터 이관 -->
-      <div class="admin-box" id="cl-migrateBox">
+      <div class="admin-box" id="cl-migrateBox" data-sub="migrate">
         <h3>🔄 기존 신청 데이터 이관
           <span class="box-actions">
             <button class="btn btn-outline btn-sm" onclick="toggleMigrate()" id="mg-toggleBtn">열기</button>
@@ -761,7 +783,7 @@
       </div>
 
       <!-- 학습 현황 -->
-      <div class="admin-box" id="cl-progressBox" style="display:none;">
+      <div class="admin-box" id="cl-progressBox" data-sub="progress" style="display:none;">
         <h3>📊 수강생 학습 현황 <span class="pf-state" id="cl-progCount"></span>
           <span class="box-actions">
             <button class="btn btn-outline btn-sm" onclick="openAddEnroll()">＋ 수강생 직접 추가</button>

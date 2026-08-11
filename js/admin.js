@@ -176,18 +176,50 @@ $('cd-career').innerHTML = '<option value="">전체</option>' +
 $('mf-role').innerHTML = '<option value="">전체</option>' +
   ROLE_ORDER.map(k => `<option value="${k}">${ROLES[k].icon} ${ROLES[k].label}</option>`).join('');
 
-/* ==================== 탭 ==================== */
-function switchTab(name){
+/* ==================== 탭 · 하위 메뉴 ====================
+   v35: 기능이 많은 탭은 하위 메뉴로 나눠 봅니다.
+   패널 안의 각 .admin-box에 data-sub 값을 달아두고, 현재 하위 메뉴에
+   속하지 않는 박스에 .sub-off를 붙여 감춥니다.
+   (박스 자체의 display 제어 로직은 그대로 두고 클래스로만 덮어씁니다) */
+const TAB_SUBS = {
+  workshop: ['reg', 'list', 'apply'],
+  online:   ['course', 'progress', 'migrate'],
+  assign:   ['reg', 'list', 'applicant']
+};
+const lastSub = {};   // 탭별 마지막으로 보던 하위 메뉴
+
+function applySub(name, sub){
+  const panel = $('tab-' + name);
+  if (!panel) return;
+  panel.querySelectorAll('[data-sub]').forEach(box =>
+    box.classList.toggle('sub-off', !box.dataset.sub.split(/\s+/).includes(sub)));
+  document.querySelectorAll(`.atab-subs[data-for="${name}"] .asub`).forEach(b =>
+    b.classList.toggle('active', b.dataset.sub === sub));
+}
+
+function switchTab(name, sub){
   document.querySelectorAll('.atab').forEach(b =>
     b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.atab-group').forEach(g =>
+    g.classList.toggle('on', g.dataset.group === name));
   document.querySelectorAll('.tab-panel').forEach(p =>
     p.classList.toggle('on', p.id === 'tab-' + name));
+
+  const subs = TAB_SUBS[name];
+  if (subs){
+    const cur = subs.includes(sub) ? sub : (lastSub[name] || subs[0]);
+    lastSub[name] = cur;
+    applySub(name, cur);
+  }
+
   window.scrollTo({ top: 0, behavior: 'smooth' });
   if ((name === 'member' || name === 'assign') && !membersLoaded) loadMembers();
   if (name === 'assign') renderAssign();
   if (name === 'online') renderClassroom();
 }
 window.switchTab = switchTab;
+/* 초기 하위 메뉴 상태를 잡아둡니다 (탭을 처음 열었을 때 첫 항목이 선택되도록) */
+Object.entries(TAB_SUBS).forEach(([name, subs]) => applySub(name, subs[0]));
 
 /* ==================== 접근 제어 ==================== */
 function adminLogout(){ signOut(auth); }
@@ -349,7 +381,7 @@ function editProgram(id){
   if (!p) return;
   /* v10: 강사 모집 공고는 [강사 배정] 탭의 전용 폼에서 수정합니다 */
   if (p.type === 'recruit'){ editRecruit(id); return; }
-  switchTab('workshop');
+  switchTab('workshop', 'reg');
   $('p-id').value = p.id;
   /* v19: 유형은 숨은 필드로 유지합니다 — 이 폼은 강사 워크샵 전용이지만
      기존 camp 프로그램을 수정해도 유형이 workshop으로 바뀌지 않도록 원래 값을 보존합니다 */
@@ -451,8 +483,9 @@ function renderAdminTable(){
   const list = byWorkshopDate(programs.filter(p => p.type !== 'recruit'));
   tb.innerHTML = list.length
     ? list.map(progRow).join('')
-    : '<tr><td colspan="6" style="text-align:center;color:#6A776F;">등록된 워크샵이 없습니다. 위에서 새 워크샵을 등록하세요.</td></tr>';
+    : '<tr><td colspan="6" style="text-align:center;color:#6A776F;">등록된 워크샵이 없습니다. [워크샵 등록]에서 새 워크샵을 등록하세요.</td></tr>';
   $('badgeProgram').textContent = list.length;
+  $('badgeProgramSub').textContent = list.length;
 
   renderRecruitTable();
 }
@@ -464,9 +497,11 @@ function renderRecruitTable(){
   const list = byWorkshopDate(programs.filter(p => p.type === 'recruit'));
   tb.innerHTML = list.length
     ? list.map(progRow).join('')
-    : '<tr><td colspan="5" style="text-align:center;color:#6A776F;">등록된 모집 공고가 없습니다. 위에서 새 공고를 등록하세요.</td></tr>';
+    : '<tr><td colspan="5" style="text-align:center;color:#6A776F;">등록된 모집 공고가 없습니다. [공고 등록]에서 새 공고를 등록하세요.</td></tr>';
   const badge = $('badgeRecruit');
   if (badge) badge.textContent = list.length;
+  const badgeSub = $('badgeRecruitSub');
+  if (badgeSub) badgeSub.textContent = list.length;
 }
 
 Object.assign(window, { editProgram, resetProgramForm, deleteProgram, toggleOpen });
@@ -1688,13 +1723,11 @@ $('as-program').addEventListener('change', renderAssign);
 /* ---------- v10: 모집 공고 등록/수정 (프로그램 탭에서 이관) ---------- */
 let pendingSelectId = null;   // 등록 직후 자동 선택할 공고 id
 
+/* v35: 등록 폼이 [공고 등록] 하위 메뉴로 옮겨졌습니다.
+   열기 = 등록 메뉴로 이동, 닫기(저장 후) = 입력 초기화 후 공고 관리로 이동 */
 function toggleRecruitForm(force){
-  const box = $('recruitBox');
-  const openIt = force === undefined ? box.style.display === 'none' : !!force;
-  box.style.display = openIt ? '' : 'none';
-  $('rToggleBtn').textContent = openIt ? '✕ 공고 등록 닫기' : '＋ 새 모집 공고 등록';
-  if (openIt) setTimeout(() => box.scrollIntoView({behavior:'smooth', block:'center'}), 120);
-  else resetRecruitForm();
+  if (force === false){ resetRecruitForm(); switchTab('assign', 'list'); }
+  else switchTab('assign', 'reg');
 }
 
 function resetRecruitForm(){
@@ -1712,9 +1745,7 @@ function resetRecruitForm(){
 function editRecruit(id){
   const p = programs.find(x => x.id === id);
   if (!p) return;
-  switchTab('assign');
-  $('recruitBox').style.display = '';
-  $('rToggleBtn').textContent = '✕ 공고 등록 닫기';
+  switchTab('assign', 'reg');
   $('r-id').value        = p.id;
   $('r-title').value     = p.title || '';
   $('r-target').value    = p.target || '';
