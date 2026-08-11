@@ -1734,6 +1734,9 @@ function editRecruit(id){
   $('r-hours').value     = p.hours || '';
   $('r-qual').value      = p.qualification || '';
   $('r-deadline').value  = p.deadline || '';
+  $('r-deadlineTime').value = p.deadlineTime || '';
+  $('r-open').value      = p.openDate || '';
+  $('r-openTime').value  = p.openTime || '';
   $('r-capacity').value  = p.capacity ?? '';
   $('r-loginonly').checked = !!p.loginOnly;
   setPickedCourses('r', Array.isArray(p.courses) ? p.courses : []);
@@ -1771,12 +1774,22 @@ $('recruitForm').addEventListener('submit', async e => {
     qualification: $('r-qual').value.trim(),
     levels:  pickedLevels(),
     deadline: $('r-deadline').value,
+    deadlineTime: $('r-deadlineTime').value,
+    openDate: $('r-open').value,          // v36: 모집 시작 (없으면 즉시 접수)
+    openTime: $('r-openTime').value,
     capacity: Number($('r-capacity').value),
     loginOnly: $('r-loginonly').checked,
     courses: pickedCourses('r')
   };
   if (data.recruitFor === 'camp' && !data.levels.length){
     alert('대상 학교급을 1개 이상 선택해주세요.'); return;
+  }
+  if (data.openDate && data.deadline && data.openDate > data.deadline){
+    alert('지원 시작일이 지원 마감일보다 늦습니다.'); return;
+  }
+  if (data.openDate && data.deadline && data.openDate === data.deadline
+      && data.openTime && data.deadlineTime && data.openTime > data.deadlineTime){
+    alert('지원 마감 시각이 시작 시각보다 빠릅니다.'); return;
   }
   if (!data.courses.length){ alert('담당 과정을 1개 이상 선택해주세요.'); return; }
   const btn = $('rFormSubmit');

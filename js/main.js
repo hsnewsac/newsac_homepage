@@ -115,7 +115,7 @@ function cardHTML(p){
     action = `<button class="btn ${btnClass}" disabled>${isRecruit ? '모집이 마감되었습니다' : '접수가 마감되었습니다'}</button>`;
   } else if (notYet){
     const [, m, d] = p.openDate.split('-');
-    action = `<button class="btn ${btnClass}" disabled>${Number(m)}월 ${Number(d)}일${p.openTime ? ` ${p.openTime}` : ''}부터 접수합니다</button>`;
+    action = `<button class="btn ${btnClass}" disabled>${Number(m)}월 ${Number(d)}일${p.openTime ? ` ${p.openTime}` : ''}부터 ${isRecruit ? '지원할 수 있습니다' : '접수합니다'}</button>`;
   } else if (needLogin){
     action = `<a class="btn ${btnClass}" href="mypage.html?next=apply">🔐 로그인 후 ${isRecruit ? '지원하기' : '신청하기'}</a>`;
   } else if (wrongRole){

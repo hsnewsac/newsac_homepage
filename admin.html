@@ -463,8 +463,19 @@
               </div>
             </div>
             <div class="form-row">
-              <label for="r-deadline">지원 마감일 <span class="req">*</span></label>
-              <input id="r-deadline" type="date" required>
+              <label for="r-open">지원 시작 (선택)</label>
+              <div class="dt-pair">
+                <input id="r-open" type="date">
+                <input id="r-openTime" type="time" step="300" aria-label="지원 시작 시각">
+              </div>
+              <p class="form-note" style="margin-top:6px;">지정하면 그 전까지 홈 카드에 <b>모집 예정</b>으로 표시되고 지원이 열리지 않습니다.</p>
+            </div>
+            <div class="form-row">
+              <label for="r-deadline">지원 마감 <span class="req">*</span></label>
+              <div class="dt-pair">
+                <input id="r-deadline" type="date" required>
+                <input id="r-deadlineTime" type="time" step="300" aria-label="지원 마감 시각">
+              </div>
             </div>
             <div class="form-row">
               <label for="r-capacity">모집 인원 <span class="req">*</span></label>
