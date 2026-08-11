@@ -505,6 +505,53 @@ function renderRecruitTable(){
   if (badgeSub) badgeSub.textContent = list.length;
 }
 
+/* v38: 마우스로 카드를 끌어 관리 버튼을 여는 드래그 스와이프.
+   터치는 브라우저 기본 스크롤(관성·스냅)을 그대로 쓰고,
+   마우스·펜만 여기서 처리합니다. 이벤트 위임이라 새로 그린 행에도 적용됩니다. */
+function initDragSwipe(){
+  document.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'touch' || e.button !== 0) return;
+    const row = e.target.closest('.swipe-table tr');
+    if (!row) return;
+    if (e.target.closest('button, a, input, select, textarea, label')) return;
+
+    const startX = e.clientX, startLeft = row.scrollLeft;
+    const max = row.scrollWidth - row.clientWidth;
+    if (max <= 0) return;
+    let moved = false;
+    row.style.scrollSnapType = 'none';
+    row.classList.add('dragging');
+
+    const move = ev => {
+      const dx = ev.clientX - startX;
+      if (Math.abs(dx) > 3) moved = true;
+      row.scrollLeft = Math.max(0, Math.min(max, startLeft - dx));
+    };
+    const up = ev => {
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', up);
+      row.classList.remove('dragging');
+      row.style.scrollSnapType = '';
+      /* 놓았을 때 절반을 넘겼으면 끝까지 열고, 아니면 닫습니다 */
+      const dx = ev.clientX - startX;
+      const openIt = moved ? (row.scrollLeft > max * 0.35) : startLeft > 0 ? false : (dx < -40);
+      row.scrollTo({ left: openIt ? max : 0, behavior: 'smooth' });
+    };
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', up);
+    e.preventDefault();   // 드래그 중 텍스트 선택 방지
+  });
+
+  /* 다른 카드를 열면 열려 있던 카드는 닫습니다 */
+  document.addEventListener('pointerdown', e => {
+    const row = e.target.closest('.swipe-table tr');
+    document.querySelectorAll('.swipe-table tr').forEach(r => {
+      if (r !== row && r.scrollLeft > 0) r.scrollTo({ left: 0, behavior: 'smooth' });
+    });
+  });
+}
+initDragSwipe();
+
 Object.assign(window, { editProgram, resetProgramForm, deleteProgram, toggleOpen });
 
 /* ==================== 공지 ==================== */
