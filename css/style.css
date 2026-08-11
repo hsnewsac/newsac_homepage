@@ -1,3 +1,10 @@
+/* =========================================================
+   한신대학교 디지털새싹 사업단 — 공통 스타일
+   ※ 캐시 주의: 각 HTML의 <link href="css/style.css?v=NN">에
+     버전 번호가 붙어 있습니다. 이 파일을 고칠 때는
+     모든 HTML의 ?v= 값을 함께 올려야 브라우저가 새 파일을 받습니다.
+     (현재 v=35)
+========================================================= */
 :root{
   --leaf:#1E7F4F;
   --sprout:#5FC97E;
@@ -1678,23 +1685,23 @@ a:hover > .gic svg, a.active > .gic svg,
    ========================================================== */
 .atab-group{display:contents;}   /* 버튼과 하위 메뉴가 사이드바 흐름에 그대로 놓이도록 */
 .atab-subs{display:none;}
-.admin-tabs.side .atab-group.on .atab-subs{
+.atab-group.on .atab-subs{
   display:flex;flex-direction:column;gap:2px;margin:4px 0 6px 12px;
   padding-left:10px;border-left:2px solid rgba(42,84,128,.16);
 }
-.admin-tabs.side .asub{
+.asub{
   display:flex;align-items:center;gap:6px;width:100%;
   padding:8px 10px;border:1px solid transparent;border-radius:10px;
   background:transparent;cursor:pointer;font-family:inherit;
   font-size:.83rem;font-weight:700;color:#5A6862;text-align:left;
   transition:background .16s ease,color .16s ease;
 }
-.admin-tabs.side .asub:hover{background:rgba(255,255,255,.7);color:var(--navy);}
-.admin-tabs.side .asub.active{
+.asub:hover{background:rgba(255,255,255,.7);color:var(--navy);}
+.asub.active{
   background:rgba(42,84,128,.1);color:var(--navy);
   box-shadow:inset 2px 0 0 var(--navy);
 }
-.admin-tabs.side .asub .tab-badge{margin-left:auto;}
+.asub .tab-badge{margin-left:auto;}
 /* 마이페이지 쪽에서 같은 구조를 쓸 때의 활성 색 */
 .my-shell .asub.active{background:rgba(30,127,79,.1);color:var(--leaf);
   box-shadow:inset 2px 0 0 var(--leaf);}
@@ -1704,13 +1711,9 @@ a:hover > .gic svg, a.active > .gic svg,
 .tab-panel .admin-box.sub-off{display:none !important;}
 
 @media (max-width:1000px){
-  /* 가로 배치에서는 하위 메뉴가 상위 탭 줄 아래 한 줄을 차지합니다 */
-  .admin-tabs.side .atab-group.on .atab-subs{
-    flex-basis:100%;
-    flex-direction:row;flex-wrap:wrap;margin:6px 0 2px;padding-left:0;
-    border-left:none;border-top:1px dashed rgba(42,84,128,.18);padding-top:6px;
+  /* 사이드바가 가로로 바뀌어도 하위 메뉴는 한 줄에 하나씩 세로로 유지합니다 */
+  .atab-group.on .atab-subs{
+    flex-basis:100%;flex-direction:column;margin:6px 0 4px;
+    padding:6px 0 0;border-left:none;border-top:1px dashed rgba(42,84,128,.18);
   }
-  .admin-tabs.side .asub{width:auto;}
-  .admin-tabs.side .asub.active{box-shadow:inset 0 -2px 0 var(--navy);}
-  .my-shell .asub.active{box-shadow:inset 0 -2px 0 var(--leaf);}
 }
