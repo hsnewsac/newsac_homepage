@@ -72,10 +72,34 @@
 
   /* 한 줄에 한 과목 — 가로형 카드 (이 페이지 전용) */
   .on-grid{grid-template-columns:1fr;max-width:860px;margin:0 auto;}
-  .on-card{flex-direction:row;align-items:center;gap:26px;padding:22px 28px;}
+  .on-card{flex-direction:row;align-items:center;gap:26px;padding:20px 26px;}
   .oc-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px;}
   .oc-side{flex:none;width:200px;display:flex;flex-direction:column;gap:8px;}
   .oc-side .btn{width:100%;}
+
+  /* v34: 카드는 과목명 + 한 줄 요약 + 태그만 — 긴 안내는 접어둡니다 */
+  .oc-head{display:flex;align-items:flex-start;gap:12px;}
+  .oc-head .oc-ic{font-size:1.5rem;line-height:1.25;flex:none;}
+  .oc-ttl{min-width:0;display:flex;flex-direction:column;gap:6px;}
+  .oc-tags{display:flex;flex-wrap:wrap;gap:5px;}
+  .oc-tag{font-size:.71rem;font-weight:700;padding:3px 8px;border-radius:6px;
+    background:#F4F7F5;border:1px solid var(--line);color:#5A6862;white-space:nowrap;}
+  .oc-tag.lv{background:var(--sprout-soft,#EAF7EF);border-color:#CDE9D8;color:var(--leaf);}
+  .on-card.sp .oc-tag.lv{background:#FDF6F3;border-color:#F0DAD1;color:#B4553C;}
+  .oc-tag.warn{background:#FFF8E8;border-color:#F0DFB8;color:#8A6A16;}
+  .on-card .oc-sum{font-size:.85rem;line-height:1.65;color:#5A6862;word-break:keep-all;}
+  .oc-more{align-self:flex-start;display:inline-flex;align-items:center;gap:5px;
+    padding:4px 0;border:none;background:none;cursor:pointer;font-family:inherit;
+    font-size:.79rem;font-weight:700;color:var(--leaf);}
+  .oc-more:hover{text-decoration:underline;}
+  .oc-more i{font-style:normal;font-size:.7rem;transition:transform .2s ease;}
+  .oc-more.open i{transform:rotate(180deg);}
+  .oc-detail{margin-top:2px;padding:12px 14px;border-radius:10px;
+    background:var(--paper,#F7FAF8);border:1px solid var(--line);}
+  .oc-detail[hidden]{display:none;}
+  .oc-note{margin-top:12px;padding-top:11px;border-top:1px dashed var(--line);}
+  .oc-note > b{display:block;margin-bottom:5px;font-size:.79rem;color:#8A6A16;}
+
   @media (max-width:680px){
     .on-card{flex-direction:column;align-items:stretch;gap:14px;}
     .oc-side{width:auto;}
@@ -182,6 +206,24 @@
   let me = null, myEnrolls = [], onCourses = {}, lessonCount = {};
   let qText = '', grp = '';
 
+  /* 카드 한 줄 요약 길이 — 넘치면 '자세히 보기'로 접습니다 */
+  const SUM_LEN = 88;
+  /* 마크다운 표기를 걷어낸 순수 텍스트 (요약 미리보기용) */
+  const plainMd = s => String(s || '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .split('\n')
+    .map(l => {
+      const li = /^\s*(?:[-*+]|\d+\.)\s+/.test(l);          // 목록 항목은 · 로 구분
+      const t = l.replace(/^\s*(?:[>#]+|[-*+]|\d+\.)\s*/, '').replace(/[*_~]/g, '').trim();
+      return t ? (li ? '· ' + t : t) : '';
+    })
+    .filter(Boolean).join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
   async function loadOnline(){
     try {
       const cs = await getDocs(collection(db, 'onlineCourses'));
@@ -236,16 +278,38 @@
       const d = onCourses[c.key] || {};
       const mine = myEnrolls.find(e => e.courseKey === c.key);
       const n = lessonCount[c.key] || 0;
+
+      /* v34: 카드에는 한 줄 요약만 두고, 긴 안내는 '자세히 보기'로 접어둡니다 */
+      const full = String(d.intro || c.intro || '').trim();
+      const plainAll = plainMd(full);
+      /* 요약은 첫 문단만 사용하고, 그마저 길면 잘라냅니다 */
+      const head = plainMd(full.split(/\n\s*\n/)[0]) || plainAll;
+      const long = head.length > SUM_LEN;
+      const summary = long ? head.slice(0, SUM_LEN).replace(/[\s,·]+$/, '') + '…' : head;
+      const hasDetail = long || plainAll.length > head.length || !!d.note;
+
       return `<article class="on-card ${c.group === '특화' ? 'sp' : ''}">
         <div class="oc-main">
-          <div class="oc-top"><span class="oc-ic">${c.icon}</span>
-            <span class="oc-lv">${esc(c.group)}과정 · ${esc(c.level)}</span></div>
-          <h4>${esc(c.name)}</h4>
-          <div class="md sm">${mdToHtml(d.intro || c.intro)}</div>
-          <div class="oc-meta">
-            <span>총 ${n}차시</span><span>상시 개설</span>
+          <div class="oc-head">
+            <span class="oc-ic">${c.icon}</span>
+            <div class="oc-ttl">
+              <h4>${esc(c.name)}</h4>
+              <div class="oc-tags">
+                <span class="oc-tag lv">${esc(c.group)}과정 · ${esc(c.level)}</span>
+                <span class="oc-tag">총 ${n}차시</span>
+                <span class="oc-tag">상시 개설</span>
+                ${d.note ? '<span class="oc-tag warn">📌 수강 안내</span>' : ''}
+              </div>
+            </div>
           </div>
-          ${d.note ? `<div class="md sm note">📌 ${mdToHtml(d.note)}</div>` : ''}
+          <p class="oc-sum">${esc(summary)}</p>
+          ${hasDetail ? `
+            <button type="button" class="oc-more" data-more="${c.key}"
+              aria-expanded="false" aria-controls="ocd-${c.key}">자세히 보기<i>▾</i></button>
+            <div class="oc-detail" id="ocd-${c.key}" hidden>
+              <div class="md sm">${mdToHtml(full)}</div>
+              ${d.note ? `<div class="oc-note"><b>📌 수강 안내</b><div class="md sm">${mdToHtml(d.note)}</div></div>` : ''}
+            </div>` : ''}
         </div>
         <div class="oc-side">
           ${mine
@@ -261,6 +325,15 @@
 
     onBox.querySelectorAll('[data-enroll]').forEach(b =>
       b.addEventListener('click', () => enroll(b.dataset.enroll, b)));
+    onBox.querySelectorAll('[data-more]').forEach(b =>
+      b.addEventListener('click', () => {
+        const box = document.getElementById('ocd-' + b.dataset.more);
+        const open = box.hidden;
+        box.hidden = !open;
+        b.setAttribute('aria-expanded', open ? 'true' : 'false');
+        b.classList.toggle('open', open);
+        b.firstChild.textContent = open ? '간단히 보기' : '자세히 보기';
+      }));
   }
 
   async function enroll(key, btn){
