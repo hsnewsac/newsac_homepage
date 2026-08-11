@@ -3,7 +3,7 @@
    ※ 캐시 주의: 각 HTML의 <link href="css/style.css?v=NN">에
      버전 번호가 붙어 있습니다. 이 파일을 고칠 때는
      모든 HTML의 ?v= 값을 함께 올려야 브라우저가 새 파일을 받습니다.
-     (현재 v=39)
+     (현재 v=40)
 ========================================================= */
 :root{
   --leaf:#1E7F4F;
@@ -1753,15 +1753,20 @@ a:hover > .gic svg, a.active > .gic svg,
    색깔 버튼 패널이 들어옵니다 (다른 칸을 가리지 않습니다).
    좁은 화면: 표가 들어가지 않으므로 카드로 쌓고 같은 방식으로 동작합니다.
    드래그 처리는 js/admin.js의 initDragSwipe()가 담당합니다. */
-.swipe-table th.c-actH{width:224px;}
+/* 관리 열을 따로 두지 않습니다 — 필요할 때만 끌어서 꺼내므로
+   나머지 정보가 넓게 표시됩니다. */
 .swipe-table tr{position:relative;touch-action:pan-y;cursor:grab;}
 .swipe-table tr.dragging{cursor:grabbing;}
 body.sw-nosel, body.sw-nosel *{user-select:none;-webkit-user-select:none;}
+.swipe-table tbody td:nth-last-child(2){padding-right:26px;}
 .swipe-table tr::after{
-  content:'‹ 끌어서 관리';position:absolute;right:18px;top:50%;
-  transform:translateY(-50%);white-space:nowrap;pointer-events:none;
-  font-size:.76rem;font-weight:700;color:#B8C3BC;
+  content:'‹';position:absolute;right:9px;top:50%;
+  transform:translateY(-50%);pointer-events:none;
+  font-size:1.15rem;font-weight:800;color:#C3CCC6;
+  transition:opacity .18s ease;
 }
+.swipe-table tr:hover::after{color:var(--navy);opacity:.55;}
+.swipe-table tr[data-open="1"]::after{opacity:0;}
 .swipe-table td.c-swipe{
   position:absolute;top:0;bottom:0;right:0;padding:0;margin:0;
   display:flex;overflow:hidden;z-index:2;
@@ -1795,7 +1800,8 @@ body.sw-nosel, body.sw-nosel *{user-select:none;-webkit-user-select:none;}
     border:1px solid var(--line);border-radius:14px;background:#fff;
     box-shadow:0 2px 8px rgba(23,34,27,.05);
   }
-  .swipe-table tr::after{content:'‹';right:10px;top:18px;transform:none;font-size:1.15rem;}
+  .swipe-table tr::after{right:10px;top:18px;transform:none;}
+  .swipe-table tbody td:nth-last-child(2){padding-right:16px;}
   .swipe-table td{display:block;border:none;padding:3px 14px;}
   /* 카드는 내용도 함께 밀려 iOS 목록처럼 움직입니다 */
   .swipe-table td:not(.c-swipe){transform:translateX(calc(-1 * var(--sw,0px)));}
