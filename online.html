@@ -9,7 +9,7 @@
 <meta property="og:description" content="상시 개설 온라인 강사 워크샵 — 언제든 신청하고 바로 수강 시작">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=37">
+<link rel="stylesheet" href="css/style.css?v=38">
 <style>
   /* ===== online.html 전용 ===== */
   .ol-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;
@@ -77,32 +77,59 @@
   .oc-side{flex:none;width:200px;display:flex;flex-direction:column;gap:8px;}
   .oc-side .btn{width:100%;}
 
-  /* v34: 카드는 과목명 + 한 줄 요약 + 태그만 — 긴 안내는 접어둡니다 */
-  .oc-head{display:flex;align-items:flex-start;gap:12px;}
-  .oc-head .oc-ic{font-size:1.5rem;line-height:1.25;flex:none;}
-  .oc-ttl{min-width:0;display:flex;flex-direction:column;gap:6px;}
-  .oc-tags{display:flex;flex-wrap:wrap;gap:5px;}
-  .oc-tag{font-size:.71rem;font-weight:700;padding:3px 8px;border-radius:6px;
-    background:#F4F7F5;border:1px solid var(--line);color:#5A6862;white-space:nowrap;}
-  .oc-tag.lv{background:var(--sprout-soft,#EAF7EF);border-color:#CDE9D8;color:var(--leaf);}
-  .on-card.sp .oc-tag.lv{background:#FDF6F3;border-color:#F0DAD1;color:#B4553C;}
-  .oc-tag.warn{background:#FFF8E8;border-color:#F0DFB8;color:#8A6A16;}
-  .on-card .oc-sum{font-size:.85rem;line-height:1.65;color:#5A6862;word-break:keep-all;}
-  .oc-more{align-self:flex-start;display:inline-flex;align-items:center;gap:5px;
-    padding:4px 0;border:none;background:none;cursor:pointer;font-family:inherit;
-    font-size:.79rem;font-weight:700;color:var(--leaf);}
-  .oc-more:hover{text-decoration:underline;}
-  .oc-more i{font-style:normal;font-size:.7rem;transition:transform .2s ease;}
-  .oc-more.open i{transform:rotate(180deg);}
-  .oc-detail{margin-top:2px;padding:12px 14px;border-radius:10px;
-    background:var(--paper,#F7FAF8);border:1px solid var(--line);}
+  /* v38: 연수원 과정 목록 스타일 — 썸네일 + 정보 + 우측 액션 */
+  .on-card{flex-wrap:wrap;align-items:stretch;gap:0;padding:0;overflow:hidden;}
+  .oc-thumb{
+    flex:0 0 132px;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(150deg,#E9F6EE,#D6EFE0);border-right:1px solid var(--line);
+  }
+  .on-card.sp .oc-thumb{background:linear-gradient(150deg,#FDF1EA,#F8E1D5);}
+  .oc-thumb span{font-size:2.6rem;filter:drop-shadow(0 3px 5px rgba(23,34,27,.14));}
+  .oc-body{flex:1;min-width:0;padding:16px 20px 14px;display:flex;flex-direction:column;gap:6px;}
+  .oc-row1{display:flex;align-items:center;gap:10px;}
+  .oc-cat{font-size:.78rem;font-weight:800;color:var(--leaf);}
+  .on-card.sp .oc-cat{color:#B4553C;}
+  .oc-cnt{margin-left:auto;font-size:.8rem;color:#8A968E;font-weight:700;white-space:nowrap;}
+  .oc-cnt b{font-size:1.1rem;color:var(--navy);font-weight:800;}
+  .on-card h4{font-size:1.08rem;line-height:1.4;}
+  .on-card .oc-sum{font-size:.85rem;line-height:1.6;color:#6A776F;word-break:keep-all;}
+  .on-card .oc-meta{
+    display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;
+    margin-top:8px;padding-top:11px;border-top:1px dashed var(--line);
+  }
+  /* 이전 디자인의 칩 스타일(.on-card .oc-meta span)을 걷어냅니다 */
+  .on-card .oc-meta span{background:none;border:none;border-radius:0;padding:0;}
+  .on-card .oc-meta .oc-m{
+    display:flex;align-items:flex-start;gap:6px;
+    font-size:.8rem;color:#5A6862;word-break:keep-all;
+  }
+  .on-card .oc-meta .oc-m i{font-style:normal;flex:none;opacity:.85;}
+  .on-card .oc-meta .oc-m b{color:#28352E;font-weight:800;}
+  .on-card .oc-meta .oc-m.warn{grid-column:1/-1;color:#8A6A16;}
+  .oc-side{
+    flex:none;width:150px;display:flex;flex-direction:column;justify-content:center;gap:7px;
+    padding:16px 18px;border-left:1px dashed var(--line);
+  }
+  .oc-side .btn{width:100%;text-align:center;text-decoration:none;}
+  .on-card .oc-state{padding:7px 10px;font-size:.78rem;}
+  .oc-detail{
+    flex:0 0 100%;margin:0;padding:14px 20px 16px;border-radius:0;
+    background:var(--paper,#F7FAF8);border:none;border-top:1px solid var(--line);
+  }
   .oc-detail[hidden]{display:none;}
   .oc-note{margin-top:12px;padding-top:11px;border-top:1px dashed var(--line);}
   .oc-note > b{display:block;margin-bottom:5px;font-size:.79rem;color:#8A6A16;}
 
-  @media (max-width:680px){
-    .on-card{flex-direction:column;align-items:stretch;gap:14px;}
-    .oc-side{width:auto;}
+  @media (max-width:760px){
+    .oc-thumb{flex-basis:100%;height:88px;border-right:none;border-bottom:1px solid var(--line);}
+    .oc-thumb span{font-size:2.1rem;}
+    .on-card .oc-meta{grid-template-columns:1fr;gap:5px;}
+    .oc-side{
+      width:100%;flex-direction:row;flex-wrap:wrap;padding:0 20px 16px;
+      border-left:none;
+    }
+    .oc-side .btn{flex:1;min-width:130px;}
+    .on-card .oc-state{flex:1 0 100%;text-align:center;}
   }
 </style>
 </head>
@@ -289,37 +316,39 @@
       const hasDetail = long || plainAll.length > head.length || !!d.note;
 
       return `<article class="on-card ${c.group === '특화' ? 'sp' : ''}">
-        <div class="oc-main">
-          <div class="oc-head">
-            <span class="oc-ic">${c.icon}</span>
-            <div class="oc-ttl">
-              <h4>${esc(c.name)}</h4>
-              <div class="oc-tags">
-                <span class="oc-tag lv">${esc(c.group)}과정 · ${esc(c.level)}</span>
-                <span class="oc-tag">총 ${n}차시</span>
-                <span class="oc-tag">상시 개설</span>
-                ${d.note ? '<span class="oc-tag warn">📌 수강 안내</span>' : ''}
-              </div>
-            </div>
+        <div class="oc-thumb" aria-hidden="true"><span>${c.icon}</span></div>
+        <div class="oc-body">
+          <div class="oc-row1">
+            <span class="oc-cat">온라인 과정 (상시) · ${esc(c.group)}과정</span>
+            <span class="oc-cnt"><b>${n}</b> 차시</span>
           </div>
+          <h4>${esc(c.name)}</h4>
           <p class="oc-sum">${esc(summary)}</p>
-          ${hasDetail ? `
-            <button type="button" class="oc-more" data-more="${c.key}"
-              aria-expanded="false" aria-controls="ocd-${c.key}">자세히 보기<i>▾</i></button>
-            <div class="oc-detail" id="ocd-${c.key}" hidden>
-              <div class="md sm">${mdToHtml(full)}</div>
-              ${d.note ? `<div class="oc-note"><b>📌 수강 안내</b><div class="md sm">${mdToHtml(d.note)}</div></div>` : ''}
-            </div>` : ''}
+          <div class="oc-meta">
+            <span class="oc-m"><i>🗓</i><span>신청기간 : <b>상시 접수</b></span></span>
+            <span class="oc-m"><i>⏱</i><span>차시정보 : <b>${n}차시</b> (내 속도로 수강)</span></span>
+            <span class="oc-m"><i>👥</i><span>교육대상 : <b>${esc(c.level)}</b> 담당 교원 · 강사</span></span>
+            <span class="oc-m"><i>💻</i><span>수강방식 : <b>온라인</b> (마이페이지 내 강의실)</span></span>
+            ${d.note ? '<span class="oc-m warn"><i>📌</i><span>수강 전 <b>안내사항</b>이 있습니다</span></span>' : ''}
+          </div>
         </div>
         <div class="oc-side">
           ${mine
-            ? `<div class="oc-state done">✅ 수강 중입니다</div>
+            ? `<div class="oc-state done">✅ 수강 중</div>
                <a class="btn btn-navy btn-sm" href="classroom.html?enroll=${mine.id}">강의실 입장 →</a>`
             : (me
-              ? `<button class="btn btn-navy btn-sm" data-enroll="${c.key}">수강 신청하기</button>`
-              : `<div class="oc-state wait">로그인 후 신청 가능</div>
-                 <a class="btn btn-outline btn-sm" href="mypage.html">로그인 / 회원가입</a>`)}
+              ? `<button class="btn btn-navy btn-sm" data-enroll="${c.key}">신청하기</button>`
+              : `<div class="oc-state wait">로그인 후 신청</div>
+                 <a class="btn btn-navy btn-sm" href="mypage.html">로그인 / 가입</a>`)}
+          ${hasDetail
+            ? `<button type="button" class="btn btn-outline btn-sm oc-more" data-more="${c.key}"
+                 aria-expanded="false" aria-controls="ocd-${c.key}">상세보기</button>`
+            : ''}
         </div>
+        ${hasDetail ? `<div class="oc-detail" id="ocd-${c.key}" hidden>
+          <div class="md sm">${mdToHtml(full)}</div>
+          ${d.note ? `<div class="oc-note"><b>📌 수강 안내</b><div class="md sm">${mdToHtml(d.note)}</div></div>` : ''}
+        </div>` : ''}
       </article>`;
     }).join('');
 
@@ -332,7 +361,7 @@
         box.hidden = !open;
         b.setAttribute('aria-expanded', open ? 'true' : 'false');
         b.classList.toggle('open', open);
-        b.firstChild.textContent = open ? '간단히 보기' : '자세히 보기';
+        b.textContent = open ? '접기' : '상세보기';
       }));
   }
 
