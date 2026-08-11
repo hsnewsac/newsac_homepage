@@ -14,7 +14,7 @@ import {
   KIND, ORG_TYPES, openModal, closeModal, bindModalEvents, toast,
   ROLES, roleOf, qualificationHTML, RECRUIT_FOR,
   guessCourseKey, acceptedOnlineKeys, courseByKey,
-  courseInfoOf, courseStat, courseTimeText, allCoursesFull, appliedPatch
+  courseInfoOf, courseStat, courseTimeText, allCoursesFull, hasCourseCaps, appliedPatch
 } from './common.js';
 import { sendApplicationEmail, emailEnabled } from './email-config.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
@@ -362,7 +362,7 @@ function openApply(programId){
     checks.style.display = ''; courseNote.style.display = '';
     /* v42: 과목별 운영 시간과 잔여 정원을 함께 보여주고, 찬 과목은 고를 수 없게 합니다 */
     const info = courseInfoOf(p);
-    const hasCap = info.some(c => Number(c.cap) > 0);
+    const hasCap = hasCourseCaps(p);
     checks.innerHTML = courses.map((c, i) => {
       const ci = info.find(x => x.name === c) || { name: c };
       const st = courseStat(p, ci);

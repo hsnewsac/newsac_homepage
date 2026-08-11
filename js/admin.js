@@ -23,7 +23,7 @@ import {
   STATUS, STATUS_ORDER, statusOf, statusChip, APPROVE_STATUS, statusSet, isRecruit,
   ROLES, ROLE_ORDER, roleOf,
   tsText, tsNum, toast, openModal, closeModal, bindModalEvents, checkIsAdmin, mdToHtml,
-  courseCountKey, appliedPatch, courseInfoOf, courseStat, courseTimeText
+  courseCountKey, appliedPatch, courseInfoOf, courseStat, courseTimeText, hasCourseCaps
 } from './common.js';
 import { sendCertificateEmail, certEmailEnabled } from './email-config.js';
 
@@ -547,10 +547,65 @@ function byWorkshopDate(list){
   });
 }
 
+/* ---------- v42: 과목별 신청 인원 재계산 ----------
+   과목별 정원을 도입하기 전에 접수된 건은 courseApplied 값이 없어
+   0명으로 보입니다. 신청자 명단을 다시 세어 맞춰줍니다.
+   applied(전체 인원)는 타 채널 접수분이 섞여 있을 수 있어 건드리지 않고,
+   차이가 나면 안내만 합니다. */
+async function recalcCourseCounts(){
+  const targets = programs.filter(p => p.type !== 'recruit');
+  if (!targets.length){ toast('재계산할 워크샵이 없습니다.', 'warn'); return; }
+
+  const plan = targets.map(p => {
+    const apps = applications.filter(a => a.programId === p.id);
+    const counts = {};
+    courseInfoOf(p).forEach(c => { counts[courseCountKey(c.name)] = 0; });
+    let unknown = 0;
+    apps.forEach(a => {
+      const k = courseCountKey(a.course);
+      if (!k) return;
+      if (counts[k] === undefined) unknown++;      // 지금 개설 목록에 없는 과목
+      counts[k] = (counts[k] || 0) + 1;
+    });
+    const before = p.courseApplied || {};
+    const changed = Object.keys(counts).some(k => (Number(before[k]) || 0) !== counts[k]);
+    return { p, counts, total: apps.length, unknown, changed };
+  });
+
+  const todo = plan.filter(x => x.changed);
+  if (!todo.length){ toast('이미 모든 워크샵의 과목별 인원이 맞습니다.'); return; }
+
+  const lines = todo.slice(0, 12).map(x => {
+    const detail = courseInfoOf(x.p)
+      .map(c => `${c.name} ${x.counts[courseCountKey(c.name)] || 0}명`).join(', ');
+    return `· ${x.p.title}\n   ${detail || '개설 강좌 없음'}`;
+  });
+  if (todo.length > 12) lines.push(`… 외 ${todo.length - 12}건`);
+  if (!confirm(`신청자 명단을 다시 세어 과목별 인원을 맞춥니다.\n\n${lines.join('\n')}\n\n진행할까요?`)) return;
+
+  let ok = 0, fail = 0, gap = [];
+  for (const x of todo){
+    try {
+      await updateDoc(doc(db, 'programs', x.p.id), { courseApplied: x.counts });
+      ok++;
+      const sum = Object.values(x.counts).reduce((s, v) => s + v, 0);
+      if ((Number(x.p.applied) || 0) !== sum) gap.push(`${x.p.title} (전체 ${x.p.applied || 0}명 / 과목 합계 ${sum}명)`);
+    } catch (e) { fail++; }
+  }
+  toast(`과목별 인원을 다시 계산했습니다. (${ok}건${fail ? `, 실패 ${fail}건` : ''})`);
+  if (gap.length){
+    alert('전체 신청 인원과 과목별 합계가 다른 워크샵이 있습니다.\n' +
+      '타 채널 접수분(기존 신청 인원)이 포함된 경우일 수 있으니 확인해주세요.\n\n' +
+      gap.slice(0, 10).join('\n'));
+  }
+}
+window.recalcCourseCounts = recalcCourseCounts;
+
 /** v42: 과목별 신청/정원 요약 칩 */
 function courseSeatChips(p){
+  if (!hasCourseCaps(p)) return '';
   const list = courseInfoOf(p);
-  if (!list.length || !list.some(c => Number(c.cap) > 0)) return '';
+  if (!list.length) return '';
   return `<span class="pc-seats">${list.map(c => {
     const st = courseStat(p, c);
     const t = courseTimeText(c);

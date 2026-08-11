@@ -559,11 +559,18 @@ export function courseTimeText(c){
   if (c.start && c.end) return `${c.start}~${c.end}`;
   return c.start || c.end || '';
 }
-/** 모든 과목이 찼는지 — 과목 정원이 하나도 없으면 전체 정원으로 판단합니다 */
+/** 과목별 정원이 실제로 저장되어 있는지.
+    courseInfoOf는 예전 프로그램에 정원을 균등 배분해 채우므로(관리자 입력 편의),
+    화면 표시 여부는 반드시 이 함수로 판단해야 합니다. */
+export function hasCourseCaps(p){
+  return Array.isArray(p && p.courseInfo)
+    && p.courseInfo.some(c => c && Number(c.cap) > 0);
+}
+/** 모든 과목이 찼는지 — 과목별 정원이 없으면 null(전체 정원으로 판단) */
 export function allCoursesFull(p){
+  if (!hasCourseCaps(p)) return null;
   const list = courseInfoOf(p);
-  if (!list.length || !list.some(c => Number(c.cap) > 0)) return null;   // 판단 불가
-  return list.every(c => courseStat(p, c).full);
+  return list.length ? list.every(c => courseStat(p, c).full) : null;
 }
 
 /* v41: 공지 본문 — 새 글은 마크다운 원문(md:true)을 저장하고 볼 때 변환합니다.
