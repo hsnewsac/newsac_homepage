@@ -927,7 +927,10 @@ nav a.active{background:var(--sprout-soft);color:var(--leaf);}
 .c-appinfo .ai-sub{ display:flex; flex-wrap:wrap; gap:2px 10px; margin-top:3px;
   font-size:.76rem; line-height:1.5; color:#6A776F; }
 .c-appinfo .ai-when{ font-weight:600; color:#4A5850; white-space:nowrap; }
+.c-appinfo .ai-where{ color:#6A776F; }
 .c-appinfo .ai-got{ white-space:nowrap; }
+/* 프로그램 필터는 이름+기간+장소가 들어가 길어지므로 폭을 넓힙니다 */
+.filter-item select#f-program{ min-width:260px; max-width:420px; }
 
 /* ================= v11: 등록 폼 보조 UI ================= */
 /* 물음표 도움말 툴팁 */
