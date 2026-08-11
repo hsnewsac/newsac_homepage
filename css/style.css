@@ -3,7 +3,7 @@
    ※ 캐시 주의: 각 HTML의 <link href="css/style.css?v=NN">에
      버전 번호가 붙어 있습니다. 이 파일을 고칠 때는
      모든 HTML의 ?v= 값을 함께 올려야 브라우저가 새 파일을 받습니다.
-     (현재 v=35)
+     (현재 v=36)
 ========================================================= */
 :root{
   --leaf:#1E7F4F;
@@ -1716,4 +1716,82 @@ a:hover > .gic svg, a.active > .gic svg,
     flex-basis:100%;flex-direction:column;margin:6px 0 4px;
     padding:6px 0 0;border-left:none;border-top:1px dashed rgba(42,84,128,.18);
   }
+}
+
+/* ==========================================================
+   v36 — 워크샵/공고 목록 표: 구분 칸 정리 + 스와이프 관리 버튼
+   ========================================================== */
+/* 구분 — 정규 / 미니 한 가지만 표시 */
+.wskind{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 11px;border-radius:999px;
+  font-size:.74rem;font-weight:800;letter-spacing:-.01em;white-space:nowrap;
+}
+.wskind::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.75;}
+.wskind.reg{background:var(--navy-soft);color:var(--navy);}
+.wskind.mini{background:#FDF3E7;color:#B4763C;}
+.lock-i{font-size:.8rem;vertical-align:1px;opacity:.85;cursor:help;}
+
+/* 관리 — 색으로 구분되는 액션 버튼 */
+.sw-btns{display:flex;gap:6px;}
+.sw-btn{
+  padding:6px 12px;border-radius:9px;border:1px solid transparent;
+  font-family:inherit;font-size:.78rem;font-weight:800;white-space:nowrap;cursor:pointer;
+  transition:filter .15s ease, transform .12s ease;
+}
+.sw-btn:hover{filter:brightness(.94);}
+.sw-btn:active{transform:scale(.97);}
+.sw-btn.edit{background:var(--navy-soft);color:var(--navy);border-color:#C9DAEC;}
+.sw-btn.warn{background:#FFF3DD;color:#8A5A12;border-color:#F0DFB8;}
+.sw-btn.ok{background:var(--sprout-soft);color:var(--leaf);border-color:#BFE6CC;}
+.sw-btn.danger{background:#FBE9E4;color:var(--red);border-color:#EDC9C2;}
+
+/* 넓은 화면에서는 버튼이 그대로 보이고, 스와이프 안내는 감춥니다 */
+.swipe-cell{display:flex;align-items:center;gap:8px;}
+.sw-hint{display:none;}
+
+@media (max-width:820px){
+  /* 모바일 — 표를 가로 스크롤 대신 카드로 쌓고,
+     관리 줄은 오른쪽에서 옆으로 밀면 색깔별 버튼이 나타납니다 */
+  .swipe-table, .swipe-table tbody, .swipe-table tr, .swipe-table td{display:block;width:auto;}
+  .swipe-table thead{display:none;}
+  .swipe-table{border-collapse:separate;border-spacing:0;}
+  .swipe-table tr{
+    position:relative;margin-bottom:10px;padding:14px 14px 12px;
+    border:1px solid var(--line);border-radius:14px;background:#fff;
+    box-shadow:0 2px 8px rgba(23,34,27,.05);
+  }
+  .swipe-table td{border:none;padding:3px 0;}
+  .swipe-table td.c-kind{position:absolute;top:12px;right:12px;padding:0;}
+  .swipe-table td.c-name{padding-right:64px;font-size:.95rem;}
+  .swipe-table td.c-name b{font-size:.95rem;}
+  /* 라벨을 붙여 어떤 값인지 알 수 있게 합니다 */
+  .swipe-table td[data-l]{
+    display:flex;align-items:center;gap:8px;
+    font-size:.84rem;color:#3E4B44;padding:4px 0;
+  }
+  .swipe-table td[data-l]{align-items:flex-start;}
+  .swipe-table td[data-l]::before{
+    content:attr(data-l);flex:0 0 66px;
+    font-size:.74rem;font-weight:800;color:#8A968E;line-height:1.6;
+  }
+  .swipe-table td[data-l] .v{min-width:0;line-height:1.6;}
+  .swipe-table td.c-swipe{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);}
+
+  .swipe-cell{
+    width:100%;overflow-x:auto;gap:0;
+    scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;-ms-overflow-style:none;
+  }
+  .swipe-cell::-webkit-scrollbar{display:none;}
+  .sw-hint{
+    display:flex;align-items:center;justify-content:flex-end;gap:6px;
+    flex:0 0 100%;height:36px;padding:0 12px;scroll-snap-align:start;
+    border-radius:10px;background:var(--paper);border:1px dashed var(--line);
+    font-size:.76rem;font-weight:800;color:#8A968E;user-select:none;
+  }
+  .sw-hint::before{content:'관리';margin-right:auto;}
+  .sw-hint::after{content:'‹‹';letter-spacing:-1px;opacity:.7;}
+  .sw-btns{flex:0 0 auto;gap:6px;padding-left:6px;scroll-snap-align:end;}
+  .sw-btn{padding:8px 14px;font-size:.79rem;}
 }
