@@ -470,13 +470,10 @@ function progRow(p){
       <td data-l="${recruit ? '지원 마감' : '접수 마감'}"><span class="v">${esc(p.deadline)}${p.deadlineTime ? ` ${esc(p.deadlineTime)}` : ''}${p.openDate ? `<br><span class="cell-sub">시작 ${esc(p.openDate)}${p.openTime ? ` ${esc(p.openTime)}` : ''}</span>` : ''}</span></td>
       <td data-l="${recruit ? '지원/모집' : '신청/정원'}"><span class="v">${p.applied || 0} / ${p.capacity}</span></td>
       <td data-l="상태"><span class="v"><span class="chip ${closed ? 'close' : 'open'}">${closed ? '마감' : (notYet ? '접수예정' : '접수중')}</span></span></td>
-      <td class="c-swipe"><div class="swipe-cell">
-        <span class="sw-hint" aria-hidden="true">밀기</span>
-        <div class="sw-btns">
-          <button class="sw-btn edit" onclick="editProgram('${p.id}')">수정</button>
-          <button class="sw-btn ${p.open ? 'warn' : 'ok'}" onclick="toggleOpen('${p.id}')">${p.open ? '마감처리' : '접수재개'}</button>
-          <button class="sw-btn danger" onclick="deleteProgram('${p.id}')">삭제</button>
-        </div>
+      <td class="c-swipe"><div class="sw-btns">
+        <button class="sw-btn edit" onclick="editProgram('${p.id}')"><i>✎</i><span>수정</span></button>
+        <button class="sw-btn ${p.open ? 'warn' : 'ok'}" onclick="toggleOpen('${p.id}')"><i>${p.open ? '⊘' : '↺'}</i><span>${p.open ? '마감' : '재개'}</span></button>
+        <button class="sw-btn danger" onclick="deleteProgram('${p.id}')"><i>🗑</i><span>삭제</span></button>
       </div></td>
     </tr>`;
 }
