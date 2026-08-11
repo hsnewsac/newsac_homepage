@@ -1653,7 +1653,6 @@ a:hover > .gic svg, a.active > .gic svg,
 }
 .ended-toggle:hover{transform:translateY(-2px);color:var(--leaf,#2E7D48);
   box-shadow:0 10px 24px rgba(31,45,38,.13);}
-.ended-toggle .et-ico{font-size:1rem;filter:grayscale(.25);}
 .ended-toggle .et-count{
   min-width:22px;padding:1px 7px;border-radius:999px;
   background:rgba(60,80,68,.1);color:#3B4A41;font-size:.8rem;font-weight:800;
