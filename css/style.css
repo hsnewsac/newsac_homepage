@@ -3,7 +3,7 @@
    ※ 캐시 주의: 각 HTML의 <link href="css/style.css?v=NN">에
      버전 번호가 붙어 있습니다. 이 파일을 고칠 때는
      모든 HTML의 ?v= 값을 함께 올려야 브라우저가 새 파일을 받습니다.
-     (현재 v=44)
+     (현재 v=45)
 ========================================================= */
 :root{
   --leaf:#1E7F4F;
@@ -1936,6 +1936,12 @@ body.sw-nosel, body.sw-nosel *{user-select:none;-webkit-user-select:none;}
 }
 .att-note b{color:#28352E;font-weight:800;}
 .att-plain{font-weight:400;color:#8A968E;}
+.att-walk{
+  display:inline-block;margin-left:6px;padding:2px 8px;border-radius:6px;
+  background:#FFF3DD;color:#8A5A12;border:1px solid #F0DFB8;
+  font-size:.72rem;font-weight:800;
+}
+@media print{ .att-walk{background:#fff !important;color:#000 !important;border-color:#999 !important;} }
 .att-kind{font-size:.72em;font-weight:800;color:var(--leaf);letter-spacing:0;}
 @media print{ .att-kind{color:#000 !important;} }
 @media print{
