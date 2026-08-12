@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=43">
+<link rel="stylesheet" href="css/style.css?v=44">
 </head>
 <body>
 
@@ -433,7 +433,8 @@
             <button class="btn btn-outline btn-sm" onclick="openWalkIn()">➕ 현장 접수 등록</button>
             <button class="btn btn-outline btn-sm" onclick="downloadCSV('filtered')">CSV (검색결과)</button>
             <button class="btn btn-outline btn-sm" onclick="downloadCSV('all')">CSV (전체)</button>
-            <button class="btn btn-outline btn-sm" onclick="printAttendance()">🖨 서명부 인쇄</button>
+            <button class="btn btn-outline btn-sm" onclick="printAttendance('course')">🖨 서명부 (과목별)</button>
+            <button class="btn btn-outline btn-sm" onclick="printAttendance('all')">🖨 서명부 (통합·실인원)</button>
           </div>
         </div>
 

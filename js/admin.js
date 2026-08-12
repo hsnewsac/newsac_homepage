@@ -2277,7 +2277,8 @@ function saveCSV(rows, filename){
 /* ==================== v15: 서명부 인쇄 ====================
    신청자 탭의 현재 필터 결과를 과목(강좌)별로 묶어
    한 과목 = 한 페이지의 서명부를 만듭니다. 반려 건은 제외합니다. */
-function printAttendance(){
+/* v45: mode = 'course' 과목별 서명부 (기본) / 'all' 통합 서명부 (실인원 1인 1줄) */
+function printAttendance(mode = 'course'){
   const list = filteredApps().filter(a => statusOf(a) !== 'rejected');
   if (!list.length){
     alert('현재 필터에 표시된 신청자가 없습니다.\n필터를 조정한 뒤 다시 시도해주세요.');
@@ -2297,7 +2298,7 @@ function printAttendance(){
      계정이 없는 신청은 이메일, 그것도 없으면 이름+연락처로 동일인을 판별합니다. */
   const personKey = a =>
     (a.uid || a.email || `${a.name || ''}|${a.phone || ''}`) + '@' + (a.programId || '');
-  const ordered = [...groups.entries()].sort((x, y) => x[0].localeCompare(y[0], 'ko'));
+  let ordered = [...groups.entries()].sort((x, y) => x[0].localeCompare(y[0], 'ko'));
   ordered.forEach(([, apps]) => apps.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko')));
   const seen = new Set();
   const dupIds = new Set();
@@ -2306,8 +2307,24 @@ function printAttendance(){
     if (seen.has(k)) dupIds.add(a.id);   // 두 번째 등장부터 * 표시
     else seen.add(k);
   }));
-  const isMulti = a => dupIds.has(a.id);
+  let isMulti = a => dupIds.has(a.id);
   const uniqueTotal = seen.size;
+
+  /* 통합 서명부 — 중복 신청자를 한 줄로 합쳐 실인원만 남깁니다.
+     과목명 칸에는 이 서명부에 포함된 전체 과목을 나열합니다. */
+  const allCourses = ordered.map(([c]) => c).join(' · ');
+  if (mode === 'all'){
+    const uniq = new Map();
+    ordered.forEach(([, apps]) => apps.forEach(a => {
+      const k = personKey(a);
+      if (!uniq.has(k)) uniq.set(k, { ...a, _courses: [] });
+      uniq.get(k)._courses.push(a.course || a.session || '');
+    }));
+    const merged = [...uniq.values()]
+      .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'));
+    ordered = [[allCourses || '(강좌 미지정)', merged]];
+    isMulti = () => false;                       // 통합본에는 * 를 쓰지 않습니다
+  }
 
   /* A4 한 장에 서명 20줄(한 반 정원 기준) — 신청자가 적으면 빈 줄로 채우고,
      20명을 넘으면 연번을 이어가며 다음 장으로 나눕니다. */
@@ -2330,7 +2347,7 @@ function printAttendance(){
           <img class="att-logo att-emblem" src="img/logo.png" alt="한신대학교" onerror="this.remove()">
           <div class="att-title">
             <span class="att-sub">HANSHIN UNIVERSITY · DIGITAL SAESSAK</span>
-            <h1>2026 한신대학교 디지털새싹<br>강사워크샵 서명부</h1>
+            <h1>2026 한신대학교 디지털새싹<br>강사워크샵 서명부${mode === 'all' ? ' <span class="att-kind">(통합)</span>' : ''}</h1>
           </div>
           <img class="att-logo att-word" src="img/partner-3.png" alt="디지털새싹" onerror="this.remove()">
         </div>
@@ -2341,19 +2358,25 @@ function printAttendance(){
         <table class="att-info">
           <tr><th>일시</th><td>${esc(progPeriod(first) || '')}</td>
               <th>장소</th><td>${esc(progPlace(first) || '')}</td></tr>
-          <tr><th>과목명</th><td colspan="3">${esc(course)}${pageN > 1 ? ` <span class="att-pn">(${p + 1}/${pageN})</span>` : ''}</td></tr>
+          <tr><th>${mode === 'all' ? '전체 과목' : '과목명'}</th><td colspan="3">${esc(course)}${pageN > 1 ? ` <span class="att-pn">(${p + 1}/${pageN})</span>` : ''}</td></tr>
         </table>
         <table class="att-table">
           <thead><tr><th class="att-no">연번</th><th>소속</th><th class="att-role">직책</th><th class="att-name">성함</th><th class="att-sign">서명</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
-        <p class="att-count">신청 인원 ${apps.length}명${(() => {
-          const m = chunk.filter(isMulti).length;
-          return m ? ` · 이 중 <span class="att-multi">*</span> ${m}명은 앞 과목에 이미 포함` : '';
-        })()}</p>
-        <p class="att-note"><span class="att-multi">*</span> 표시는 <b>앞 과목 서명부에 이미 성함이 있는 분</b>입니다.
-          총인원을 셀 때는 <b>* 없는 줄만</b> 합산해주세요.
-          이 서명부 전체의 실인원은 <b>${uniqueTotal}명</b>입니다.</p>
+        <p class="att-count">${mode === 'all'
+          ? `실인원 ${apps.length}명 <span class="att-plain">(중복 신청 합산 · 전체 신청 ${list.length}건)</span>`
+          : `신청 인원 ${apps.length}명${(() => {
+              const m = chunk.filter(isMulti).length;
+              return m ? ` · 이 중 <span class="att-multi">*</span> ${m}명은 앞 과목에 이미 포함` : '';
+            })()}`}</p>
+        ${mode === 'all'
+          ? `<p class="att-note">여러 과목을 함께 신청한 분은 <b>한 줄로 합쳤습니다</b>.
+              이 서명부의 인원이 곧 <b>실인원 ${uniqueTotal}명</b>입니다.
+              과목별 명단이 필요하면 <b>과목별 서명부</b>를 따로 인쇄해주세요.</p>`
+          : `<p class="att-note"><span class="att-multi">*</span> 표시는 <b>앞 과목 서명부에 이미 성함이 있는 분</b>입니다.
+              총인원을 셀 때는 <b>* 없는 줄만</b> 합산해주세요.
+              이 서명부 전체의 실인원은 <b>${uniqueTotal}명</b>입니다.</p>`}
         <div class="att-foot"><b>한신대학교 디지털새싹 사업단</b> · 031-379-0255 · newsac26@naver.com</div>
       </section>`;
       });
