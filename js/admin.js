@@ -2284,6 +2284,17 @@ function printAttendance(){
     return;
   }
 
+  /* v43: 같은 워크샵에서 2과목 이상 신청한 사람은 이름 옆에 * 를 붙입니다.
+     계정이 없는 신청은 이메일, 그것도 없으면 이름+연락처로 동일인을 판별합니다. */
+  const personKey = a =>
+    (a.uid || a.email || `${a.name || ''}|${a.phone || ''}`) + '@' + (a.programId || '');
+  const appCount = new Map();
+  list.forEach(a => {
+    const k = personKey(a);
+    appCount.set(k, (appCount.get(k) || 0) + 1);
+  });
+  const isMulti = a => (appCount.get(personKey(a)) || 0) > 1;
+
   const groups = new Map();
   list.forEach(a => {
     const key = a.course || a.session || '(강좌 미지정)';
@@ -2304,7 +2315,8 @@ function printAttendance(){
       return Array.from({ length: pageN }, (_, p) => {
         const chunk = apps.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
         const rows = chunk.map((a, i) =>
-          `<tr><td>${p * PER_PAGE + i + 1}</td><td>${esc(a.org || '')}</td><td class="att-role-td">${esc(a.orgType || '')}</td><td>${esc(a.name || '')}</td><td></td></tr>`).join('')
+          `<tr><td>${p * PER_PAGE + i + 1}</td><td>${esc(a.org || '')}</td><td class="att-role-td">${esc(a.orgType || '')}</td><td>${esc(a.name || '')}${
+            isMulti(a) ? '<span class="att-multi">*</span>' : ''}</td><td></td></tr>`).join('')
           + Array.from({ length: PER_PAGE - chunk.length }, (_, i) =>
           `<tr><td>${p * PER_PAGE + chunk.length + i + 1}</td><td></td><td></td><td></td><td></td></tr>`).join('');
         return `
@@ -2330,7 +2342,12 @@ function printAttendance(){
           <thead><tr><th class="att-no">연번</th><th>소속</th><th class="att-role">직책</th><th class="att-name">성함</th><th class="att-sign">서명</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
-        <p class="att-count">신청 인원 ${apps.length}명</p>
+        <p class="att-count">신청 인원 ${apps.length}명${(() => {
+          const m = chunk.filter(isMulti).length;
+          return m ? ` · <span class="att-multi">*</span> 여러 과목 함께 신청 ${m}명` : '';
+        })()}</p>
+        ${chunk.some(isMulti) ? `<p class="att-note"><span class="att-multi">*</span> 표시는
+          이 워크샵에서 <b>2과목 이상</b>을 함께 신청한 분입니다. 다른 과목 서명부에도 성함이 있습니다.</p>` : ''}
         <div class="att-foot"><b>한신대학교 디지털새싹 사업단</b> · 031-379-0255 · newsac26@naver.com</div>
       </section>`;
       });

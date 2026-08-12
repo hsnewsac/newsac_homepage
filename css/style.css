@@ -3,7 +3,7 @@
    ※ 캐시 주의: 각 HTML의 <link href="css/style.css?v=NN">에
      버전 번호가 붙어 있습니다. 이 파일을 고칠 때는
      모든 HTML의 ?v= 값을 함께 올려야 브라우저가 새 파일을 받습니다.
-     (현재 v=42)
+     (현재 v=43)
 ========================================================= */
 :root{
   --leaf:#1E7F4F;
@@ -1923,3 +1923,19 @@ body.sw-nosel, body.sw-nosel *{user-select:none;-webkit-user-select:none;}
 }
 .pc-seats span.full{background:#F4F5F3;color:#8A968E;}
 .pc-seats span.soon{background:#FFF3DD;color:#8A5A12;}
+
+/* ==========================================================
+   v43 — 서명부: 여러 과목 함께 신청한 분 표시
+   ========================================================== */
+.att-multi{
+  display:inline-block;margin-left:2px;
+  font-weight:900;color:#C0392B;
+}
+.att-note{
+  margin-top:5px;text-align:left;font-size:.72rem;line-height:1.6;color:#6A776F;
+}
+.att-note b{color:#28352E;font-weight:800;}
+@media print{
+  .att-multi{color:#000 !important;}
+  .att-note{color:#444 !important;}
+}
