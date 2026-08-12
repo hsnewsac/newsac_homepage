@@ -2284,17 +2284,6 @@ function printAttendance(){
     return;
   }
 
-  /* v43: 같은 워크샵에서 2과목 이상 신청한 사람은 이름 옆에 * 를 붙입니다.
-     계정이 없는 신청은 이메일, 그것도 없으면 이름+연락처로 동일인을 판별합니다. */
-  const personKey = a =>
-    (a.uid || a.email || `${a.name || ''}|${a.phone || ''}`) + '@' + (a.programId || '');
-  const appCount = new Map();
-  list.forEach(a => {
-    const k = personKey(a);
-    appCount.set(k, (appCount.get(k) || 0) + 1);
-  });
-  const isMulti = a => (appCount.get(personKey(a)) || 0) > 1;
-
   const groups = new Map();
   list.forEach(a => {
     const key = a.course || a.session || '(강좌 미지정)';
@@ -2302,14 +2291,30 @@ function printAttendance(){
     groups.get(key).push(a);
   });
 
+  /* v44: 총인원 집계용 중복 표시 —
+     인쇄 순서대로 훑어 '처음 나오는 이름'에는 표시를 붙이지 않고,
+     두 번째 등장부터 * 를 붙입니다. 따라서 * 없는 줄만 세면 실인원이 됩니다.
+     계정이 없는 신청은 이메일, 그것도 없으면 이름+연락처로 동일인을 판별합니다. */
+  const personKey = a =>
+    (a.uid || a.email || `${a.name || ''}|${a.phone || ''}`) + '@' + (a.programId || '');
+  const ordered = [...groups.entries()].sort((x, y) => x[0].localeCompare(y[0], 'ko'));
+  ordered.forEach(([, apps]) => apps.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko')));
+  const seen = new Set();
+  const dupIds = new Set();
+  ordered.forEach(([, apps]) => apps.forEach(a => {
+    const k = personKey(a);
+    if (seen.has(k)) dupIds.add(a.id);   // 두 번째 등장부터 * 표시
+    else seen.add(k);
+  }));
+  const isMulti = a => dupIds.has(a.id);
+  const uniqueTotal = seen.size;
+
   /* A4 한 장에 서명 20줄(한 반 정원 기준) — 신청자가 적으면 빈 줄로 채우고,
      20명을 넘으면 연번을 이어가며 다음 장으로 나눕니다. */
   const PER_PAGE = 20;
 
-  $('attPages').innerHTML = [...groups.entries()]
-    .sort((x, y) => x[0].localeCompare(y[0], 'ko'))
+  $('attPages').innerHTML = ordered
     .flatMap(([course, apps]) => {
-      apps.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'));
       const first = apps[0];
       const pageN = Math.max(1, Math.ceil(apps.length / PER_PAGE));
       return Array.from({ length: pageN }, (_, p) => {
@@ -2344,10 +2349,11 @@ function printAttendance(){
         </table>
         <p class="att-count">신청 인원 ${apps.length}명${(() => {
           const m = chunk.filter(isMulti).length;
-          return m ? ` · <span class="att-multi">*</span> 여러 과목 함께 신청 ${m}명` : '';
+          return m ? ` · 이 중 <span class="att-multi">*</span> ${m}명은 앞 과목에 이미 포함` : '';
         })()}</p>
-        ${chunk.some(isMulti) ? `<p class="att-note"><span class="att-multi">*</span> 표시는
-          이 워크샵에서 <b>2과목 이상</b>을 함께 신청한 분입니다. 다른 과목 서명부에도 성함이 있습니다.</p>` : ''}
+        <p class="att-note"><span class="att-multi">*</span> 표시는 <b>앞 과목 서명부에 이미 성함이 있는 분</b>입니다.
+          총인원을 셀 때는 <b>* 없는 줄만</b> 합산해주세요.
+          이 서명부 전체의 실인원은 <b>${uniqueTotal}명</b>입니다.</p>
         <div class="att-foot"><b>한신대학교 디지털새싹 사업단</b> · 031-379-0255 · newsac26@naver.com</div>
       </section>`;
       });
