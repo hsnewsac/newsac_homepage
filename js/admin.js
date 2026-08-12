@@ -2334,8 +2334,11 @@ function printAttendance(mode = 'course'){
     .flatMap(([course, apps]) => {
       const first = apps[0];
       const pageN = Math.max(1, Math.ceil(apps.length / PER_PAGE));
-      return Array.from({ length: pageN }, (_, p) => {
-        const chunk = apps.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
+      /* v46: 마지막에 현장 접수용 빈 장을 한 장 더 붙입니다.
+         연번은 앞 장에서 이어집니다 (예: 20명이면 21~40). */
+      return Array.from({ length: pageN + 1 }, (_, p) => {
+        const walkIn = p >= pageN;
+        const chunk = walkIn ? [] : apps.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
         const rows = chunk.map((a, i) =>
           `<tr><td>${p * PER_PAGE + i + 1}</td><td>${esc(a.org || '')}</td><td class="att-role-td">${esc(a.orgType || '')}</td><td>${esc(a.name || '')}${
             isMulti(a) ? '<span class="att-multi">*</span>' : ''}</td><td></td></tr>`).join('')
@@ -2358,12 +2361,19 @@ function printAttendance(mode = 'course'){
         <table class="att-info">
           <tr><th>일시</th><td>${esc(progPeriod(first) || '')}</td>
               <th>장소</th><td>${esc(progPlace(first) || '')}</td></tr>
-          <tr><th>${mode === 'all' ? '전체 과목' : '과목명'}</th><td colspan="3">${esc(course)}${pageN > 1 ? ` <span class="att-pn">(${p + 1}/${pageN})</span>` : ''}</td></tr>
+          <tr><th>${mode === 'all' ? '전체 과목' : '과목명'}</th><td colspan="3">${esc(course)}
+            <span class="att-pn">(${p + 1}/${pageN + 1})</span>${
+            walkIn ? ' <span class="att-walk">현장 접수용</span>' : ''}</td></tr>
         </table>
         <table class="att-table">
           <thead><tr><th class="att-no">연번</th><th>소속</th><th class="att-role">직책</th><th class="att-name">성함</th><th class="att-sign">서명</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
+        ${walkIn ? `
+        <p class="att-count">현장 접수 기입란 <span class="att-plain">(연번 ${pageN * PER_PAGE + 1}번부터)</span></p>
+        <p class="att-note">사전 신청 없이 <b>당일 현장에서 참석</b>하신 분을 이어서 적어주세요.
+          여기에 적힌 분은 관리자 페이지 <b>[＋ 현장 접수 등록]</b>으로 등록하시면
+          수료·이수증 관리에 함께 반영됩니다.</p>` : `
         <p class="att-count">${mode === 'all'
           ? `실인원 ${apps.length}명 <span class="att-plain">(중복 신청 합산 · 전체 신청 ${list.length}건)</span>`
           : `신청 인원 ${apps.length}명${(() => {
@@ -2376,7 +2386,7 @@ function printAttendance(mode = 'course'){
               과목별 명단이 필요하면 <b>과목별 서명부</b>를 따로 인쇄해주세요.</p>`
           : `<p class="att-note"><span class="att-multi">*</span> 표시는 <b>앞 과목 서명부에 이미 성함이 있는 분</b>입니다.
               총인원을 셀 때는 <b>* 없는 줄만</b> 합산해주세요.
-              이 서명부 전체의 실인원은 <b>${uniqueTotal}명</b>입니다.</p>`}
+              이 서명부 전체의 실인원은 <b>${uniqueTotal}명</b>입니다.</p>`}`}
         <div class="att-foot"><b>한신대학교 디지털새싹 사업단</b> · 031-379-0255 · newsac26@naver.com</div>
       </section>`;
       });
