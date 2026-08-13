@@ -2423,6 +2423,127 @@ function downloadCSV(scope = 'filtered'){
 }
 window.downloadCSV = downloadCSV;
 
+/* ==================== v47: 강사 모집 지원자 자료 추출 ====================
+   선택한 공고의 지원자를 CSV로 내려받거나, 검토용 인쇄물로 만듭니다.
+   회원으로 지원한 분은 강사 프로필(전문분야·경력·활동지역·자격·자기소개)을
+   함께 싣습니다. 교수님 검토 요청 대응용입니다. */
+function assignContext(){
+  const pid = $('as-program').value;
+  if (!pid){ alert('먼저 모집 공고를 선택해주세요.'); return null; }
+  const p = programs.find(x => x.id === pid);
+  const apps = applications.filter(a => a.programId === pid)
+    .slice().sort((a, b) =>
+      STATUS_ORDER.indexOf(statusOf(a)) - STATUS_ORDER.indexOf(statusOf(b))
+      || (a.name || '').localeCompare(b.name || '', 'ko'));
+  if (!apps.length){ alert('이 공고에는 아직 지원자가 없습니다.'); return null; }
+  const byUid = new Map(members.filter(m => m.uid).map(m => [m.uid, m]));
+  const prof = a => (a.uid && byUid.get(a.uid)) || {};
+  return { p, apps, prof };
+}
+
+function downloadApplicantCSV(){
+  const ctx = assignContext();
+  if (!ctx) return;
+  const { p, apps, prof } = ctx;
+  const rows = [['지원일시','강사명','회원구분','소속기관','소속기관 유형','전화번호','전자메일',
+                 '지원 분야','희망 역할','진행 상태',
+                 '전문분야','경력','활동 가능 지역','보유 자격','자기소개',
+                 '지원 동기·참고사항','배정 학교/기관','배정 기간','배정 차수','배정 시수','관리 메모']];
+  apps.forEach(a => {
+    const m = prof(a);
+    rows.push([
+      tsText(a.createdAt), a.name || '', a.uid ? '회원' : '비회원',
+      a.org || '', a.orgType || '', a.phone || '', a.email || '',
+      a.course || '', a.applyRole || '', statusSet(a)[statusOf(a)].label,
+      (m.specialties || []).join(' · '), m.career || '',
+      (m.regions || []).join(' · '), m.certs || '', m.bio || '',
+      a.memo || '',
+      a.assignPlace || '', a.assignPeriod || '', a.assignSessions ?? '', a.assignHours ?? '',
+      a.statusMemo || ''
+    ]);
+  });
+  const safe = String(p.title || '공고').replace(/[\\/:*?"<>|]/g, '_').slice(0, 40);
+  saveCSV(rows, `디지털새싹_지원자명단_${safe}_${todayStr().replace(/\./g, '')}.csv`);
+  toast(`지원자 ${apps.length}명의 자료를 내려받았습니다.`);
+}
+
+function printApplicants(){
+  const ctx = assignContext();
+  if (!ctx) return;
+  const { p, apps, prof } = ctx;
+
+  const field = (label, value) => value
+    ? `<div class="ap-f"><span class="ap-l">${label}</span><span class="ap-v">${esc(value)}</span></div>` : '';
+  const longField = (label, value) => value
+    ? `<div class="ap-long"><span class="ap-l">${label}</span>
+         <p>${esc(value).replace(/\n/g, '<br>')}</p></div>` : '';
+
+  /* A4 한 장에 지원자 3명 */
+  const PER_PAGE = 3;
+  const pageN = Math.max(1, Math.ceil(apps.length / PER_PAGE));
+
+  $('attPages').innerHTML = Array.from({ length: pageN }, (_, pg) => {
+    const chunk = apps.slice(pg * PER_PAGE, (pg + 1) * PER_PAGE);
+    const cards = chunk.map((a, i) => {
+      const m = prof(a);
+      const asg = [a.assignPlace, a.assignPeriod,
+        a.assignSessions ? `${a.assignSessions}차수` : '',
+        a.assignHours ? `${a.assignHours}시수` : ''].filter(Boolean).join(' · ');
+      return `<article class="ap-card">
+        <div class="ap-head">
+          <span class="ap-no">${pg * PER_PAGE + i + 1}</span>
+          <b class="ap-name">${esc(a.name || '')}</b>
+          <span class="ap-tag">${a.uid ? '회원' : '비회원'}</span>
+          <span class="ap-tag">${esc(statusSet(a)[statusOf(a)].label)}</span>
+          ${(() => { const d = tsText(a.createdAt, false);
+            return d && d !== '-' ? `<span class="ap-date">지원 ${esc(d)}</span>` : ''; })()}
+        </div>
+        <div class="ap-grid">
+          ${field('소속', [a.org, a.orgType].filter(Boolean).join(' · '))}
+          ${field('연락처', a.phone)}
+          ${field('이메일', a.email)}
+          ${field('지원 분야', a.course)}
+          ${field('희망 역할', a.applyRole)}
+          ${field('경력', m.career)}
+          ${field('전문분야', (m.specialties || []).join(' · '))}
+          ${field('활동 지역', (m.regions || []).join(' · '))}
+          ${asg ? field('배정 정보', asg) : ''}
+        </div>
+        ${longField('보유 자격', m.certs)}
+        ${longField('자기소개', m.bio)}
+        ${longField('지원 동기 · 참고사항', a.memo)}
+        <div class="ap-sign"><span>검토 의견</span><i></i></div>
+      </article>`;
+    }).join('');
+
+    return `
+      <section class="att-page ap-page">
+        <div class="att-head">
+          <img class="att-logo att-emblem" src="img/logo.png" alt="한신대학교" onerror="this.remove()">
+          <div class="att-title">
+            <span class="att-sub">HANSHIN UNIVERSITY · DIGITAL SAESSAK</span>
+            <h1>2026 한신대학교 디지털새싹<br>강사 모집 지원자 검토표</h1>
+          </div>
+          <img class="att-logo att-word" src="img/partner-3.png" alt="디지털새싹" onerror="this.remove()">
+        </div>
+        <div class="att-rule"></div>
+        <table class="att-info">
+          <tr><th>공고명</th><td>${esc(p.title || '')}</td>
+              <th>지원자</th><td>${apps.length}명 <span class="att-pn">(${pg + 1}/${pageN})</span></td></tr>
+          <tr><th>활동기간</th><td>${esc(p.period || '')}</td>
+              <th>활동장소</th><td>${esc(p.place || '')}</td></tr>
+        </table>
+        ${cards}
+        <p class="att-note">본 자료는 강사 선발 검토 목적으로만 사용하며, 검토 후 파기해주시기 바랍니다.</p>
+        <div class="att-foot"><b>한신대학교 디지털새싹 사업단</b> · 031-379-0255 · newsac26@naver.com</div>
+      </section>`;
+  }).join('');
+
+  $('attSheet').classList.add('on');
+  document.body.classList.add('att-print');
+}
+Object.assign(window, { downloadApplicantCSV, printApplicants });
+
 /* ==================== 강사 회원 ==================== */
 /* ---------- v12: 관리자 명단 ---------- */
 let adminUids = new Set();

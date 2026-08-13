@@ -3,7 +3,7 @@
    ※ 캐시 주의: 각 HTML의 <link href="css/style.css?v=NN">에
      버전 번호가 붙어 있습니다. 이 파일을 고칠 때는
      모든 HTML의 ?v= 값을 함께 올려야 브라우저가 새 파일을 받습니다.
-     (현재 v=45)
+     (현재 v=46)
 ========================================================= */
 :root{
   --leaf:#1E7F4F;
@@ -1947,4 +1947,44 @@ body.sw-nosel, body.sw-nosel *{user-select:none;-webkit-user-select:none;}
 @media print{
   .att-multi{color:#000 !important;}
   .att-note{color:#444 !important;}
+}
+
+/* ==========================================================
+   v47 — 강사 모집 지원자 검토표 (인쇄)
+   ========================================================== */
+.ap-card{
+  margin-top:12px;padding:12px 14px;
+  border:1px solid var(--line);border-radius:10px;background:#fff;
+  break-inside:avoid;page-break-inside:avoid;
+}
+.ap-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding-bottom:8px;border-bottom:1px solid var(--line);}
+.ap-no{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;border-radius:50%;
+  background:var(--navy);color:#fff;font-size:.74rem;font-weight:800;
+}
+.ap-name{font-size:1rem;font-weight:800;color:#17221B;}
+.ap-tag{
+  padding:2px 8px;border-radius:6px;background:var(--paper);
+  border:1px solid var(--line);font-size:.71rem;font-weight:700;color:#5A6862;
+}
+.ap-date{margin-left:auto;font-size:.72rem;color:#8A968E;}
+.ap-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:3px 18px;margin-top:8px;
+}
+.ap-f{display:flex;gap:8px;font-size:.79rem;line-height:1.7;}
+.ap-l{flex:0 0 68px;font-size:.72rem;font-weight:800;color:#8A968E;}
+.ap-v{color:#28352E;min-width:0;}
+.ap-long{margin-top:7px;font-size:.79rem;}
+.ap-long .ap-l{display:block;margin-bottom:2px;}
+.ap-long p{line-height:1.7;color:#3E4B44;word-break:keep-all;}
+.ap-sign{
+  display:flex;align-items:flex-end;gap:8px;margin-top:10px;
+  font-size:.72rem;font-weight:800;color:#8A968E;
+}
+.ap-sign i{flex:1;border-bottom:1px dotted #B8C3BC;height:20px;}
+@media print{
+  .ap-card{border-color:#999 !important;}
+  .ap-no{background:#333 !important;}
 }
