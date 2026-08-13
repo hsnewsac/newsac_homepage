@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=45">
+<link rel="stylesheet" href="css/style.css?v=46">
 </head>
 <body>
 
@@ -607,7 +607,14 @@
       </div>
 
       <div class="admin-box" id="as-applicantBox" data-sub="applicant" style="display:none;">
-        <h3>📥 지원자 관리 <span class="pf-state" id="as-count"></span></h3>
+        <h3>📥 지원자 관리 <span class="pf-state" id="as-count"></span>
+          <span class="box-actions">
+            <button class="btn btn-outline btn-sm" onclick="downloadApplicantCSV()">CSV 다운로드</button>
+            <button class="btn btn-outline btn-sm" onclick="printApplicants()">🖨 지원자 검토표</button>
+          </span>
+        </h3>
+        <p class="box-desc">지원자 자료를 <b>CSV</b>로 내려받거나 <b>검토표</b>로 인쇄할 수 있습니다.
+          검토표에는 지원 정보와 강사 프로필(전문분야·경력·활동지역·자격·자기소개)이 함께 실립니다.</p>
         <div class="stage-bar" id="as-stages"></div>
         <div class="table-scroll">
           <table class="admin-table">
