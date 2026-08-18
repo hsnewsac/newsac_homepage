@@ -3,7 +3,7 @@
    ※ 캐시 주의: 각 HTML의 <link href="css/style.css?v=NN">에
      버전 번호가 붙어 있습니다. 이 파일을 고칠 때는
      모든 HTML의 ?v= 값을 함께 올려야 브라우저가 새 파일을 받습니다.
-     (현재 v=46)
+     (현재 v=47)
 ========================================================= */
 :root{
   --leaf:#1E7F4F;
@@ -1988,3 +1988,24 @@ body.sw-nosel, body.sw-nosel *{user-select:none;-webkit-user-select:none;}
   .ap-card{border-color:#999 !important;}
   .ap-no{background:#333 !important;}
 }
+
+/* ==========================================================
+   v48 — 신청 모달: 과목 복수 선택 안내 · 시간 충돌 표시
+   ========================================================== */
+.pick-bar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin-bottom:8px;
+}
+.pick-count{
+  padding:4px 11px;border-radius:999px;
+  background:var(--paper);border:1px solid var(--line);
+  font-size:.78rem;font-weight:800;color:#8A968E;white-space:nowrap;
+}
+.pick-count.on{background:var(--sprout-soft);border-color:#BFE6CC;color:var(--leaf);}
+.pick-count.bad{background:#FBE9E4;border-color:#EDC9C2;color:var(--red);}
+.pick-tip{font-size:.78rem;color:#7A867F;}
+.pick-tip b{color:var(--leaf);font-weight:800;}
+.form-error.sm{
+  margin-top:8px;padding:9px 12px;font-size:.8rem;line-height:1.6;
+}
+.chk.cchk.clash{border-color:#EDC9C2;background:#FDF3F1;}

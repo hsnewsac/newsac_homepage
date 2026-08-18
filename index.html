@@ -12,7 +12,7 @@
 <meta property="og:url" content="https://hsnewsac.github.io/newsac_homepage/">
 <meta property="og:type" content="website">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=46">
+<link rel="stylesheet" href="css/style.css?v=47">
 </head>
 <body>
 
@@ -148,7 +148,11 @@
         <label for="a-course" id="a-courseLabel">희망 강좌 <span class="req">*</span></label>
         <select id="a-course" required></select>
         <!-- v16: 워크샵은 강좌 복수 선택 (시간대가 다른 강좌 연속 신청) -->
+        <p class="pick-bar" id="a-pickBar" style="display:none;">
+          <span class="pick-count" id="a-pickCount">과목을 선택하세요</span>
+          <span class="pick-tip">시간이 겹치지 않으면 <b>2~3과목</b>도 함께 신청할 수 있습니다</span></p>
         <div class="chk-grid" id="a-courseChecks" style="display:none;"></div>
+        <p class="form-error sm" id="a-courseWarn" style="display:none;"></p>
         <p class="form-note" id="a-courseNote" style="display:none;margin-top:6px;">
           시간이 겹치지 않으면 여러 강좌를 함께 신청할 수 있습니다.
           선택한 강좌 수만큼 신청이 각각 접수되며, 강좌별로 따로 취소할 수 있습니다.</p>

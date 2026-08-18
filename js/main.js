@@ -14,7 +14,8 @@ import {
   KIND, ORG_TYPES, openModal, closeModal, bindModalEvents, toast,
   ROLES, roleOf, qualificationHTML, RECRUIT_FOR,
   guessCourseKey, acceptedOnlineKeys, courseByKey,
-  courseInfoOf, courseStat, courseTimeText, allCoursesFull, hasCourseCaps, appliedPatch
+  courseInfoOf, courseStat, courseTimeText, allCoursesFull, hasCourseCaps, appliedPatch,
+  overlappingPairs
 } from './common.js';
 import { sendApplicationEmail, emailEnabled } from './email-config.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
@@ -354,12 +355,14 @@ function openApply(programId){
   if (isRecruit){
     sel.style.display = ''; sel.required = true;
     checks.style.display = 'none'; courseNote.style.display = 'none';
+    $('a-pickBar').style.display = 'none';
     checks.innerHTML = '';
     sel.innerHTML = '<option value="">강좌를 선택하세요</option>' +
       courses.map(c => `<option>${esc(c)}</option>`).join('');
   } else {
     sel.style.display = 'none'; sel.required = false; sel.innerHTML = '';
     checks.style.display = ''; courseNote.style.display = '';
+    $('a-pickBar').style.display = '';
     /* v42: 과목별 운영 시간과 잔여 정원을 함께 보여주고, 찬 과목은 고를 수 없게 합니다 */
     const info = courseInfoOf(p);
     const hasCap = hasCourseCaps(p);
@@ -378,9 +381,33 @@ function openApply(programId){
           : `잔여 <b>${st.remain}</b>석`}<i>${st.applied}/${st.cap}</i></span>` : ''}
       </label>`;
     }).join('');
-    courseNote.innerHTML = hasCap
+    courseNote.innerHTML = `<span id="a-courseHint">${hasCap
       ? '과목마다 <b>정원이 따로</b> 관리됩니다. 시간이 겹치지 않으면 여러 과목을 함께 신청하셔도 다른 과목의 잔여 좌석이 줄지 않습니다.'
-      : '시간이 겹치지 않으면 여러 강좌를 함께 신청할 수 있습니다. 선택한 강좌 수만큼 신청이 각각 접수되며, 강좌별로 따로 취소할 수 있습니다.';
+      : '시간이 겹치지 않으면 여러 강좌를 함께 신청할 수 있습니다. 선택한 강좌 수만큼 신청이 각각 접수되며, 강좌별로 따로 취소할 수 있습니다.'}</span>`;
+
+    /* v48: 고른 과목 수와 시간 충돌을 바로 알려줍니다 */
+    const paintPick = () => {
+      const picked = [...checks.querySelectorAll('input:checked')].map(x => x.value);
+      const chosen = picked.map(n => info.find(x => x.name === n) || { name: n });
+      const bad = overlappingPairs(chosen);
+      $('a-pickCount').textContent = picked.length
+        ? `${picked.length}과목 선택` : '과목을 선택하세요';
+      $('a-pickCount').classList.toggle('on', picked.length > 0);
+      $('a-pickCount').classList.toggle('bad', bad.length > 0);
+      const warn = $('a-courseWarn');
+      warn.innerHTML = bad.length
+        ? `⚠️ <b>운영 시간이 겹칩니다</b> — ${bad.map(([x, y]) =>
+            `${esc(x.name)}(${esc(courseTimeText(x))}) · ${esc(y.name)}(${esc(courseTimeText(y))})`).join(' / ')}<br>
+           시간이 겹치는 과목은 함께 수강할 수 없으니 하나만 선택해주세요.`
+        : '';
+      warn.style.display = bad.length ? 'block' : 'none';
+      checks.querySelectorAll('.cchk').forEach(l => {
+        const v = l.querySelector('input').value;
+        l.classList.toggle('clash', bad.some(([x, y]) => x.name === v || y.name === v));
+      });
+    };
+    checks.querySelectorAll('input').forEach(i => i.addEventListener('change', paintPick));
+    paintPick();
   }
 
   if (isRecruit){
@@ -453,6 +480,18 @@ $('applyForm').addEventListener('submit', async e => {
     $('applyError').textContent = '희망 강좌를 하나 이상 선택해주세요.';
     $('applyError').style.display = 'block';
     return;
+  }
+  /* v48: 시간이 겹치는 과목은 함께 신청할 수 없습니다 */
+  if (!isRecruitSubmit && p && chosenCourses.length > 1){
+    const info0 = courseInfoOf(p);
+    const bad = overlappingPairs(chosenCourses.map(n => info0.find(x => x.name === n) || { name: n }));
+    if (bad.length){
+      $('applyError').textContent =
+        `운영 시간이 겹치는 과목은 함께 신청할 수 없습니다: ${
+          bad.map(([x, y]) => `${x.name} · ${y.name}`).join(' / ')}`;
+      $('applyError').style.display = 'block';
+      return;
+    }
   }
   /* v42: 접수 직전 과목 정원을 다시 확인합니다 (다른 사람이 먼저 접수한 경우) */
   if (!isRecruitSubmit && p){

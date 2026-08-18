@@ -553,6 +553,19 @@ export function courseStat(p, c){
   const applied = Number(((p && p.courseApplied) || {})[courseCountKey(c.name)]) || 0;
   return { cap, applied, remain: Math.max(0, cap - applied), full: cap > 0 && applied >= cap };
 }
+/** v48: 두 과목의 운영 시간이 겹치는지 — 시간이 비어 있으면 판단하지 않습니다 */
+export function courseTimeOverlap(a, b){
+  if (!a || !b || !a.start || !a.end || !b.start || !b.end) return false;
+  return a.start < b.end && b.start < a.end;
+}
+/** 고른 과목들 중 시간이 겹치는 조합을 찾아 돌려줍니다 (없으면 빈 배열) */
+export function overlappingPairs(list){
+  const out = [];
+  for (let i = 0; i < list.length; i++)
+    for (let j = i + 1; j < list.length; j++)
+      if (courseTimeOverlap(list[i], list[j])) out.push([list[i], list[j]]);
+  return out;
+}
 /** 과목 운영 시간 표기 (09:00~12:00) */
 export function courseTimeText(c){
   if (!c) return '';
