@@ -482,7 +482,10 @@ function editProgram(id){
   $('p-capacity').value = p.capacity;
   $('p-loginonly').checked = !!p.loginOnly;
   setPickedCourses('p', Array.isArray(p.courses) ? p.courses : []);
-  /* v42: 과목별 운영 시간·정원 불러오기 (없던 프로그램은 정원을 균등 배분해 채웁니다) */
+  /* v42: 과목별 운영 시간·정원 불러오기 (없던 프로그램은 정원을 균등 배분해 채웁니다)
+     v48: setPickedCourses가 이미 빈 입력란을 그려두므로, 먼저 비워야
+          renderCourseMeta()의 값 보존 로직이 방금 불러온 값을 덮어쓰지 않습니다. */
+  $('p-courseMeta').innerHTML = '';
   cmDraft = {};
   courseInfoOf(p).forEach(c => {
     cmDraft[c.name] = { start: c.start, end: c.end, cap: c.cap || '' };
@@ -508,10 +511,11 @@ function resetProgramForm(){
   $('p-applied').value = 0;
   $('p-applied').disabled = false;
   $('p-target').value = WORKSHOP_TARGET;   // 기본 대상 문구 복원
+  $('p-courseMeta').innerHTML = '';
   cmDraft = {};
+  $('p-courseExtra').value = '';
   setPickedCourses('p', []);
   renderCourseMeta();
-  $('p-courseExtra').value = '';
   $('pFormTitle').textContent = '📌 새 강사 워크샵 등록';
   $('pFormSubmit').textContent = '워크샵 등록';
 }
