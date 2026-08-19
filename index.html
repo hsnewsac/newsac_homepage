@@ -99,6 +99,17 @@
       </p>
     </div>
     <div class="open-grid" id="recruitGrid"></div>
+
+    <!-- v51: 활동 기간이 끝난 구인 공고도 접어두고 필요할 때만 펼쳐 봅니다 -->
+    <div class="ended-wrap" id="rEndedWrap" style="display:none;">
+      <button type="button" class="ended-toggle" id="rEndedToggle" aria-expanded="false" aria-controls="rEndedGrid">
+        <span class="et-txt">종료된 구인 공고 보기</span>
+        <span class="et-count" id="rEndedCount">0</span>
+        <span class="et-arrow" aria-hidden="true">▾</span>
+      </button>
+      <p class="ended-note" id="rEndedNote" style="display:none;">활동 기간이 지난 공고입니다. 지원은 마감되었으며 기록 확인용으로만 표시됩니다.</p>
+      <div class="open-grid ended-grid" id="rEndedGrid" hidden></div>
+    </div>
   </div>
 </section>
 
