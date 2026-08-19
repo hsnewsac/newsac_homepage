@@ -175,22 +175,22 @@ function cardHTML(p){
           ? `<dt>지원자격</dt><dd>${esc(p.qualification).replace(/\n/g, '<br>')}</dd>` : ''}
       </dl>
 
-      <div class="seat-bar">
-        ${isRecruit ? '지원 현황' : '신청 현황'} <strong>${applied} / ${p.capacity}명</strong> · ${seatText}
-        <div class="seat-track"><div class="seat-fill" style="width:${pct}%"></div></div>
-      </div>
+      ${(() => {
+        /* v50: 과목별 정원이 있으면 '신청 현황' 줄 자체가 펼침 버튼이 됩니다 */
+        const can = !isRecruit && byCourse !== null;
+        const open = can && openSeats.has(p.id);
+        const inner = `${isRecruit ? '지원 현황' : '신청 현황'} <strong>${applied} / ${p.capacity}명</strong> · ${seatText}
+        ${can ? `<span class="sb-more" aria-hidden="true">과목별 <i>▾</i></span>` : ''}
+        <div class="seat-track"><div class="seat-fill" style="width:${pct}%"></div></div>`;
+        return can
+          ? `<button type="button" class="seat-bar seat-toggle${open ? ' open' : ''}" data-seat="${p.id}"
+               aria-expanded="${open ? 'true' : 'false'}" aria-controls="cseat-${p.id}"
+               title="과목별 잔여 좌석 보기">${inner}</button>`
+          : `<div class="seat-bar">${inner}</div>`;
+      })()}
       ${(!isRecruit && byCourse !== null) ? (() => {
-        /* v49: 과목별 현황은 접어두고, 눌렀을 때만 펼칩니다 (유리 패널) */
         const open = openSeats.has(p.id);
-        const openN = perCourse.filter(c => !courseStat(p, c).full).length;
         return `
-      <button type="button" class="cseat-toggle${open ? ' open' : ''}" data-seat="${p.id}"
-        aria-expanded="${open ? 'true' : 'false'}" aria-controls="cseat-${p.id}">
-        <span class="cst-ic" aria-hidden="true">🎫</span>
-        <span class="cst-txt">과목별 잔여 좌석</span>
-        <span class="cst-n">${openN ? `${openN}과목 신청 가능` : '전 과목 마감'}</span>
-        <span class="cst-arrow" aria-hidden="true">▾</span>
-      </button>
       <ul class="cseat" id="cseat-${p.id}"${open ? '' : ' hidden'}>
         ${perCourse.map(c => {
           const st = courseStat(p, c);
@@ -282,7 +282,7 @@ function renderPrograms(){
 
 /* v49: 카드의 과목별 잔여 좌석 펼치기/접기 — 다시 그려도 상태가 유지됩니다 */
 document.addEventListener('click', e => {
-  const btn = e.target.closest('.cseat-toggle');
+  const btn = e.target.closest('.seat-toggle');
   if (!btn) return;
   const id = btn.dataset.seat;
   const box = document.getElementById('cseat-' + id);
