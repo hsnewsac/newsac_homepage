@@ -239,11 +239,24 @@ function byDeadline(list){
 const isOnlineWs = p => p.type === 'workshop' && /온라인/.test(p.title || '');
 
 /* v33: 종료된 워크샵은 최근에 끝난 순으로 보여줍니다 */
-function byEndDesc(list){
+function byEndDesc(list, key = p => p.endDate || p.startDate || ''){
   return [...list].sort((a, b) => {
-    const ea = a.endDate || a.startDate || '', eb = b.endDate || b.startDate || '';
+    const ea = key(a), eb = key(b);
     return ea === eb ? 0 : (ea > eb ? -1 : 1);
   });
+}
+
+/* v52: 강사 구인 공고는 '더 이상 지원할 수 없으면' 종료 목록으로 내립니다.
+   활동 기간이 남아 있어도 지원이 마감됐거나 관리자가 모집을 중지한 공고는
+   홈 상단에 계속 떠 있을 이유가 없습니다. */
+function recruitEnded(p){
+  return programEnded(p) || !p.open || ddayInfo(p).closed;
+}
+/* 종료 정렬 기준 — 활동 종료일과 지원 마감일 중 나중 날짜 */
+function rEndKey(p){
+  const a = p.endDate || p.startDate || '';
+  const b = p.deadline || '';
+  return a > b ? a : b;
 }
 
 function renderPrograms(){
@@ -251,8 +264,8 @@ function renderPrograms(){
   const edu     = byDeadline(all.filter(p => !programEnded(p)));
   const done    = byEndDesc(all.filter(programEnded));
   const rAll    = programs.filter(p => p.type === 'recruit');
-  const recruit = byDeadline(rAll.filter(p => !programEnded(p)));
-  const rDone   = byEndDesc(rAll.filter(programEnded));
+  const recruit = byDeadline(rAll.filter(p => !recruitEnded(p)));
+  const rDone   = byEndDesc(rAll.filter(recruitEnded), rEndKey);
 
   const grid = $('programGrid');
   grid.innerHTML = edu.length
