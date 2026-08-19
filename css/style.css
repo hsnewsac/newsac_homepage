@@ -3,7 +3,7 @@
    ※ 캐시 주의: 각 HTML의 <link href="css/style.css?v=NN">에
      버전 번호가 붙어 있습니다. 이 파일을 고칠 때는
      모든 HTML의 ?v= 값을 함께 올려야 브라우저가 새 파일을 받습니다.
-     (현재 v=50)
+     (현재 v=51)
 ========================================================= */
 :root{
   --leaf:#1E7F4F;
@@ -2054,10 +2054,10 @@ body.sw-nosel, body.sw-nosel *{user-select:none;-webkit-user-select:none;}
 /* ==========================================================
    v53 — 공지사항: 페이지 내 작성·수정 + 첨부 파일
    ========================================================== */
-.nt-editor{margin-bottom:22px;}
+.nt-editor{margin-top:22px;}
 .nt-editor[hidden]{display:none;}
-.board-toolbar .nt-new{margin-left:auto;flex:none;}
-.board-toolbar .nt-new[hidden]{display:none;}
+.board-foot{display:flex;justify-content:flex-end;margin-top:14px;}
+.board-foot .nt-new[hidden]{display:none;}
 .btn.danger-btn{color:var(--red);border-color:#EDC9C2;}
 .btn.danger-btn:hover{background:#FBE9E4;}
 
