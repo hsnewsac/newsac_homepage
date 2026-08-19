@@ -3,7 +3,7 @@
    ※ 캐시 주의: 각 HTML의 <link href="css/style.css?v=NN">에
      버전 번호가 붙어 있습니다. 이 파일을 고칠 때는
      모든 HTML의 ?v= 값을 함께 올려야 브라우저가 새 파일을 받습니다.
-     (현재 v=49)
+     (현재 v=50)
 ========================================================= */
 :root{
   --leaf:#1E7F4F;
@@ -2050,3 +2050,53 @@ body.sw-nosel, body.sw-nosel *{user-select:none;-webkit-user-select:none;}
   margin-top:8px;padding:9px 12px;font-size:.8rem;line-height:1.6;
 }
 .chk.cchk.clash{border-color:#EDC9C2;background:#FDF3F1;}
+
+/* ==========================================================
+   v53 — 공지사항: 페이지 내 작성·수정 + 첨부 파일
+   ========================================================== */
+.nt-editor{margin-bottom:22px;}
+.nt-editor[hidden]{display:none;}
+.board-toolbar .nt-new{margin-left:auto;flex:none;}
+.board-toolbar .nt-new[hidden]{display:none;}
+.btn.danger-btn{color:var(--red);border-color:#EDC9C2;}
+.btn.danger-btn:hover{background:#FBE9E4;}
+
+/* 편집기 안의 첨부 목록 */
+.nt-filelist{display:flex;flex-direction:column;gap:6px;margin-top:9px;}
+.nt-filelist li{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 12px;border-radius:10px;
+  background:var(--paper);border:1px solid var(--line);
+  font-size:.83rem;color:#3E4B44;
+}
+.nt-filelist li.del{opacity:.5;text-decoration:line-through;}
+.nt-filelist .nfl-ic{flex:none;}
+.nt-filelist .nfl-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.nt-filelist .nfl-size{flex:none;font-size:.75rem;color:#8A968E;}
+.nt-filelist .mini-btn{margin-left:auto;flex:none;}
+
+/* 공지 상세의 첨부 영역 */
+.nd-files{margin-top:22px;padding-top:18px;border-top:1px dashed var(--line);}
+.nf-media{display:flex;flex-direction:column;gap:16px;}
+.nf-media figure{margin:0;}
+.nf-media img,.nf-media video{
+  display:block;width:100%;max-width:720px;height:auto;
+  border-radius:12px;border:1px solid var(--line);background:#fff;
+}
+.nf-media figcaption{
+  margin-top:6px;font-size:.78rem;color:#8A968E;word-break:break-all;
+}
+.nf-docs{display:flex;flex-direction:column;gap:6px;margin-top:16px;}
+.nf-docs .nf-head{
+  font-size:.8rem;font-weight:800;color:#5A6862;margin-bottom:2px;list-style:none;
+}
+.nf-docs li a{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;border-radius:10px;text-decoration:none;
+  background:var(--paper);border:1px solid var(--line);
+  font-size:.85rem;color:#28352E;
+  transition:border-color .16s ease,background .16s ease;
+}
+.nf-docs li a:hover{border-color:var(--leaf);background:#F1FAF4;color:var(--leaf);}
+.nf-docs .nf-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.nf-docs .nf-size{margin-left:auto;flex:none;font-size:.76rem;color:#8A968E;}
