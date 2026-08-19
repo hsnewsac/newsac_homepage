@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=49">
+<link rel="stylesheet" href="css/style.css?v=48">
 <style>
   .cr-wrap{display:grid;grid-template-columns:302px 1fr;gap:20px;align-items:start;}
   @media (max-width:900px){ .cr-wrap{grid-template-columns:1fr;} }
@@ -52,6 +52,34 @@
   .cr-watch .wbar i{display:block;height:100%;background:var(--navy);border-radius:99px;transition:width .4s;}
   .cr-watch .wtx{font-size:.82rem;font-weight:700;color:#5A6862;white-space:nowrap;}
   .cr-watch .wtx.done{color:var(--leaf);}
+  .cr-watch .auto-next{display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;
+    font-size:.8rem;font-weight:700;color:#5A6862;white-space:nowrap;}
+  .cr-watch .auto-next input{width:15px;height:15px;accent-color:var(--leaf);cursor:pointer;}
+
+  /* 영상 종료 → 다음 차시 안내 */
+  .cr-next{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:11px;padding:22px 20px;overflow:auto;
+    text-align:center;background:rgba(18,26,22,.92);color:#fff;animation:nxIn .22s ease-out;}
+  @keyframes nxIn{from{opacity:0}to{opacity:1}}
+  .cr-next .nx-ic{font-size:1.6rem;line-height:1;}
+  .cr-next h4{font-size:1.02rem;font-weight:800;letter-spacing:-.02em;}
+  .cr-next p{font-size:.86rem;line-height:1.65;color:#D6E1D9;max-width:31rem;}
+  .cr-next p b{color:#fff;font-weight:800;}
+  .cr-next .nx-btns{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;margin-top:3px;}
+  .cr-next button{padding:9px 16px;border-radius:9px;border:1.5px solid transparent;cursor:pointer;
+    font-family:inherit;font-size:.85rem;font-weight:700;transition:filter .12s,background .12s;}
+  .cr-next button.pri{background:#fff;color:#1E2B24;}
+  .cr-next button.pri:hover{filter:brightness(.92);}
+  .cr-next button.sec{background:transparent;color:#EAF2EC;border-color:rgba(255,255,255,.45);}
+  .cr-next button.sec:hover{background:rgba(255,255,255,.13);}
+  @media (max-width:560px){
+    .cr-next{gap:7px;padding:13px 12px;}
+    .cr-next .nx-ic{font-size:1.2rem;}
+    .cr-next h4{font-size:.9rem;}
+    .cr-next p{font-size:.77rem;line-height:1.5;}
+    .cr-next button{padding:7px 12px;font-size:.79rem;}
+  }
+  @media (max-width:420px){ .cr-next .nx-ic{display:none;} }
 
   .cr-note{padding:18px 20px;background:var(--paper);border:1px solid var(--line);
     border-radius:13px;font-size:.86rem;line-height:1.75;color:#5A6862;}
@@ -230,8 +258,9 @@ function rate(){
 }
 
 /* ---------- 렌더 ---------- */
-function render(lessonId){
+function render(lessonId, opts){
   stopTracking();
+  clearNextOverlay();
   current = lessons.find(l => l.id === lessonId) || lessons[0];
   const r = rate();
   const idx = lessons.indexOf(current);
@@ -275,6 +304,9 @@ function render(lessonId){
           <span class="wtx">시청 진도</span>
           <span class="wbar"><i id="wFill" style="width:0%"></i></span>
           <span class="wtx" id="wTxt">0%</span>
+          <label class="auto-next" title="영상이 끝나면 다음 차시로 자동 이동합니다">
+            <input type="checkbox" id="autoNext"><span>자동 이동</span>
+          </label>
         </div>` : `
         <div class="cr-note">아직 영상이 등록되지 않은 차시입니다. 등록되면 이곳에서 시청하실 수 있습니다.</div>`)
       : `<div class="cr-note">
@@ -302,7 +334,16 @@ function render(lessonId){
   const tf = document.getElementById('taskForm');
   if (tf) tf.addEventListener('submit', submitTask);
 
-  if (online && current.videoId) mountPlayer();
+  const an = document.getElementById('autoNext');
+  if (an){
+    an.checked = autoNextOn();
+    an.addEventListener('change', () => {
+      try { localStorage.setItem(AUTO_KEY, an.checked ? '1' : '0'); } catch (e){}
+      if (!an.checked) clearNextOverlay();
+    });
+  }
+
+  if (online && current.videoId) mountPlayer(!!(opts && opts.autoplay));
 }
 
 function fileRow(f){
@@ -403,7 +444,7 @@ async function submitTask(e){
 }
 
 /* ---------- YouTube 플레이어 · 진도 추적 ---------- */
-function mountPlayer(){
+function mountPlayer(autoplay){
   const p = progress[current.id] || {};
   watched = p.watchedSec || 0;
   maxPos  = p.maxPos || 0;
@@ -413,10 +454,12 @@ function mountPlayer(){
   const start = () => {
     player = new YT.Player('ytPlayer', {
       videoId: current.videoId,
-      playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
+      playerVars: { rel: 0, modestbranding: 1, playsinline: 1, autoplay: autoplay ? 1 : 0 },
       events: {
+        onReady: ev => { if (autoplay){ try { ev.target.playVideo(); } catch (e){} } },
         onStateChange: ev => {
-          if (ev.data === YT.PlayerState.PLAYING) startTracking();
+          if (ev.data === YT.PlayerState.PLAYING){ clearNextOverlay(); startTracking(); }
+          else if (ev.data === YT.PlayerState.ENDED) onVideoEnded();
           else { stopTracking(); saveProgress(); }
         }
       }
@@ -451,11 +494,22 @@ function startTracking(){
 }
 function stopTracking(){ if (tick){ clearInterval(tick); tick = null; } }
 
+/* 차시에 durationSec이 등록되지 않았으면 플레이어가 알려주는 길이를 씁니다 */
+function videoDuration(){
+  if (current && current.durationSec) return current.durationSec;
+  const d = player && player.getDuration ? player.getDuration() : 0;
+  return d > 0 ? Math.round(d) : 0;
+}
+function watchPct(){
+  const d = videoDuration();
+  return d ? Math.min(100, Math.round(watched / d * 100)) : 0;
+}
+
 function paintWatch(){
   const fill = document.getElementById('wFill');
   const txt = document.getElementById('wTxt');
-  if (!fill || !txt || !current.durationSec) return;
-  const pct = Math.min(100, Math.round(watched / current.durationSec * 100));
+  if (!fill || !txt || !videoDuration()) return;
+  const pct = watchPct();
   fill.style.width = pct + '%';
   const done = pct >= 90;
   txt.textContent = done ? '✅ 이수 완료' : pct + '%';
@@ -466,7 +520,8 @@ let saving = false;
 async function saveProgress(){
   if (!dirty || saving || !current) return;
   saving = true; dirty = false;
-  const done = !!current.durationSec && watched >= current.durationSec * 0.9;
+  const dur = videoDuration();
+  const done = !!dur && watched >= dur * 0.9;
   const wasDone = isDone(current);
   try {
     await setDoc(doc(db, 'enrollments', enrollId, 'progress', current.id), {
@@ -476,7 +531,7 @@ async function saveProgress(){
       lastAt: serverTimestamp()
     }, { merge: true });
     progress[current.id] = { ...(progress[current.id] || {}),
-      watchedSec: watched, maxPos, done: done || undefined };
+      watchedSec: watched, maxPos, ...(done ? { done: true } : {}) };
     if (done && !wasDone){
       toast('이 차시를 이수했습니다.');
       const li = root.querySelector(`[data-lesson="${current.id}"]`);
@@ -487,6 +542,116 @@ async function saveProgress(){
     }
   } catch (err){ console.error(err); }
   finally { saving = false; }
+}
+
+/* ---------- 영상 종료 → 다음 차시 자동 이동 ---------- */
+const AUTO_KEY = 'nsac_autoNext';   /* 기본값 켜짐 */
+const NEXT_DELAY = 5;               /* 자동 이동까지 기다리는 초 */
+let countTimer = null;
+
+function autoNextOn(){
+  try { return localStorage.getItem(AUTO_KEY) !== '0'; } catch (e){ return true; }
+}
+function clearNextOverlay(){
+  if (countTimer){ clearInterval(countTimer); countTimer = null; }
+  const el = document.getElementById('crNext');
+  if (el) el.remove();
+}
+function goLesson(l, autoplay){
+  clearNextOverlay();
+  render(l.id, { autoplay: !!autoplay });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function onVideoEnded(){
+  stopTracking();
+  /* 마지막 tick 이후 남은 구간도 시청 시간에 반영 */
+  if (player && player.getCurrentTime){
+    const now = player.getCurrentTime();
+    const delta = now - lastPos;
+    if (delta > 0 && delta <= 3){ watched += delta; lastPos = now; }
+  }
+  dirty = true;
+  paintWatch();
+  await saveProgress();
+  planNext();
+}
+
+function planNext(){
+  if (!current) return;
+  const next = lessons[lessons.indexOf(current) + 1];
+  const p = progress[current.id] || {};
+  /* 건너뛰며 보아 시청 시간이 모자라면 이수되지 않으므로 자동 이동하지 않습니다 */
+  if (!isDone(current))              return showEnd('short', next);
+  if (current.hasTask && !p.taskAt)  return showEnd('task', next);
+  if (!next)                         return showEnd('end', null);
+  if (!autoNextOn())                 return showEnd('manual', next);
+  showEnd('count', next);
+}
+
+function showEnd(kind, next){
+  clearNextOverlay();
+  const box = root.querySelector('.cr-video');
+  if (!box) return;
+  const cut = t => { t = String(t || ''); return esc(t.length > 28 ? t.slice(0, 28) + '…' : t); };
+  const nx = next ? `${next.order}차시` : '';
+  const nxFull = next ? `<b>${nx} · ${cut(next.title)}</b>` : '';
+  const goBtn = (cls, label) => next ? `<button class="${cls}" data-nx="go">${label}</button>` : '';
+
+  let ic = '✅', title = '', desc = '', btns = '';
+  if (kind === 'short'){
+    ic = '⏳';
+    title = '조금 더 보셔야 이수됩니다';
+    desc = `지금까지 시청 진도는 <b>${watchPct()}%</b>입니다. 영상 길이의 <b>90% 이상</b>을 보셔야
+      이수 처리되며, 건너뛴 구간은 시청 시간에 포함되지 않습니다.`;
+    btns = `<button class="pri" data-nx="replay">처음부터 다시 보기</button>`
+         + goBtn('sec', `그래도 ${nx}로 →`);
+  } else if (kind === 'task'){
+    ic = '📝';
+    title = '이수 완료 · 과제가 남아 있습니다';
+    desc = `이 차시에는 제출할 과제가 있습니다. 과제를 제출하신 뒤 다음 차시로 이동해주세요.`;
+    btns = `<button class="pri" data-nx="task">과제 제출하러 가기</button>`
+         + goBtn('sec', `${nx}로 이동 →`);
+  } else if (kind === 'end'){
+    ic = '🎉';
+    title = '마지막 차시까지 모두 시청하셨습니다';
+    desc = `필수 차시 진도는 <b>${rate()}%</b>입니다. 마이페이지에서 이수 현황을 확인하실 수 있습니다.`;
+    btns = `<button class="pri" data-nx="mypage">마이페이지로</button>`
+         + `<button class="sec" data-nx="stay">닫기</button>`;
+  } else if (kind === 'manual'){
+    title = '이 차시를 이수했습니다';
+    desc = `이어서 ${nxFull}을(를) 시청하실 수 있습니다.`;
+    btns = goBtn('pri', `${nx}로 이동 →`) + `<button class="sec" data-nx="stay">닫기</button>`;
+  } else {
+    title = '이 차시를 이수했습니다';
+    desc = `<b id="nxCnt">${NEXT_DELAY}</b>초 뒤 ${nxFull}(으)로 자동 이동합니다.`;
+    btns = goBtn('pri', `지금 ${nx}로 →`) + `<button class="sec" data-nx="stay">여기 머무르기</button>`;
+  }
+
+  const el = document.createElement('div');
+  el.id = 'crNext'; el.className = 'cr-next';
+  el.innerHTML = `<div class="nx-ic">${ic}</div><h4>${title}</h4>
+    <p>${desc}</p><div class="nx-btns">${btns}</div>`;
+  box.appendChild(el);
+
+  el.querySelectorAll('[data-nx]').forEach(b => b.addEventListener('click', () => {
+    const act = b.dataset.nx;
+    clearNextOverlay();
+    if (act === 'go' && next) goLesson(next, true);
+    else if (act === 'replay'){ try { player.seekTo(0, true); player.playVideo(); } catch (e){} }
+    else if (act === 'task') document.querySelector('.cr-task')?.scrollIntoView({ behavior:'smooth', block:'center' });
+    else if (act === 'mypage') location.href = 'mypage.html';
+  }));
+
+  if (kind === 'count'){
+    let left = NEXT_DELAY;
+    countTimer = setInterval(() => {
+      left--;
+      const c = document.getElementById('nxCnt');
+      if (c) c.textContent = left;
+      if (left <= 0) goLesson(next, true);
+    }, 1000);
+  }
 }
 
 window.addEventListener('beforeunload', () => { if (dirty) saveProgress(); });
