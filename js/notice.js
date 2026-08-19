@@ -205,7 +205,7 @@ function openNoticeEditor(id){
   $('noticeDetailView').style.display = 'none';
   $('noticeListView').style.display = 'block';
   paintNoticePreview();
-  $('ntEditor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  $('ntEditor').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 function closeNoticeEditor(){
   $('ntEditor').hidden = true;
