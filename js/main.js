@@ -32,6 +32,7 @@ const $ = id => document.getElementById(id);
 let programs = [];
 let currentUser = null, userProfile = null;
 let endedOpen = false;        // 종료된 워크샵 펼침 상태 (렌더보다 먼저 선언)
+const openSeats = new Set();  // v49: 과목별 잔여 좌석을 펼쳐 둔 프로그램 id
 /* v27 방문객 대시보드 상태 — 로그인 콜백이 먼저 실행돼도 안전하도록 위쪽에 둡니다 */
 const VDASH_DEFAULTS = { students: 0, instructors: 0, visit: 0, group: 0, workshops: 0, goal: 4800 };
 let vdashStats = null, vdashPainted = false;
@@ -178,7 +179,19 @@ function cardHTML(p){
         ${isRecruit ? '지원 현황' : '신청 현황'} <strong>${applied} / ${p.capacity}명</strong> · ${seatText}
         <div class="seat-track"><div class="seat-fill" style="width:${pct}%"></div></div>
       </div>
-      ${(!isRecruit && byCourse !== null) ? `<ul class="cseat">
+      ${(!isRecruit && byCourse !== null) ? (() => {
+        /* v49: 과목별 현황은 접어두고, 눌렀을 때만 펼칩니다 (유리 패널) */
+        const open = openSeats.has(p.id);
+        const openN = perCourse.filter(c => !courseStat(p, c).full).length;
+        return `
+      <button type="button" class="cseat-toggle${open ? ' open' : ''}" data-seat="${p.id}"
+        aria-expanded="${open ? 'true' : 'false'}" aria-controls="cseat-${p.id}">
+        <span class="cst-ic" aria-hidden="true">🎫</span>
+        <span class="cst-txt">과목별 잔여 좌석</span>
+        <span class="cst-n">${openN ? `${openN}과목 신청 가능` : '전 과목 마감'}</span>
+        <span class="cst-arrow" aria-hidden="true">▾</span>
+      </button>
+      <ul class="cseat" id="cseat-${p.id}"${open ? '' : ' hidden'}>
         ${perCourse.map(c => {
           const st = courseStat(p, c);
           const t = courseTimeText(c);
@@ -189,7 +202,8 @@ function cardHTML(p){
               <em>${st.applied}/${st.cap}</em></span>
           </li>`;
         }).join('')}
-      </ul>` : ''}
+      </ul>`;
+      })() : ''}
       ${wrongRole ? `<p class="card-note">현재 <b>${ROLES[roleOf(userProfile)].label}</b> 회원으로 로그인되어 있습니다.
         <a href="mypage.html">마이페이지</a>에서 회원 유형을 <b>강사</b>로 변경하면 지원할 수 있습니다.</p>` : ''}
       <div class="open-actions">
@@ -265,6 +279,20 @@ function renderPrograms(){
     rSec.style.display = 'none';
   }
 }
+
+/* v49: 카드의 과목별 잔여 좌석 펼치기/접기 — 다시 그려도 상태가 유지됩니다 */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.cseat-toggle');
+  if (!btn) return;
+  const id = btn.dataset.seat;
+  const box = document.getElementById('cseat-' + id);
+  if (!box) return;
+  const open = box.hidden;
+  box.hidden = !open;
+  btn.classList.toggle('open', open);
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (open) openSeats.add(id); else openSeats.delete(id);
+});
 
 function paintEndedToggle(){
   const btn = $('endedToggle'), gridEl = $('endedGrid'), note = $('endedNote');

@@ -3,7 +3,7 @@
    ※ 캐시 주의: 각 HTML의 <link href="css/style.css?v=NN">에
      버전 번호가 붙어 있습니다. 이 파일을 고칠 때는
      모든 HTML의 ?v= 값을 함께 올려야 브라우저가 새 파일을 받습니다.
-     (현재 v=47)
+     (현재 v=48)
 ========================================================= */
 :root{
   --leaf:#1E7F4F;
@@ -1875,12 +1875,54 @@ body.sw-nosel, body.sw-nosel *{user-select:none;-webkit-user-select:none;}
   .cm-capbox input{flex:1;width:auto;text-align:left;}
 }
 
-/* 홈 카드의 과목별 잔여 현황 */
-.cseat{display:flex;flex-direction:column;gap:5px;margin-top:10px;}
+/* 홈 카드의 과목별 잔여 현황 — v49: 눌러서 펼치는 유리 패널 */
+.cseat-toggle{
+  display:flex;align-items:center;gap:8px;width:100%;margin-top:10px;
+  padding:9px 13px;border-radius:12px;cursor:pointer;
+  font-family:inherit;font-size:.81rem;font-weight:700;color:#4A5850;
+  background:var(--glass-bg,rgba(255,255,255,.55));
+  border:1px solid var(--glass-border,rgba(255,255,255,.6));
+  box-shadow:0 3px 12px rgba(31,45,38,.07);
+  -webkit-backdrop-filter:blur(19px) saturate(144%);backdrop-filter:blur(19px) saturate(144%);
+  transition:transform .18s ease,box-shadow .18s ease,color .18s ease,border-color .18s ease;
+}
+.cseat-toggle:hover{
+  transform:translateY(-1px);color:var(--leaf);
+  border-color:rgba(143,207,166,.75);box-shadow:0 8px 20px rgba(31,45,38,.12);
+}
+.cseat-toggle .cst-ic{font-size:.95rem;filter:grayscale(.15);}
+.cseat-toggle .cst-txt{flex:none;}
+.cseat-toggle .cst-n{
+  margin-left:auto;padding:2px 9px;border-radius:999px;
+  background:rgba(60,80,68,.09);color:#3B4A41;font-size:.73rem;font-weight:800;
+  white-space:nowrap;
+}
+.cseat-toggle.open .cst-n{background:var(--sprout-soft);color:var(--leaf);}
+.cseat-toggle .cst-arrow{flex:none;font-size:.75rem;opacity:.6;transition:transform .22s ease;}
+.cseat-toggle.open .cst-arrow{transform:rotate(180deg);}
+.cseat-toggle.open{border-color:rgba(143,207,166,.7);color:var(--leaf);}
+
+.cseat{
+  display:flex;flex-direction:column;gap:5px;margin-top:7px;padding:9px;
+  border-radius:12px;
+  background:var(--glass-bg,rgba(255,255,255,.5));
+  border:1px solid var(--glass-border,rgba(255,255,255,.55));
+  -webkit-backdrop-filter:blur(19px) saturate(144%);backdrop-filter:blur(19px) saturate(144%);
+  animation:cseatIn .24s cubic-bezier(.2,.8,.2,1);
+}
+.cseat[hidden]{display:none;}
+@keyframes cseatIn{
+  from{opacity:0;transform:translateY(-6px);}
+  to{opacity:1;transform:none;}
+}
+@media (prefers-reduced-motion:reduce){
+  .cseat{animation:none;}
+  .cseat-toggle:hover{transform:none;}
+}
 .cseat li{
   display:flex;align-items:center;gap:8px;
   padding:7px 11px;border-radius:9px;
-  background:var(--paper);border:1px solid var(--line);
+  background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.7);
   font-size:.8rem;color:#4A5850;
 }
 .cseat .cs-name{font-weight:700;color:#28352E;min-width:0;
