@@ -32,6 +32,7 @@ const $ = id => document.getElementById(id);
 let programs = [];
 let currentUser = null, userProfile = null;
 let endedOpen = false;        // 종료된 워크샵 펼침 상태 (렌더보다 먼저 선언)
+let rEndedOpen = false;       // 종료된 구인 공고 펼침 상태
 const openSeats = new Set();  // v49: 과목별 잔여 좌석을 펼쳐 둔 프로그램 id
 /* v27 방문객 대시보드 상태 — 로그인 콜백이 먼저 실행돼도 안전하도록 위쪽에 둡니다 */
 const VDASH_DEFAULTS = { students: 0, instructors: 0, visit: 0, group: 0, workshops: 0, goal: 4800 };
@@ -249,7 +250,9 @@ function renderPrograms(){
   const all     = programs.filter(p => p.type !== 'recruit' && !isOnlineWs(p));
   const edu     = byDeadline(all.filter(p => !programEnded(p)));
   const done    = byEndDesc(all.filter(programEnded));
-  const recruit = byDeadline(programs.filter(p => p.type === 'recruit' && !programEnded(p)));
+  const rAll    = programs.filter(p => p.type === 'recruit');
+  const recruit = byDeadline(rAll.filter(p => !programEnded(p)));
+  const rDone   = byEndDesc(rAll.filter(programEnded));
 
   const grid = $('programGrid');
   grid.innerHTML = edu.length
@@ -271,12 +274,22 @@ function renderPrograms(){
     $('vd-workshops').textContent = programs.filter(p => p.type === 'workshop').length;
   }
 
+  /* 강사 구인 — 진행 중인 공고가 없어도 종료된 공고가 있으면 섹션을 보여줍니다 */
   const rSec = $('recruit-now');
-  if (recruit.length){
-    rSec.style.display = 'block';
-    $('recruitGrid').innerHTML = recruit.map(cardHTML).join('');
-  } else {
-    rSec.style.display = 'none';
+  rSec.style.display = (recruit.length || rDone.length) ? 'block' : 'none';
+  $('recruitGrid').innerHTML = recruit.length
+    ? recruit.map(cardHTML).join('')
+    : (rDone.length
+      ? '<div class="open-empty">현재 모집 중인 강사 구인 공고가 없습니다.<br>지난 공고는 아래 <b>종료된 구인 공고 보기</b>에서 확인할 수 있습니다.</div>'
+      : '');
+
+  /* v51: 종료된 구인 공고 — 기본은 접힌 상태 */
+  const rWrap = $('rEndedWrap');
+  if (rWrap){
+    rWrap.style.display = rDone.length ? '' : 'none';
+    $('rEndedCount').textContent = rDone.length;
+    $('rEndedGrid').innerHTML = rDone.map(cardHTML).join('');
+    paintEndedToggle('r');
   }
 }
 
@@ -294,20 +307,33 @@ document.addEventListener('click', e => {
   if (open) openSeats.add(id); else openSeats.delete(id);
 });
 
-function paintEndedToggle(){
-  const btn = $('endedToggle'), gridEl = $('endedGrid'), note = $('endedNote');
-  if (!btn) return;
-  btn.setAttribute('aria-expanded', endedOpen ? 'true' : 'false');
-  btn.classList.toggle('open', endedOpen);
-  btn.querySelector('.et-txt').textContent = endedOpen ? '종료된 워크샵 접기' : '종료된 워크샵 보기';
-  gridEl.hidden = !endedOpen;
-  note.style.display = endedOpen ? '' : 'none';
+/* v51: 워크샵('') / 구인 공고('r') 두 목록이 같은 방식으로 접히고 펼쳐집니다 */
+/* 함수 선언은 호이스팅되므로, 첫 렌더가 먼저 실행돼도 안전합니다 */
+function endedCfg(kind){
+  return kind === 'r'
+    ? { open: () => rEndedOpen, set: v => { rEndedOpen = v; },
+        ids: ['rEndedToggle', 'rEndedGrid', 'rEndedNote'], label: '종료된 구인 공고' }
+    : { open: () => endedOpen,  set: v => { endedOpen = v; },
+        ids: ['endedToggle', 'endedGrid', 'endedNote'], label: '종료된 워크샵' };
 }
-
-document.getElementById('endedToggle')?.addEventListener('click', () => {
-  endedOpen = !endedOpen;
-  paintEndedToggle();
-  if (endedOpen) $('endedGrid').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+function paintEndedToggle(kind = ''){
+  const cfg = endedCfg(kind);
+  const [btn, gridEl, note] = cfg.ids.map(id => $(id));
+  if (!btn) return;
+  const on = cfg.open();
+  btn.setAttribute('aria-expanded', on ? 'true' : 'false');
+  btn.classList.toggle('open', on);
+  btn.querySelector('.et-txt').textContent = `${cfg.label} ${on ? '접기' : '보기'}`;
+  gridEl.hidden = !on;
+  note.style.display = on ? '' : 'none';
+}
+['', 'r'].forEach(kind => {
+  const cfg = endedCfg(kind);
+  document.getElementById(cfg.ids[0])?.addEventListener('click', () => {
+    cfg.set(!cfg.open());
+    paintEndedToggle(kind);
+    if (cfg.open()) $(cfg.ids[1]).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
 });
 
 onSnapshot(
