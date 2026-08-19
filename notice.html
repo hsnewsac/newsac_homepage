@@ -6,7 +6,7 @@
 <title>공지사항 — 한신대학교 디지털새싹 사업단</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=49">
+<link rel="stylesheet" href="css/style.css?v=50">
 </head>
 <body>
 
@@ -22,10 +22,86 @@
 
 <section id="notice">
   <div class="section">
+    <!-- v53: 관리자 로그인 시 이 페이지에서 바로 작성·수정·삭제 -->
+    <div class="admin-box nt-editor" id="ntEditor" hidden>
+      <h3 id="ntFormTitle">📢 새 공지 작성</h3>
+      <form id="ntForm">
+        <input type="hidden" id="nt-id">
+        <div class="form-error" id="ntError"></div>
+        <div class="form-2col">
+          <div class="form-row">
+            <label for="nt-cat">분류 <span class="req">*</span></label>
+            <select id="nt-cat" required>
+              <option value="모집">모집</option>
+              <option value="안내">안내</option>
+              <option value="마감임박">마감임박</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label for="nt-title">제목 <span class="req">*</span></label>
+            <input id="nt-title" type="text" placeholder="공지 제목을 입력하세요" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="nt-body">내용 <span class="req">*</span>
+            <span class="hint">(마크다운 사용 가능)</span></label>
+          <textarea id="nt-body" rows="10" required
+            placeholder="공지 내용을 입력하세요. 줄바꿈은 그대로 반영되고, 아래 마크다운 표기를 쓸 수 있습니다.
+
+## 소제목
+**굵게** *기울임* ~~취소선~~
+- 목록 항목
+1. 번호 목록
+&gt; 인용문
+[링크 이름](https://example.com)
+---"></textarea>
+          <div class="md-help">
+            <b>마크다운 표기</b>
+            <span><code>## 소제목</code></span>
+            <span><code>**굵게**</code></span>
+            <span><code>*기울임*</code></span>
+            <span><code>- 목록</code></span>
+            <span><code>1. 번호</code></span>
+            <span><code>&gt; 인용</code></span>
+            <span><code>[이름](주소)</code></span>
+            <span><code>---</code> 구분선</span>
+            <button type="button" class="mini-btn" id="ntPreviewBtn"
+              onclick="toggleNoticePreview()">미리보기</button>
+          </div>
+          <div class="np-wrap" id="ntPreviewWrap" hidden>
+            <span class="np-label">미리보기</span>
+            <div class="md" id="ntPreview"></div>
+          </div>
+        </div>
+
+        <!-- 첨부 파일 -->
+        <div class="form-row">
+          <label for="nt-files">첨부 파일
+            <span class="hint">(이미지·동영상·문서 · 1개당 최대 30MB)</span></label>
+          <input id="nt-files" type="file" multiple
+            accept="image/*,video/*,.pdf,.hwp,.hwpx,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt">
+          <p class="form-note" style="margin-top:6px;">
+            이미지와 동영상은 공지 본문 아래에 바로 보이고, 문서는 내려받기 링크로 표시됩니다.</p>
+          <ul class="nt-filelist" id="ntFileList"></ul>
+        </div>
+
+        <label class="form-check">
+          <input type="checkbox" id="nt-pinned">
+          <span>📌 게시판 상단에 고정</span>
+        </label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button type="submit" class="btn btn-navy btn-sm" id="ntSubmit">공지 등록</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="closeNoticeEditor()">취소</button>
+        </div>
+      </form>
+    </div>
+
     <!-- 목록 뷰 -->
     <div id="noticeListView">
       <div class="board-toolbar">
         <span class="board-count">전체 <b id="noticeTotal">0</b>건</span>
+        <button class="btn btn-navy btn-sm nt-new" id="ntNewBtn" hidden
+          onclick="openNoticeEditor()">＋ 새 공지 작성</button>
         <div class="board-search">
           <input type="text" id="noticeSearch" placeholder="제목·내용 검색"
                  onkeydown="if(event.key==='Enter')searchNotices()">
